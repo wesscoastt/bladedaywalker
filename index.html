@@ -11,7 +11,7 @@
 <meta name="description" content="Blade: Daywalker - a Marvel-style team-up action game. Sword combos, partner tag-ins, five acts of vampire hunting.">
 <!-- Inline SVG favicon keeps the single file self-sufficient; the PNG + manifest
      links light up the Home Screen icon once the /icons folder ships alongside. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3CradialGradient%20id%3D%22bg%22%20cx%3D%2250%25%22%20cy%3D%2242%25%22%20r%3D%2266%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23640c18%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23060308%22/%3E%0A%20%20%20%20%3C/radialGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22steel%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%220%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20%20%20%20stop-color%3D%22%239aa2b8%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.42%22%20stop-color%3D%22%23f2f6ff%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.72%22%20stop-color%3D%22%239aa2b8%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20%20%20%20stop-color%3D%22%236a718c%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%20%20%3Cfilter%20id%3D%22glow%22%20x%3D%22-30%25%22%20y%3D%22-30%25%22%20width%3D%22160%25%22%20height%3D%22160%25%22%3E%0A%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D%2211%22/%3E%0A%20%20%20%20%3C/filter%3E%0A%20%20%3C/defs%3E%0A%0A%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22url%28%23bg%29%22/%3E%0A%0A%20%20%3C%21--%20blood%20slash%20--%3E%0A%20%20%3Cg%20filter%3D%22url%28%23glow%29%22%20opacity%3D%220.85%22%3E%0A%20%20%20%20%3Cpolygon%20points%3D%2275%2C405%20430%2C75%20442%2C117%20105%2C440%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Cpolygon%20points%3D%2275%2C405%20430%2C75%20442%2C117%20105%2C440%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3Cpolygon%20points%3D%22107%2C432%20425%2C117%20434%2C140%20130%2C447%22%20fill%3D%22%23ff4450%22%20opacity%3D%220.8%22/%3E%0A%0A%20%20%3C%21--%20sword%20--%3E%0A%20%20%3Cpolygon%20points%3D%22256%2C44%20280%2C105%20232%2C105%22%20fill%3D%22%23e8eeff%22/%3E%0A%20%20%3Crect%20x%3D%22232%22%20y%3D%22100%22%20width%3D%2248%22%20height%3D%22240%22%20fill%3D%22url%28%23steel%29%22/%3E%0A%20%20%3Crect%20x%3D%22190%22%20y%3D%22338%22%20width%3D%22132%22%20height%3D%2221%22%20rx%3D%226%22%20fill%3D%22%23c21626%22/%3E%0A%20%20%3Crect%20x%3D%22198%22%20y%3D%22343%22%20width%3D%22116%22%20height%3D%225%22%20fill%3D%22%23ff5a64%22/%3E%0A%20%20%3Crect%20x%3D%22245%22%20y%3D%22359%22%20width%3D%2222%22%20height%3D%2271%22%20rx%3D%227%22%20fill%3D%22%231b1218%22/%3E%0A%20%20%3Cg%20fill%3D%22%2338242c%22%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22367%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22382%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22397%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22412%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Crect%20x%3D%22236%22%20y%3D%22429%22%20width%3D%2240%22%20height%3D%2222%22%20rx%3D%228%22%20fill%3D%22%23c21626%22/%3E%0A%3C/svg%3E%0A">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3CradialGradient%20id%3D%22bg%22%20cx%3D%2250%25%22%20cy%3D%2242%25%22%20r%3D%2266%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23640c18%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23060308%22/%3E%0A%20%20%20%20%3C/radialGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22steel%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ffffff%22/%3E%3Cstop%20offset%3D%220.24%22%20stop-color%3D%22%23c8cfdd%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.47%22%20stop-color%3D%22%236f7787%22/%3E%3Cstop%20offset%3D%220.51%22%20stop-color%3D%22%23f2f6ff%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.72%22%20stop-color%3D%22%23a2aabc%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%233f4653%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%20%20%3Cfilter%20id%3D%22g%22%20x%3D%22-30%25%22%20y%3D%22-30%25%22%20width%3D%22160%25%22%20height%3D%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%2210%22/%3E%3C/filter%3E%0A%20%20%3C/defs%3E%0A%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22url%28%23bg%29%22/%3E%0A%20%20%3Ctext%20x%3D%22256%22%20y%3D%22352%22%20text-anchor%3D%22middle%22%20fill%3D%22url%28%23steel%29%22%20stroke%3D%22%23140408%22%20stroke-width%3D%2214%22%0A%20%20%20%20%20%20%20%20paint-order%3D%22stroke%22%20font-family%3D%22%27Arial%20Black%27%2C%27Impact%27%2Csans-serif%22%20font-size%3D%22400%22%20font-weight%3D%22900%22%3EB%3C/text%3E%0A%20%20%3Cg%20filter%3D%22url%28%23g%29%22%20opacity%3D%22.8%22%3E%0A%20%20%20%20%3Cpolygon%20points%3D%2238%2C375%20475%2C105%20485%2C140%2049%2C412%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Cpolygon%20points%3D%2238%2C375%20475%2C105%20485%2C140%2049%2C412%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3Cpolygon%20points%3D%2265%2C367%20470%2C118%20475%2C135%2075%2C393%22%20fill%3D%22%23ff5a64%22%20opacity%3D%22.8%22/%3E%0A%20%20%3Cpath%20d%3D%22M220%2C295%20h15%20v65%20q0%2C12%20-7%2C12%20q-8%2C0%20-8%2C-12z%22%20fill%3D%22%23be0e1e%22/%3E%0A%20%20%3Ccircle%20cx%3D%22227%22%20cy%3D%22378%22%20r%3D%2211%22%20fill%3D%22%23be0e1e%22/%3E%0A%3C/svg%3E%0A">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="icons/manifest.webmanifest">
@@ -50,16 +50,62 @@ canvas{display:block;position:absolute;top:0;left:0;}
 .screen.on{display:block;}
 .center{min-height:100%;display:flex;align-items:center;justify-content:center;padding:26px 18px;}
 
-/* title */
-#titleBg{position:absolute;inset:0;background:
-  radial-gradient(ellipse at 50% 15%,rgba(150,20,28,.30),transparent 62%),
-  radial-gradient(ellipse at 50% 100%,rgba(60,8,14,.5),transparent 60%),#070508;}
-#logo{font-size:clamp(46px,13vw,120px);line-height:.86;letter-spacing:.06em;font-weight:bold;
-  color:#f5efe6;text-shadow:0 0 26px rgba(190,26,38,.65),0 6px 0 #3a0a10;}
-#logo span{color:#c22b36;}
-#titleMark{width:clamp(60px,15vw,100px);height:auto;margin:0 auto 12px;display:block;
-  filter:drop-shadow(0 8px 24px rgba(190,26,38,.5));}
-#tag{margin-top:10px;font-size:clamp(11px,2.6vw,15px);letter-spacing:.5em;color:#a3505a;text-transform:uppercase;}
+/* ============================================================
+   TITLE SCREEN — cinematic, late-90s action-game energy:
+   metallic wordmark, blood slash, rain + ash, distant lightning.
+   ============================================================ */
+#titleBg{position:absolute;inset:0;overflow:hidden;background:#050307;}
+#tSky{position:absolute;inset:0;background:
+  radial-gradient(ellipse 120% 70% at 50% 8%,rgba(150,18,26,.34),transparent 60%),
+  radial-gradient(ellipse 90% 60% at 50% 108%,rgba(90,10,16,.55),transparent 62%),
+  linear-gradient(180deg,#0a0710 0%,#0a0509 45%,#12060a 100%);}
+#tVig{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 34%,rgba(60,0,6,.55) 78%,rgba(0,0,0,.92) 100%);}
+#tCity{position:absolute;left:0;right:0;bottom:0;height:46%;opacity:.62;}
+#tCity svg{width:100%;height:100%;display:block;}
+#tFlash{position:absolute;inset:0;background:#9fb4e8;opacity:0;pointer-events:none;mix-blend-mode:screen;}
+#tRain{position:absolute;inset:0;pointer-events:none;opacity:.32;
+  background-image:repeating-linear-gradient(102deg,rgba(190,205,240,.5) 0 1px,transparent 1px 5px);
+  background-size:auto 190px;animation:rainFall 0.55s linear infinite;}
+@keyframes rainFall{from{background-position:0 0;}to{background-position:-40px 190px;}}
+.ash{position:absolute;border-radius:50%;background:#ff7a4a;pointer-events:none;
+  box-shadow:0 0 7px rgba(255,110,60,.85);animation:ashDrift linear infinite;}
+@keyframes ashDrift{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:0;}
+  12%{opacity:.85;}
+  85%{opacity:.5;}
+  100%{transform:translate3d(var(--dx),-108vh,0) scale(.45);opacity:0;}}
+
+#titleStage{position:relative;text-align:center;width:100%;max-width:760px;}
+#logoSvg{width:min(680px,92vw);height:auto;display:block;margin:0 auto;
+  filter:drop-shadow(0 10px 34px rgba(180,14,26,.55)) drop-shadow(0 2px 0 rgba(0,0,0,.9));}
+
+/* knife-edge menu */
+#mainMenu{margin-top:clamp(14px,3vh,34px);display:inline-flex;flex-direction:column;
+  gap:2px;align-items:stretch;min-width:min(330px,84vw);}
+.mi{position:relative;display:flex;align-items:center;gap:12px;padding:10px 16px 10px 20px;
+  cursor:pointer;color:#cfc6bb;font-size:clamp(13px,1.8vw,16px);letter-spacing:.26em;
+  text-transform:uppercase;font-weight:bold;background:linear-gradient(90deg,rgba(20,8,10,.55),rgba(10,6,8,0));
+  border-left:2px solid rgba(190,40,52,.28);
+  transition:color .14s,letter-spacing .14s,border-color .14s,background .14s,transform .12s;
+  text-shadow:0 2px 6px #000;}
+.mi:before{content:'';position:absolute;left:0;right:100%;bottom:0;height:1px;
+  background:linear-gradient(90deg,#ff2436,rgba(255,36,54,0));transition:right .22s ease;}
+.mi:after{content:'▸';margin-left:auto;color:#7c2b33;opacity:0;transition:opacity .14s,transform .14s;transform:translateX(-6px);}
+.mi:hover,.mi.sel{color:#fff6ec;border-left-color:#ff2436;letter-spacing:.3em;transform:translateX(5px);
+  background:linear-gradient(90deg,rgba(120,18,26,.5),rgba(10,6,8,0));}
+.mi:hover:before,.mi.sel:before{right:0;}
+.mi:hover:after,.mi.sel:after{opacity:1;transform:none;color:#ff6a74;}
+.mi.off{opacity:.34;cursor:not-allowed;filter:grayscale(1);}
+.mi.off:hover{transform:none;letter-spacing:.26em;color:#cfc6bb;border-left-color:rgba(190,40,52,.28);}
+.mi.off:hover:before{right:100%;}
+#titleFoot{margin-top:16px;font-size:11px;letter-spacing:.2em;color:#6d6259;text-transform:uppercase;}
+@media (max-height:520px){
+  #logoSvg{width:min(430px,64vw);}
+  #mainMenu{margin-top:8px;gap:0;}
+  .mi{padding:6px 14px 6px 16px;font-size:12px;letter-spacing:.2em;}
+  #titleFoot{margin-top:8px;font-size:9px;}
+}
 
 /* ============================================================
    HUD  —  flex COLUMN: [top bar] [boss bar] [toasts]
@@ -132,6 +178,20 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
   background:radial-gradient(ellipse at center,transparent 40%,rgba(255,60,20,.42) 100%);transition:opacity .3s;}
 
 /* ---------- banners / toasts ---------- */
+#hubPrompt{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 120px);
+  transform:translateX(-50%);z-index:26;display:none;text-align:center;pointer-events:none;}
+#hubPrompt.on{display:block;}
+#hubPromptTxt{font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#ffd7a0;font-weight:bold;
+  text-shadow:0 2px 8px #000;}
+#hubPromptKey{margin-top:5px;font-size:11px;letter-spacing:.2em;color:#c0b3a8;text-transform:uppercase;
+  border:1px solid #6b232b;display:inline-block;padding:3px 10px;background:rgba(10,6,8,.75);}
+.optRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;
+  border:1px solid #341418;background:rgba(14,9,11,.8);margin:6px 0;}
+.optRow b{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#f0e6da;}
+.optRow p{font-size:11px;color:#8d8078;margin-top:3px;}
+.optVal{padding:7px 14px;border:1px solid #6b232b;background:rgba(50,14,18,.8);font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;color:#ffd7a0;cursor:pointer;font-weight:bold;white-space:nowrap;}
+.optVal:hover{border-color:#ffb04a;}
 #banner{position:absolute;left:0;right:0;top:22%;text-align:center;z-index:30;pointer-events:none;opacity:0;
   transition:opacity .3s;padding:0 16px;}
 #bannerT{font-size:clamp(24px,6vw,54px);font-weight:bold;letter-spacing:.1em;text-transform:uppercase;
@@ -341,7 +401,12 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
     <div id="dwVig"></div>
   </div>
 
-    <div id="banner"><div id="bannerT">TITLE</div><div id="bannerS">SUB</div></div>
+    <div id="hubPrompt">
+    <div id="hubPromptTxt">TERMINAL</div>
+    <div id="hubPromptKey">PRESS J / E</div>
+  </div>
+
+  <div id="banner"><div id="bannerT">TITLE</div><div id="bannerS">SUB</div></div>
   <div id="toast"></div>
   <div id="cineBars"><b></b><b></b></div>
 
@@ -372,19 +437,129 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 
   <!-- ===================== SCREENS ===================== -->
   <div class="screen on" id="scTitle">
-    <div id="titleBg"></div>
+    <div id="titleBg">
+      <div id="tSky"></div>
+      <div id="tCity">
+        <svg viewBox="0 0 1200 300" preserveAspectRatio="none">
+          <!-- gothic city silhouette: towers, spires, a cathedral -->
+          <g fill="#05040a">
+            <rect x="0" y="150" width="90" height="150"/>
+            <rect x="86" y="196" width="70" height="104"/>
+            <rect x="150" y="120" width="78" height="180"/>
+            <polygon points="150,120 189,74 228,120"/>
+            <rect x="224" y="172" width="96" height="128"/>
+            <rect x="316" y="96" width="60" height="204"/>
+            <polygon points="316,96 346,40 376,96"/>
+            <rect x="340" y="60" width="8" height="42"/>
+            <rect x="332" y="72" width="24" height="7"/>
+            <rect x="372" y="164" width="104" height="136"/>
+            <rect x="470" y="128" width="72" height="172"/>
+            <polygon points="470,128 506,88 542,128"/>
+            <rect x="536" y="182" width="118" height="118"/>
+            <rect x="648" y="108" width="86" height="192"/>
+            <polygon points="648,108 691,56 734,108"/>
+            <rect x="728" y="168" width="94" height="132"/>
+            <rect x="816" y="140" width="64" height="160"/>
+            <polygon points="816,140 848,98 880,140"/>
+            <rect x="874" y="186" width="110" height="114"/>
+            <rect x="978" y="122" width="76" height="178"/>
+            <polygon points="978,122 1016,78 1054,122"/>
+            <rect x="1048" y="176" width="90" height="124"/>
+            <rect x="1132" y="146" width="68" height="154"/>
+          </g>
+          <g fill="#ffc061" opacity=".5">
+            <rect x="20" y="176" width="6" height="9"/><rect x="44" y="200" width="6" height="9"/>
+            <rect x="168" y="152" width="6" height="9"/><rect x="200" y="186" width="6" height="9"/>
+            <rect x="256" y="204" width="6" height="9"/><rect x="392" y="196" width="6" height="9"/>
+            <rect x="432" y="228" width="6" height="9"/><rect x="492" y="160" width="6" height="9"/>
+            <rect x="576" y="212" width="6" height="9"/><rect x="676" y="148" width="6" height="9"/>
+            <rect x="756" y="200" width="6" height="9"/><rect x="838" y="176" width="6" height="9"/>
+            <rect x="912" y="216" width="6" height="9"/><rect x="1000" y="158" width="6" height="9"/>
+            <rect x="1080" y="206" width="6" height="9"/><rect x="1160" y="180" width="6" height="9"/>
+          </g>
+        </svg>
+      </div>
+      <div id="tRain"></div>
+      <div id="tFlash"></div>
+      <div id="tVig"></div>
+    </div>
+
     <div class="center" style="position:relative">
-      <div style="text-align:center;max-width:520px;width:100%">
-        <img id="titleMark" alt="" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3CradialGradient%20id%3D%22bg%22%20cx%3D%2250%25%22%20cy%3D%2242%25%22%20r%3D%2266%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23640c18%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23060308%22/%3E%0A%20%20%20%20%3C/radialGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22steel%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%220%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20%20%20%20stop-color%3D%22%239aa2b8%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.42%22%20stop-color%3D%22%23f2f6ff%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.72%22%20stop-color%3D%22%239aa2b8%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20%20%20%20stop-color%3D%22%236a718c%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%20%20%3Cfilter%20id%3D%22glow%22%20x%3D%22-30%25%22%20y%3D%22-30%25%22%20width%3D%22160%25%22%20height%3D%22160%25%22%3E%0A%20%20%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D%2211%22/%3E%0A%20%20%20%20%3C/filter%3E%0A%20%20%3C/defs%3E%0A%0A%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22url%28%23bg%29%22/%3E%0A%0A%20%20%3C%21--%20blood%20slash%20--%3E%0A%20%20%3Cg%20filter%3D%22url%28%23glow%29%22%20opacity%3D%220.85%22%3E%0A%20%20%20%20%3Cpolygon%20points%3D%2275%2C405%20430%2C75%20442%2C117%20105%2C440%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Cpolygon%20points%3D%2275%2C405%20430%2C75%20442%2C117%20105%2C440%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3Cpolygon%20points%3D%22107%2C432%20425%2C117%20434%2C140%20130%2C447%22%20fill%3D%22%23ff4450%22%20opacity%3D%220.8%22/%3E%0A%0A%20%20%3C%21--%20sword%20--%3E%0A%20%20%3Cpolygon%20points%3D%22256%2C44%20280%2C105%20232%2C105%22%20fill%3D%22%23e8eeff%22/%3E%0A%20%20%3Crect%20x%3D%22232%22%20y%3D%22100%22%20width%3D%2248%22%20height%3D%22240%22%20fill%3D%22url%28%23steel%29%22/%3E%0A%20%20%3Crect%20x%3D%22190%22%20y%3D%22338%22%20width%3D%22132%22%20height%3D%2221%22%20rx%3D%226%22%20fill%3D%22%23c21626%22/%3E%0A%20%20%3Crect%20x%3D%22198%22%20y%3D%22343%22%20width%3D%22116%22%20height%3D%225%22%20fill%3D%22%23ff5a64%22/%3E%0A%20%20%3Crect%20x%3D%22245%22%20y%3D%22359%22%20width%3D%2222%22%20height%3D%2271%22%20rx%3D%227%22%20fill%3D%22%231b1218%22/%3E%0A%20%20%3Cg%20fill%3D%22%2338242c%22%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22367%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22382%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22397%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%20%20%3Crect%20x%3D%22243%22%20y%3D%22412%22%20width%3D%2226%22%20height%3D%226%22%20rx%3D%223%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Crect%20x%3D%22236%22%20y%3D%22429%22%20width%3D%2240%22%20height%3D%2222%22%20rx%3D%228%22%20fill%3D%22%23c21626%22/%3E%0A%3C/svg%3E%0A">
-        <div id="logo">BLA<span>DE</span></div>
-        <div id="tag">Daywalker · Night Hunt</div>
-        <div style="margin-top:26px">
-          <div class="btn" id="btnPlay">▸ Continue Hunt</div>
-          <div class="btn" id="btnNew">✦ New Game</div>
-          <div class="btn" id="btnCtrl">⌘ Controls</div>
-          <div class="btn" id="btnVs">⚔ Versus Arena</div>
+      <div id="titleStage">
+        <!-- ============ LOGO ============ -->
+        <svg id="logoSvg" viewBox="0 0 900 330">
+          <defs>
+            <linearGradient id="steelG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0"    stop-color="#ffffff"/>
+              <stop offset="0.24" stop-color="#c8cfdd"/>
+              <stop offset="0.47" stop-color="#6f7787"/>
+              <stop offset="0.505" stop-color="#f2f6ff"/>
+              <stop offset="0.72" stop-color="#a2aabc"/>
+              <stop offset="1"    stop-color="#3f4653"/>
+            </linearGradient>
+            <linearGradient id="bloodG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ff3646"/>
+              <stop offset="1" stop-color="#8c0a16"/>
+            </linearGradient>
+            <linearGradient id="coldG" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0"   stop-color="#5d6675"/>
+              <stop offset="0.5" stop-color="#dfe6f2"/>
+              <stop offset="1"   stop-color="#5d6675"/>
+            </linearGradient>
+            <filter id="redGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="9"/>
+            </filter>
+          </defs>
+
+          <!-- glow bed behind the wordmark -->
+          <text x="450" y="176" text-anchor="middle" fill="#8c0a16" opacity=".55" filter="url(#redGlow)"
+                font-family="'Arial Black','Haettenschweiler','Impact',sans-serif"
+                font-size="176" font-weight="900" letter-spacing="6">BLADE</text>
+
+          <!-- main metallic wordmark -->
+          <text x="450" y="176" text-anchor="middle" fill="url(#steelG)"
+                stroke="#1b0407" stroke-width="3" paint-order="stroke"
+                font-family="'Arial Black','Haettenschweiler','Impact',sans-serif"
+                font-size="176" font-weight="900" letter-spacing="6">BLADE</text>
+
+          <!-- blood slash cutting through the lettering -->
+          <g opacity=".95">
+            <polygon points="62,214 856,74 862,104 70,246" fill="url(#bloodG)" filter="url(#redGlow)" opacity=".7"/>
+            <polygon points="70,210 852,78 856,96 76,230" fill="url(#bloodG)"/>
+            <polygon points="120,200 840,84 842,92 126,212" fill="#ff6a74" opacity=".75"/>
+          </g>
+
+          <!-- drips hanging off the slash -->
+          <g fill="url(#bloodG)">
+            <path d="M212,206 q5,0 5,7 l0,30 q0,11 -5,11 q-5,0 -5,-11 l0,-30 q0,-7 5,-7z"/>
+            <circle cx="212" cy="258" r="6.5"/>
+            <path d="M470,163 q4,0 4,6 l0,44 q0,10 -4,10 q-4,0 -4,-10 l0,-44 q0,-6 4,-6z"/>
+            <circle cx="470" cy="226" r="5.5"/>
+            <path d="M676,128 q4,0 4,6 l0,26 q0,9 -4,9 q-4,0 -4,-9 l0,-26 q0,-6 4,-6z"/>
+            <circle cx="676" cy="173" r="5"/>
+          </g>
+
+          <!-- cold secondary line -->
+          <text x="450" y="252" text-anchor="middle" fill="#dfe6f2" opacity=".92"
+                font-family="'Trebuchet MS',Helvetica,Arial,sans-serif"
+                font-size="40" font-weight="300" letter-spacing="20">DAYWALKER</text>
+          <rect x="150" y="268" width="600" height="1.6" fill="#ff2436" opacity=".55"/>
+          <text x="450" y="304" text-anchor="middle" fill="#8e5a60"
+                font-family="'Trebuchet MS',Helvetica,Arial,sans-serif"
+                font-size="17" font-weight="bold" letter-spacing="11">NIGHT HUNT</text>
+        </svg>
+
+        <!-- ============ MENU ============ -->
+        <div id="mainMenu">
+          <div class="mi" id="miContinue">Continue Hunt</div>
+          <div class="mi" id="miNew">New Game</div>
+          <div class="mi" id="miPartners">Partners</div>
+          <div class="mi" id="miUpgrades">Upgrades</div>
+          <div class="mi" id="miVersus">Versus Arena</div>
+          <div class="mi" id="miControls">Controls</div>
+          <div class="mi" id="miOptions">Options</div>
         </div>
-        <div class="small" style="margin-top:16px">Three.js r128 · single file · keyboard, gamepad &amp; touch</div>
+        <div id="titleFoot">Three.js · single file · keyboard · gamepad · touch</div>
       </div>
     </div>
   </div>
@@ -458,6 +633,27 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
     </div></div>
   </div>
 
+  <div class="screen" id="scOptions">
+    <div class="center"><div class="panel wide" style="max-width:560px">
+      <div class="hdr">Configuration</div><div class="ttl">Options</div>
+      <div class="hr"></div>
+      <div class="optRow"><div><b>Fullscreen</b><p>Recommended on desktop. Also bound to <span class="kbd">F11</span>.</p></div>
+        <div class="optVal" id="optFull">Off</div></div>
+      <div class="optRow"><div><b>Graphics Quality</b><p>Low disables shadows and halves particles.</p></div>
+        <div class="optVal" id="optQual">High</div></div>
+      <div class="optRow"><div><b>Sound &amp; Music</b><p>Menu theme and combat audio.</p></div>
+        <div class="optVal" id="optSound">On</div></div>
+      <div class="optRow"><div><b>Music Volume</b><p>Menu theme only.</p></div>
+        <div class="optVal" id="optMusVol">55%</div></div>
+      <div class="optRow"><div><b>Invert Look</b><p>Vertical camera axis.</p></div>
+        <div class="optVal" id="optInvert">Off</div></div>
+      <div class="optRow"><div><b>Camera Sensitivity</b><p>Mouse and right stick.</p></div>
+        <div class="optVal" id="optSens">Normal</div></div>
+      <div class="hr"></div>
+      <div class="btn" id="btnOptBack">◂ Back</div>
+    </div></div>
+  </div>
+
   <div id="loading">
     <div class="ttl">BLADE</div>
     <div id="loadBar"><i id="loadFill"></i></div>
@@ -528,6 +724,9 @@ var G = {
   quality: 'high',
   sound: true,
   invert: false,
+  sens: 1.0,
+  sensIdx: 2,
+  musicVol: 0.55,
   vs: false,
   vsWave: 0,
   paused: false,
@@ -643,7 +842,7 @@ function menuMusicStart() {
   if (!menuAudio) {
     menuAudio = new Audio(MENU_TRACK);
     menuAudio.loop = true;
-    menuAudio.volume = 0.55;
+    menuAudio.volume = G.musicVol;
   }
   var p = menuAudio.play();
   if (p && p.catch) p.catch(function () { /* autoplay blocked — retried on first gesture */ });
@@ -787,7 +986,7 @@ var KEYMAP = {
   Space: 'jump', ShiftLeft: 'sprint', ShiftRight: 'sprint',
   KeyJ: 'light', KeyK: 'heavy', KeyL: 'dash', ControlLeft: 'dash', KeyC: 'dash',
   KeyQ: 'special', KeyF: 'day', KeyE: 'call', KeyR: 'tag', KeyZ: 'team',
-  Escape: 'pause', KeyP: 'pause', Enter: 'confirm', KeyG: 'throw'
+  Escape: 'pause', KeyP: 'pause', Enter: 'confirm', KeyG: 'throw', KeyV: 'fullscreen'
 };
 function setAct(a, v) {
   if (!a) return;
@@ -811,6 +1010,7 @@ function inputInit() {
   window.addEventListener('keydown', function (e) {
     if (KEYMAP[e.code]) { setAct(KEYMAP[e.code], true); if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault(); }
     if (e.code === 'Space' && G.mode === 'dialogue') dlgAdvance();
+    if (e.code === 'F11' || (e.code === 'KeyV' && G.mode !== 'play')) { e.preventDefault(); toggleFullscreen(); }
     if (e.code === 'Escape') { if (G.mode === 'play') doPause(); else if (G.mode === 'pause') doResume(); }
     audioInit(); audioResume(); menuMusicPoke();
   });
@@ -979,13 +1179,56 @@ function pollGamepad() {
     var v = btn(n);
     if (v !== padPrev[n]) { setAct(a, v); padPrev[n] = v; }
   }
-  map(0, 'jump'); map(2, 'light'); map(3, 'heavy'); map(1, 'dash');
-  map(5, 'special'); map(7, 'day'); map(4, 'call'); map(6, 'tag');
-  map(10, 'team'); map(9, 'pause'); map(8, 'tag');
-  if (btn(9) && !padPrev.p9) { if (G.mode === 'play') doPause(); else if (G.mode === 'pause') doResume(); }
+  /* Friend-or-Foe style layout:
+       A jump · X light · Y heavy · B dodge
+       LB partner assist · RB special · LT tag · RT Daywalker
+       L3 sprint · R3 Team-Up · Start pause */
+  map(0, 'jump');
+  map(2, 'light');
+  map(3, 'heavy');
+  map(1, 'dash');
+  map(4, 'call');
+  map(5, 'special');
+  map(6, 'tag');
+  map(7, 'day');
+  map(10, 'sprint');
+  map(11, 'team');
+  if (btn(9) && !padPrev.p9) { if (G.mode === 'play' || G.mode === 'hub') doPause(); else if (G.mode === 'pause') doResume(); }
   padPrev.p9 = btn(9);
-  // sprint on left stick push
-  IN.down.sprint = (Math.abs(ax) > 0.85 || Math.abs(ay) > 0.85) || btn(11);
+  // menu navigation on the d-pad
+  if (G.mode === 'title' || G.mode === 'menu' || G.mode === 'pause' || G.mode === 'result' || G.mode === 'hubmenu') {
+    if (btn(12) && !padPrev.p12) padMenuMove(-1);
+    if (btn(13) && !padPrev.p13) padMenuMove(1);
+    if (btn(0) && !padPrev.p0) padMenuActivate();
+    padPrev.p12 = btn(12); padPrev.p13 = btn(13); padPrev.p0 = btn(0);
+  }
+  // pushing the stick to the rim also sprints
+  if (Math.abs(ax) > 0.9 || Math.abs(ay) > 0.9) IN.down.sprint = true;
+}
+
+/* Gamepad menu driver — moves a highlight over on-screen buttons and clicks. */
+var padMenuIdx = 0;
+function padMenuList() {
+  var scr = document.querySelector('.screen.on');
+  if (!scr) return [];
+  var nodes = scr.querySelectorAll('.mi:not(.off), .btn:not(.off), .optVal'), out = [], i;
+  for (i = 0; i < nodes.length; i++) out.push(nodes[i]);
+  return out;
+}
+function padMenuMove(dir) {
+  var list = padMenuList(), i;
+  if (!list.length) return;
+  for (i = 0; i < list.length; i++) list[i].classList.remove('sel');
+  padMenuIdx = (padMenuIdx + dir + list.length) % list.length;
+  list[padMenuIdx].classList.add('sel');
+  if (list[padMenuIdx].scrollIntoView) list[padMenuIdx].scrollIntoView({ block: 'nearest' });
+  SFX.ui();
+}
+function padMenuActivate() {
+  var list = padMenuList();
+  if (!list.length) return;
+  var n = list[clamp(padMenuIdx, 0, list.length - 1)];
+  if (n && n.click) n.click();
 }
 
 // Keyboard -> analog move vector (camera-relative resolution happens later)
@@ -1220,51 +1463,6 @@ var LOCATIONS = [
 ];
 
 /* ==========================================================================
-   [DATA] Stages — 4 per location (3 field stages + boss) = 20 total
-   type: arena | platform | objective | hunt | boss
-   ========================================================================== */
-var STAGES = [];
-(function buildStages() {
-  function S(loc, name, type, cfg) {
-    var s = {
-      id: 'L' + loc + '_' + STAGES.length, loc: loc, name: name, type: type,
-      waves: cfg.waves || 3, pool: cfg.pool || ['thrall'], size: cfg.size || 62,
-      tokens: cfg.tokens || 6, secret: cfg.secret !== false, mini: cfg.mini || null,
-      boss: cfg.boss || null, objText: cfg.objText || '', platforms: cfg.platforms || 0,
-      hazards: cfg.hazards || 0, targets: cfg.targets || 0, index: STAGES.length,
-      density: cfg.density || 1, hostages: cfg.hostages || 0
-    };
-    STAGES.push(s);
-    return s;
-  }
-  // --- ACT 1: Night Streets -------------------------------------------------
-  S(0, 'Cold Open', 'arena', { waves: 3, pool: ['thrall', 'thrall', 'vampire'], size: 58, tokens: 6, objText: 'Clear the feeding ground', density: 0.8 });
-  S(0, 'Rooftop Run', 'platform', { waves: 2, pool: ['thrall', 'bat'], size: 70, platforms: 16, tokens: 8, objText: 'Cross the rooftops to the signal' });
-  S(0, 'Blood Bank', 'objective', { waves: 3, pool: ['thrall', 'vampire', 'familiar'], size: 62, targets: 3, tokens: 8, objText: 'Destroy 3 blood caches', mini: 'gorse' });
-  S(0, 'Deacon Sable', 'boss', { pool: ['thrall'], size: 54, boss: 'sable', tokens: 12, objText: 'Kill Deacon Sable', secret: false });
-  // --- ACT 2: Docks ---------------------------------------------------------
-  S(1, 'Container Yard', 'arena', { waves: 4, pool: ['thrall', 'vampire', 'spitter'], size: 66, tokens: 8, objText: 'Wipe the yard crew' });
-  S(1, 'Crane Line', 'platform', { waves: 2, pool: ['bat', 'spitter'], size: 74, platforms: 20, hazards: 5, tokens: 10, objText: 'Reach the harbor master tower' });
-  S(1, 'Cargo Hold', 'objective', { waves: 3, pool: ['vampire', 'spitter', 'brute'], size: 60, targets: 4, tokens: 10, objText: 'Burn 4 cocoon nests', mini: 'maw' });
-  S(1, 'The Harvester', 'boss', { pool: ['spitter'], size: 58, boss: 'harvester', tokens: 16, objText: 'Put the Harvester down', secret: false });
-  // --- ACT 3: Castle --------------------------------------------------------
-  S(2, 'Broken Gate', 'arena', { waves: 4, pool: ['vampire', 'cultist', 'bat'], size: 68, tokens: 10, objText: 'Take the courtyard' });
-  S(2, 'Shattered Halls', 'platform', { waves: 3, pool: ['bat', 'cultist'], size: 78, platforms: 22, hazards: 6, tokens: 12, objText: 'Climb to the bell tower' });
-  S(2, 'Hall of Portraits', 'hunt', { waves: 3, pool: ['vampire', 'reaver', 'cultist'], size: 66, targets: 3, tokens: 12, objText: 'Hunt 3 Highblood scouts' });
-  S(2, 'Countess Vrasta', 'boss', { pool: ['bat'], size: 62, boss: 'vrasta', tokens: 20, objText: 'End the Countess', secret: false });
-  // --- ACT 4: Catacombs -----------------------------------------------------
-  S(3, 'Ossuary', 'arena', { waves: 4, pool: ['wight', 'cultist', 'thrall'], size: 60, tokens: 12, objText: 'Silence the ossuary' });
-  S(3, 'Drowned Crypt', 'platform', { waves: 3, pool: ['wight', 'spitter'], size: 72, platforms: 22, hazards: 8, tokens: 14, objText: 'Find the choir door' });
-  S(3, 'Rite of Marrow', 'objective', { waves: 4, pool: ['wight', 'reaver', 'cultist'], size: 66, targets: 4, tokens: 14, objText: 'Shatter 4 marrow altars', mini: 'gorse' });
-  S(3, 'The Bonecaller', 'boss', { pool: ['wight'], size: 64, boss: 'bonecaller', tokens: 24, objText: 'Break the Choirmaster', secret: false });
-  // --- ACT 5: Blood Temple --------------------------------------------------
-  S(4, 'Ascension Steps', 'arena', { waves: 5, pool: ['reaver', 'vampire', 'familiar'], size: 66, tokens: 14, objText: 'Climb the steps in blood' });
-  S(4, 'The Red Span', 'platform', { waves: 3, pool: ['bat', 'reaver'], size: 80, platforms: 24, hazards: 10, tokens: 16, objText: 'Cross the span to the spire' });
-  S(4, 'Inner Sanctum', 'objective', { waves: 4, pool: ['reaver', 'brute', 'cultist'], size: 64, targets: 3, tokens: 18, objText: 'Break the 3 blood seals', mini: 'maw' });
-  S(4, 'Lord Vhalimar', 'boss', { pool: ['reaver'], size: 70, boss: 'vhalimar', tokens: 40, objText: 'Kill the First Thirst', secret: false });
-})();
-
-/* ==========================================================================
    [DATA] Upgrade tree — same four lines per hero, escalating costs
    ========================================================================== */
 var UPGRADES = [
@@ -1287,123 +1485,6 @@ function heroCdMul(h) { return 1 - 0.09 * upgVal(h.heroId, 'cd'); }
 function heroComboMax(h) { return h.def.combo + (upgVal(h.heroId, 'move') >= 3 ? 1 : 0); }
 function heroReach(h) { return h.def.reach * (1 + 0.05 * upgVal(h.heroId, 'move')); }
 
-/* ==========================================================================
-   [DATA] Story script — short, punchy beats. Keyed by stage index.
-   'pre' plays on stage start, 'post' on stage clear.
-   ========================================================================== */
-var SCRIPT = {
-  0: {
-    pre: [
-      ['BLADE', 'Three blocks. Forty people. No bodies.'],
-      ['ABIGAIL', 'And one very grumpy man with a sword. I\'m on comms, Blade.'],
-      ['BLADE', 'Then keep it clear. I\'m going in loud.']
-    ],
-    post: [['ABIGAIL', 'Thermal says more of them, two streets over. Up high.'], ['BLADE', 'Then we go up.']]
-  },
-  1: {
-    pre: [['ABIGAIL', 'Rooftops. Try not to fall. I hate paperwork.'], ['BLADE', 'I don\'t fall.']],
-    post: [['SPIDER-MAN', 'Okay so — big sword, black coat, standing over a pile of guys. Help me out here, hero or problem?'],
-           ['BLADE', 'Depends how fast you move.'],
-           ['SPIDER-MAN', 'Fast. Very fast. Famously fast.']]
-  },
-  2: {
-    pre: [['SPIDER-MAN', 'They\'re running blood through a bank. That\'s… actually kind of on the nose.'],
-          ['BLADE', 'Vampires aren\'t subtle. They\'re just old.']],
-    post: [['ABIGAIL', 'The caches all tag back to one name. Deacon Sable.'], ['BLADE', 'Then Sable talks. Or Sable burns.']]
-  },
-  3: {
-    pre: [['SABLE', 'You brought a sword to a plague, Daywalker.'], ['BLADE', 'I brought silver. The sword\'s a bonus.']],
-    post: [['SABLE', 'The docks… he\'s already loading… you\'re too late, you were always—'],
-           ['BLADE', 'Save it.'],
-           ['SPIDER-MAN', 'So. Docks. Do we carpool, or…?']]
-  },
-  4: {
-    pre: [['ABIGAIL', 'Containers on the pier. Heat signatures inside them.'], ['BLADE', 'Those aren\'t signatures. That\'s cargo.']],
-    post: [['SPIDER-MAN', 'They were shipping people. Actual people.'], ['BLADE', 'Now you get it.']]
-  },
-  5: {
-    pre: [['SPIDER-MAN', 'Cranes! Swinging! This is my whole thing, man, finally.'], ['BLADE', 'Then lead.']],
-    post: [['ABIGAIL', 'Harbor master\'s manifest — everything routes to one hold.']]
-  },
-  6: {
-    pre: [['BLADE', 'Nests. Burn them all.'], ['SPIDER-MAN', 'I have so many questions and zero desire to hear the answers.']],
-    post: [['ABIGAIL', 'Something huge just woke up down there.'], ['BLADE', 'Good. I hate chasing.']]
-  },
-  7: {
-    pre: [['HARVESTER', 'Meat. Fresh meat walks in on its own.'], ['BLADE', 'Walks out too.']],
-    post: [['GHOST RIDER', 'The big one\'s soul was rotten through. So is the ship it came off.'],
-           ['SPIDER-MAN', 'Hi. Hello. Your head is on fire. Is that — is that fine?'],
-           ['GHOST RIDER', 'It is deserved.'],
-           ['BLADE', 'He\'s with us. Move.']]
-  },
-  8: {
-    pre: [['ABIGAIL', 'The ship came from a castle. They moved the whole thing overseas, stone by stone.'],
-          ['BLADE', 'Old money. Old blood.']],
-    post: [['GHOST RIDER', 'This ground remembers screaming.']]
-  },
-  9: {
-    pre: [['SPIDER-MAN', 'Gothic castle. Broken stairs. Snow. Somebody really committed to a look.'],
-          ['BLADE', 'Climb.']],
-    post: [['ABIGAIL', 'Bell tower\'s clear. There\'s a woman in the portraits. Same face. Four hundred years.']]
-  },
-  10: {
-    pre: [['BLADE', 'Highblood scouts. Kill them before they report.'], ['SPIDER-MAN', 'Stealth! Great. I\'ll whisper aggressively.']],
-    post: [['VRASTA', 'Enough. Come up, half-breed. Bring your circus.']]
-  },
-  11: {
-    pre: [['VRASTA', 'You wear your father\'s hunger like a coat.'], ['BLADE', 'And you wear a dead woman\'s face. We all cope.']],
-    post: [['ELSA', 'Lovely swing. Wide, though. You leave your left open.'],
-           ['BLADE', 'And you talk during a fight.'],
-           ['ELSA', 'I multitask. Elsa Bloodstone. The keep sits on catacombs — that is where they took the rest of the people.']]
-  },
-  12: {
-    pre: [['ELSA', 'Mind the bones. Some of them are still employed.'], ['BLADE', 'Then fire them.']],
-    post: [['ABIGAIL', 'Blade — the signal from below is not vampires. It\'s older.']]
-  },
-  13: {
-    pre: [['SPIDER-MAN', 'Flooded crypt. Cool. Cool cool cool.'], ['ELSA', 'Do try not to drown, spider.']],
-    post: [['GHOST RIDER', 'The singing is a summons. Something is being built.']]
-  },
-  14: {
-    pre: [['BLADE', 'Altars. Break them.'], ['ELSA', 'With enthusiasm.']],
-    post: [['ABIGAIL', 'Blade. The blood shipments, the castle, the choir — none of it was for Vrasta.'],
-           ['BLADE', 'It was for whoever comes after her.']]
-  },
-  15: {
-    pre: [['BONECALLER', 'Sing with us. Every bone in you knows the tune.'], ['BLADE', 'I\'m tone deaf.']],
-    post: [['MOON KNIGHT', 'The choir was a door. It\'s open now.'],
-           ['SPIDER-MAN', 'Guy in white. In a catacomb. At night. Why.'],
-           ['MOON KNIGHT', 'So they see me coming.'],
-           ['BLADE', 'Everyone in. Last stop.']]
-  },
-  16: {
-    pre: [['BLADE', 'Vhalimar. First of them. He made the Thirst.'],
-          ['ELSA', 'And you carry it.'],
-          ['BLADE', 'That\'s why I finish it.']],
-    post: [['SPIDER-MAN', 'Blade — your eyes went red back there.'], ['BLADE', 'I know.']]
-  },
-  17: {
-    pre: [['GHOST RIDER', 'The bridge is made of the ones who volunteered.'], ['BLADE', 'Then don\'t look down.']],
-    post: [['ABIGAIL', 'He wants you inside. He\'s not defending anything.']]
-  },
-  18: {
-    pre: [['ABIGAIL', 'Blade, the seals aren\'t keeping us out. They\'re keeping him in — and he WANTS them broken.'],
-          ['BLADE', 'I know.'],
-          ['SPIDER-MAN', 'You know?!'],
-          ['BLADE', 'He needs a Daywalker to finish the rite. So he gets one. Up close.']],
-    post: [['VHALIMAR', 'Come, son of the day. Take your seat.']]
-  },
-  19: {
-    pre: [['VHALIMAR', 'I made your kind. I can unmake you.'],
-          ['BLADE', 'You made a mistake. I\'m the correction.'],
-          ['SPIDER-MAN', 'Okay THAT was a good line.']],
-    post: [['SPIDER-MAN', 'Is it over? Please say it\'s over.'],
-           ['BLADE', 'It\'s never over. It\'s just quiet for a while.'],
-           ['ABIGAIL', 'I\'ll take quiet.'],
-           ['BLADE', 'Get some sleep. Sun\'s up in an hour — for the rest of you.']]
-  }
-};
-
 /* Recruitment beats — shown in the hub after a boss unlocks someone. */
 var RECRUIT_LINES = {
   spider: ['SPIDER-MAN', 'Alright, official team-up. I\'m calling us the Night Guys. Don\'t vote, it\'s decided.'],
@@ -1413,9 +1494,252 @@ var RECRUIT_LINES = {
 };
 
 /* ==========================================================================
+   [DATA] ACTS — the campaign, restructured.
+
+   An Act is ONE large continuous map. It contains several "beats" laid out
+   across separate zones of that map: combat arenas, traversal runs, objective
+   hunts, exploration pockets and boss encounters, all played without a load
+   between them. Beat order is deliberately irregular — no two Acts run the
+   same rhythm, some open on a boss, later ones hold two.
+
+   Beat shorthands:
+     F(waves)   fight — timed waves in the zone
+     G(kills)   gauntlet — continuous pressure until a kill quota is met
+     T()        traverse — platform route to the next zone
+     O(n)       objective — destroy n caches/altars/seals
+     H(n)       hunt — n marked elites
+     X(n)       explore — recover n relics hidden around the zone
+     E(id)      elite / mini-boss
+     B(id)      major boss
+   ========================================================================== */
+function F(w) { return { k: 'fight', w: w }; }
+function Gt(n) { return { k: 'gauntlet', n: n }; }
+function T() { return { k: 'traverse' }; }
+function O(n) { return { k: 'objective', n: n }; }
+function Hn(n) { return { k: 'hunt', n: n }; }
+function X(n) { return { k: 'explore', n: n }; }
+function E(id) { return { k: 'elite', b: id }; }
+function B(id) { return { k: 'boss', b: id }; }
+
+/* Extra mini-bosses so 24 Acts each get their own marquee fight. */
+BOSSES.kroven = {
+  id: 'kroven', name: 'Kroven', sub: 'Broker of the Night Market', hp: 820, speed: 5.8, dmg: 17,
+  body: 0x1e1824, skin: 0xd8ccc0, accent: 0xe8c020, scale: 1.28, reach: 3.0,
+  moves: ['blink', 'triple', 'volley'], adds: 'familiar', phases: 1, recruit: null,
+  staggerRes: 0.6, windup: 0.36, recover: 0.46, intro: 'Everything is for sale. Including you.'
+};
+BOSSES.tidewrack = {
+  id: 'tidewrack', name: 'Tidewrack', sub: 'Drowned Foreman', hp: 1050, speed: 3.6, dmg: 23,
+  body: 0x1c3038, skin: 0x8ab0a0, accent: 0x30d0b0, scale: 1.7, reach: 3.9,
+  moves: ['slam', 'charge', 'ring'], adds: 'spitter', phases: 2, recruit: null,
+  staggerRes: 0.72, windup: 0.8, recover: 0.75, slam: true, intro: 'The water took me. It can take you.'
+};
+BOSSES.lamia = {
+  id: 'lamia', name: 'Lady Lamia', sub: 'Vrasta\'s Handmaid', hp: 1150, speed: 6.6, dmg: 19,
+  body: 0x2c1436, skin: 0xefe0ee, accent: 0xc060ff, scale: 1.24, reach: 2.9,
+  moves: ['blink', 'volley', 'summon'], adds: 'bat', phases: 2, recruit: null,
+  staggerRes: 0.55, windup: 0.34, recover: 0.42, intro: 'She is sleeping. I am not.'
+};
+BOSSES.ossuar = {
+  id: 'ossuar', name: 'Ossuar', sub: 'First Voice of the Choir', hp: 1300, speed: 4.4, dmg: 22,
+  body: 0xcfc6b0, skin: 0xe8e0d0, accent: 0x50e0b0, scale: 1.45, reach: 3.3,
+  moves: ['ring', 'summon', 'slam'], adds: 'wight', phases: 2, recruit: null,
+  staggerRes: 0.68, windup: 0.6, recover: 0.6, intro: 'You are late. The song is nearly finished.'
+};
+BOSSES.crimsonguard = {
+  id: 'crimsonguard', name: 'The Crimson Guard', sub: 'Vhalimar\'s Shield', hp: 1800, speed: 5.4, dmg: 25,
+  body: 0x3a0c14, skin: 0xf0dcd4, accent: 0xff3040, scale: 1.55, reach: 3.6,
+  moves: ['charge', 'triple', 'ring', 'summon'], adds: 'reaver', phases: 2, recruit: null,
+  staggerRes: 0.7, windup: 0.42, recover: 0.5, intro: 'None reach the throne. None ever have.'
+};
+
+/* Enemy pools per biome, escalating within each act via ACT.pool overrides. */
+var POOLS = [
+  ['thrall', 'thrall', 'vampire', 'bat', 'familiar'],
+  ['thrall', 'vampire', 'spitter', 'brute', 'bat'],
+  ['vampire', 'cultist', 'bat', 'reaver', 'brute'],
+  ['wight', 'cultist', 'thrall', 'reaver', 'spitter'],
+  ['reaver', 'vampire', 'familiar', 'brute', 'cultist']
+];
+
+var ACTS = [
+  /* ---------------- ACT I — NIGHT STREETS ---------------- */
+  { n: 'Cold Open', loc: 0, recruit: null, blurb: 'Three blocks. Forty people. No bodies.',
+    beats: [F(2), T(), F(2), X(3), F(3)] },
+  { n: 'The Night Market', loc: 0, recruit: null, blurb: 'They buy and sell people here. Close it.',
+    beats: [X(3), O(3), Gt(16), T(), F(3)] },
+  { n: 'Rooftop Signal', loc: 0, recruit: null, blurb: 'Abigail has a fix on the relay. It is very high up.',
+    beats: [T(), F(3), Gt(14), T(), Hn(3), E('gorse')] },
+  { n: 'Blood Bank', loc: 0, recruit: 'spider', blurb: 'Sable runs the caches. Sable answers for them.',
+    beats: [F(2), O(3), T(), Gt(18), B('sable')] },
+  { n: 'Exodus', loc: 0, recruit: null, blurb: 'They are leaving the city. Find out what they are carrying.',
+    beats: [E('maw'), F(3), T(), X(3), F(4)] },
+
+  /* ---------------- ACT II — ROTTEN HARBOR ---------------- */
+  { n: 'Container Yard', loc: 1, recruit: null, blurb: 'Everything going out full. Nothing coming back alive.',
+    beats: [F(3), T(), O(4), F(3)] },
+  { n: 'The Long Pier', loc: 1, recruit: null, blurb: 'Kroven is selling the manifest. Buy it in blood.',
+    beats: [Gt(20), T(), F(3), E('kroven'), X(3)] },
+  { n: 'Crane Line', loc: 1, recruit: null, blurb: 'Up the gantries. Do not look at the water.',
+    beats: [T(), F(3), T(), Hn(3), T(), F(3)] },
+  { n: 'The Hold', loc: 1, recruit: 'rider', blurb: 'Whatever they were shipping is awake now.',
+    beats: [X(3), O(4), F(3), Gt(16), F(3), B('harvester')] },
+  { n: 'Drydock', loc: 1, recruit: null, blurb: 'One ship left. It came from a castle.',
+    beats: [F(3), E('tidewrack'), T(), Gt(22), F(3)] },
+
+  /* ---------------- ACT III — VRASTA KEEP ---------------- */
+  { n: 'Broken Gate', loc: 2, recruit: null, blurb: 'They shipped a castle across an ocean. Ask why.',
+    beats: [F(3), T(), F(3), O(3), F(3)] },
+  { n: 'Hall of Portraits', loc: 2, recruit: null, blurb: 'The same face. Four hundred years of it.',
+    beats: [X(4), Hn(3), E('lamia'), F(3)] },
+  { n: 'Shattered Halls', loc: 2, recruit: null, blurb: 'The stairs are gone. Climb anyway.',
+    beats: [T(), F(3), T(), X(3), T(), F(4)] },
+  { n: 'The Countess', loc: 2, recruit: 'elsa', blurb: 'Highblood. Old money. Older hunger.',
+    beats: [Gt(20), O(3), T(), F(3), Hn(3), B('vrasta')] },
+  { n: 'Under the Keep', loc: 2, recruit: null, blurb: 'The catacombs go down further than the castle goes up.',
+    beats: [E('gorse'), F(3), T(), E('lamia'), X(3), F(3)] },
+
+  /* ---------------- ACT IV — THE BONE CHOIR ---------------- */
+  { n: 'Ossuary', loc: 3, recruit: null, blurb: 'Mind the bones. Some of them are still employed.',
+    beats: [F(3), X(3), O(4), F(4)] },
+  { n: 'Drowned Crypt', loc: 3, recruit: null, blurb: 'Flooded. Singing. Neither of those should be true.',
+    beats: [T(), F(3), Hn(3), T(), F(3)] },
+  { n: 'Rite of Marrow', loc: 3, recruit: null, blurb: 'Break the altars before the rite completes.',
+    beats: [Gt(24), O(4), T(), F(3), E('ossuar')] },
+  { n: 'The Choirmaster', loc: 3, recruit: 'knight', blurb: 'Every bone in you already knows the tune.',
+    beats: [F(3), T(), X(3), F(4), B('bonecaller')] },
+  { n: 'The Open Door', loc: 3, recruit: null, blurb: 'The choir was never a ritual. It was a hinge.',
+    beats: [E('ossuar'), Gt(26), T(), F(4), Hn(3)] },
+
+  /* ---------------- ACT V — CRIMSON ASCENSION ---------------- */
+  { n: 'Ascension Steps', loc: 4, recruit: null, blurb: 'Climb the steps in blood. They were built for it.',
+    beats: [F(4), T(), Gt(26), O(3), F(4)] },
+  { n: 'The Red Span', loc: 4, recruit: null, blurb: 'The bridge is made of the ones who volunteered.',
+    beats: [T(), F(4), E('crimsonguard'), T(), X(4), F(4)] },
+  { n: 'Inner Sanctum', loc: 4, recruit: null, blurb: 'The seals are not keeping us out.',
+    beats: [O(3), F(4), E('lamia'), Gt(28), E('ossuar'), F(4)] },
+  { n: 'The First Thirst', loc: 4, recruit: null, blurb: 'He made your kind. Unmake him.',
+    beats: [F(4), T(), E('crimsonguard'), Gt(24), B('vhalimar')] }
+];
+
+/* Each Act inherits its biome pool unless it overrides. */
+(function initActs() {
+  /* Length pass. Authored beat counts set the SHAPE of an Act; these
+     multipliers set its LENGTH. Tuned against an automated play-through so a
+     full Act lands in the 8-15 minute band for a human player. */
+  var i, a, j, b;
+  for (i = 0; i < ACTS.length; i++) {
+    a = ACTS[i];
+    for (j = 0; j < a.beats.length; j++) {
+      b = a.beats[j];
+      if (b.k === 'fight') b.w = b.w + 2;
+      else if (b.k === 'gauntlet') b.n = Math.round(b.n * 1.7);
+      else if (b.k === 'hunt') b.n = b.n + 1;
+      else if (b.k === 'objective') b.n = b.n + 1;
+    }
+    a.index = i;
+    a.id = 'act' + (i + 1);
+    a.pool = a.pool || POOLS[a.loc];
+    a.loctitle = LOCATIONS[a.loc].name;
+  }
+})();
+
+/* ==========================================================================
+   [DATA] Story — one pre/post beat per Act, plus optional mid-Act lines
+   keyed by beat index. Blade stays terse; the partners carry the humour.
+   ========================================================================== */
+var ACT_SCRIPT = {
+  0: { pre: [['BLADE', 'Three blocks. Forty people. No bodies.'],
+             ['ABIGAIL', 'And one very grumpy man with a sword. I\'m on comms.'],
+             ['BLADE', 'Then keep it clear. I\'m going in loud.']],
+       mid: { 3: [['ABIGAIL', 'Thermals in the alley behind you. They cached something.']] },
+       post: [['ABIGAIL', 'They\'re running a market two streets over. Selling people, Blade.']] },
+  1: { pre: [['BLADE', 'A market. For people.'], ['ABIGAIL', 'Don\'t make it personal.'], ['BLADE', 'Too late.']],
+       post: [['ABIGAIL', 'Everything routes through a relay on the roofs. Go up.']] },
+  2: { pre: [['ABIGAIL', 'Rooftops. Try not to fall, I hate paperwork.'], ['BLADE', 'I don\'t fall.']],
+       mid: { 4: [['GORSE', 'Sable pays well for your head.'], ['BLADE', 'He can keep the money.']] },
+       post: [['SPIDER-MAN', 'Okay so — big sword, black coat, standing on a pile of guys. Hero or problem?'],
+              ['BLADE', 'Depends how fast you move.'],
+              ['SPIDER-MAN', 'Fast. Famously fast.']] },
+  3: { pre: [['SPIDER-MAN', 'They\'re running blood through a bank. That\'s on the nose.'],
+             ['BLADE', 'Vampires aren\'t subtle. They\'re just old.']],
+       post: [['SABLE', 'The docks… he\'s already loading… you were always too—'],
+              ['BLADE', 'Save it.'],
+              ['SPIDER-MAN', 'So. Docks. Do we carpool?']] },
+  4: { pre: [['ABIGAIL', 'Half the nest is moving out at once. That\'s not a retreat.'],
+             ['BLADE', 'It\'s a delivery.']],
+       post: [['SPIDER-MAN', 'Containers. On a pier. With heartbeats inside.'], ['BLADE', 'Now you get it.']] },
+
+  5: { pre: [['ABIGAIL', 'Manifest says livestock.'], ['BLADE', 'It always does.']],
+       post: [['SPIDER-MAN', 'That was a lot of very confident bad guys.']] },
+  6: { pre: [['SPIDER-MAN', 'Guy named Kroven is selling the shipping list. To everyone. At once.'],
+             ['BLADE', 'Then he can sell it to me.']],
+       post: [['ABIGAIL', 'The list points at one hold. And one very large heat signature.']] },
+  7: { pre: [['SPIDER-MAN', 'Cranes! Swinging! This is my whole thing, finally.'], ['BLADE', 'Then lead.']],
+       post: [['ABIGAIL', 'Harbor master\'s dead. Been dead a week. Still signing forms.']] },
+  8: { pre: [['BLADE', 'Nests. Burn them.'], ['SPIDER-MAN', 'I have questions and zero desire for answers.']],
+       post: [['GHOST RIDER', 'The big one\'s soul was rotten through. So is the ship it came off.'],
+              ['SPIDER-MAN', 'Hi. Your head is on fire. Is that — fine?'],
+              ['GHOST RIDER', 'It is deserved.'],
+              ['BLADE', 'He\'s with us. Move.']] },
+  9: { pre: [['GHOST RIDER', 'This dock remembers drowning.'], ['BLADE', 'Then let\'s give it something else to remember.']],
+       post: [['ABIGAIL', 'The ship came from a castle. They moved the whole thing, stone by stone.']] },
+
+  10: { pre: [['SPIDER-MAN', 'Gothic castle. Snow. Somebody really committed to a look.'], ['BLADE', 'Climb.']],
+        post: [['GHOST RIDER', 'This ground remembers screaming.']] },
+  11: { pre: [['ABIGAIL', 'There\'s a woman in every portrait. Same face. Four centuries.'],
+              ['BLADE', 'Then she\'s still in the building.']],
+        post: [['LAMIA', 'She is sleeping. You will not wake her.'], ['BLADE', 'Watch me.']] },
+  12: { pre: [['SPIDER-MAN', 'The stairs are just… gone.'], ['BLADE', 'Then we make stairs.']],
+        post: [['ABIGAIL', 'Bell tower\'s clear. She knows you\'re coming.']] },
+  13: { pre: [['VRASTA', 'You wear your father\'s hunger like a coat.'],
+              ['BLADE', 'And you wear a dead woman\'s face. We all cope.']],
+        post: [['ELSA', 'Lovely swing. Wide, though. You leave your left open.'],
+               ['BLADE', 'And you talk during a fight.'],
+               ['ELSA', 'I multitask. Elsa Bloodstone. The keep sits on catacombs — that\'s where the people went.']] },
+  14: { pre: [['ELSA', 'Mind the bones. Some are still employed.'], ['BLADE', 'Then fire them.']],
+        post: [['ABIGAIL', 'The signal below isn\'t vampires. It\'s older than vampires.']] },
+
+  15: { pre: [['ELSA', 'Ossuary. Charming. Do try not to touch anything.'], ['BLADE', 'No promises.']],
+        post: [['GHOST RIDER', 'The singing is a summons. Something is being built.']] },
+  16: { pre: [['SPIDER-MAN', 'Flooded crypt. Cool. Cool cool cool.'], ['ELSA', 'Do try not to drown, spider.']],
+        post: [['ABIGAIL', 'The water\'s carrying the song upward. Into the city.']] },
+  17: { pre: [['BLADE', 'Altars. Break them.'], ['ELSA', 'With enthusiasm.']],
+        post: [['OSSUAR', 'You are late. The song is nearly finished.'], ['BLADE', 'Then I\'ll cut it short.']] },
+  18: { pre: [['ABIGAIL', 'None of this was for Vrasta.'], ['BLADE', 'It was for whoever comes after her.']],
+        post: [['MOON KNIGHT', 'The choir was a door. It\'s open now.'],
+               ['SPIDER-MAN', 'Guy in white. In a catacomb. At night. Why.'],
+               ['MOON KNIGHT', 'So they see me coming.'],
+               ['BLADE', 'Everyone in. Last stop.']] },
+  19: { pre: [['MOON KNIGHT', 'Khonshu says the door leads to a temple.'], ['BLADE', 'Then we go through it.']],
+        post: [['ELSA', 'That\'s a lot of stairs going up into a lot of red.']] },
+
+  20: { pre: [['BLADE', 'Vhalimar. First of them. He made the Thirst.'],
+              ['ELSA', 'And you carry it.'],
+              ['BLADE', 'That\'s why I finish it.']],
+        post: [['SPIDER-MAN', 'Blade — your eyes went red back there.'], ['BLADE', 'I know.']] },
+  21: { pre: [['GHOST RIDER', 'The bridge is made of the ones who volunteered.'], ['BLADE', 'Don\'t look down.']],
+        post: [['ABIGAIL', 'He isn\'t defending anything. He wants you inside.']] },
+  22: { pre: [['ABIGAIL', 'The seals aren\'t keeping us out. They\'re keeping him in — and he WANTS them broken.'],
+              ['BLADE', 'I know.'],
+              ['SPIDER-MAN', 'You KNOW?!'],
+              ['BLADE', 'He needs a Daywalker to finish the rite. So he gets one. Up close.']],
+        post: [['VHALIMAR', 'Come, son of the day. Take your seat.']] },
+  23: { pre: [['VHALIMAR', 'I made your kind. I can unmake you.'],
+              ['BLADE', 'You made a mistake. I\'m the correction.'],
+              ['SPIDER-MAN', 'Okay THAT was a good line.']],
+        post: [['SPIDER-MAN', 'Is it over? Please say it\'s over.'],
+               ['BLADE', 'It\'s never over. It\'s just quiet for a while.'],
+               ['ABIGAIL', 'I\'ll take quiet.'],
+               ['BLADE', 'Get some sleep. Sun\'s up in an hour. For the rest of you.']] }
+};
+
+/* ==========================================================================
    [BUILD] Shared geometry / material caches (keeps draw setup cheap)
    ========================================================================== */
 var GEO = {};
+/* Weapon pose: blade hangs down-forward at rest, extends along the arm mid-swing. */
+var WEAPON_REST = 2.55, WEAPON_SWING = 0.05;
 var MATC = {};
 function boxGeo(w, h, d) {
   var k = 'b' + w + '_' + h + '_' + d;
@@ -1621,8 +1945,11 @@ function makeHumanoid(cfg) {
   } else if (wtype === 'webs') {
     var wgl = new THREE.Mesh(sphGeo(0.14, 8), matU(trimC, 0x303040)); weapon.add(wgl);
   }
-  weapon.position.set(0, -0.62, 0.06);
-  weapon.rotation.x = -0.2;
+  // Held at the grip, angled down along the leg at rest. animateEntity swings
+  // it up in line with the arm during attacks. (It used to sit at -0.2 rad,
+  // which pointed the blade straight at the sky.)
+  weapon.position.set(0, -0.6, 0.04);
+  weapon.rotation.x = WEAPON_REST;
   armR.userData.fore.add(weapon);
 
   // scale + shadow flags
@@ -2039,15 +2366,19 @@ function buildCity(stage, loc, half) {
     x = Math.sin(a) * r; z = Math.cos(a) * r;
     h = rand(24, 76); w = rand(10, 20); d = rand(10, 20);
     var b = addProp(x, 0, z, w, h, d, i % 3 === 0 ? 0x191c26 : 0x141620, { solid: false, castShadow: false });
-    // lit windows
-    var wi;
-    for (wi = 0; wi < 5; wi++) {
-      var win = new THREE.Mesh(boxGeo(w * 0.7, 0.8, 0.3), matU(0xffd890, 0xffbe60));
-      win.position.set(x, rand(6, h - 4), z + d / 2 + 0.2);
-      worldGroup.add(win);
+    // Lit windows: a small grid on the face, not one wide glowing bar.
+    var wi, wj, wrows = Math.floor(h / 7), wcols = 3;
+    for (wi = 0; wi < wrows; wi++) {
+      for (wj = 0; wj < wcols; wj++) {
+        if (Math.random() < 0.42) continue;         // some windows are dark
+        var win = new THREE.Mesh(boxGeo(w * 0.16, 0.9, 0.25), matU(0xffd890, 0xffbe60));
+        win.position.set(x + (wj - 1) * w * 0.27, 5 + wi * 7, z + d / 2 + 0.16);
+        worldGroup.add(win);
+      }
     }
   }
-  // street blocks inside the arena
+  // street blocks inside the arena (recorded so neon signs can mount on them)
+  var cityBlocks = [];
   var lc;
   for (lc = 0; lc < 4; lc++) addLedgeCluster(rand(-half + 10, half - 10), rand(-half + 10, half - 10), loc);
   var count = Math.floor(13 * stage.density);
@@ -2055,7 +2386,7 @@ function buildCity(stage, loc, half) {
     x = rand(-half + 10, half - 10); z = rand(-half + 10, half - 10);
     if (dist2(x, z, 0, 0) < 130) continue;
     w = rand(6, 13); d = rand(6, 13); h = rand(4, 11);
-    addProp(x, 0, z, w, h, d, 0x22242e);
+    if (addProp(x, 0, z, w, h, d, 0x22242e)) cityBlocks.push({ x: x, z: z, w: w, d: d, h: h });
     if (Math.random() < 0.5) addProp(x + rand(-3, 3), h, z + rand(-3, 3), 3, 1.4, 3, 0x2a2c36);
   }
   // cars
@@ -2074,14 +2405,29 @@ function buildCity(stage, loc, half) {
     addDecor(x, 6.9, z, sphGeo(0.4, 8), 0xfff0c0, 0xffd890);
     if (i < 6) addLightPoint(x, 6.6, z, 0xffc880, 0.9, 22);
   }
-  // neon signs
-  for (i = 0; i < 8; i++) {
-    x = rand(-half + 8, half - 8); z = rand(-half + 8, half - 8);
+  // Neon signs are MOUNTED on the street blocks (with a bracket arm) instead of
+  // floating in mid-air — that was the blue/red rectangles hanging in the sky.
+  var signHosts = shuffle(cityBlocks.slice(0));
+  for (i = 0; i < Math.min(9, signHosts.length); i++) {
+    var host = signHosts[i];
+    var hw = host.w, hd = host.d, hh = host.h;
+    var side = randi(0, 3);
+    var sx2 = host.x, sz2 = host.z, srot = 0;
+    if (side === 0) { sz2 = host.z + hd / 2 + 0.5; srot = 0; }
+    else if (side === 1) { sz2 = host.z - hd / 2 - 0.5; srot = Math.PI; }
+    else if (side === 2) { sx2 = host.x + hw / 2 + 0.5; srot = Math.PI / 2; }
+    else { sx2 = host.x - hw / 2 - 0.5; srot = -Math.PI / 2; }
+    var sy2 = clamp(hh * rand(0.45, 0.85), 2.2, 9);
     var nc = i % 2 ? loc.accent : loc.accent2;
-    var sgn = new THREE.Mesh(boxGeo(rand(2, 5), 0.7, 0.2), matU(nc, nc));
-    sgn.position.set(x, rand(4, 9), z); sgn.rotation.y = rand(0, 3.14);
+    var sgn = new THREE.Mesh(boxGeo(rand(2.4, 4.2), 0.75, 0.22), matU(nc, nc));
+    sgn.position.set(sx2, sy2, sz2); sgn.rotation.y = srot;
     worldGroup.add(sgn);
-    if (i < 5) addLightPoint(x, sgn.position.y, z, nc, 0.7, 16);
+    // bracket back to the wall so it visibly hangs off something
+    var brk = new THREE.Mesh(boxGeo(0.14, 0.14, 1.0), matU(0x14141a));
+    brk.position.set((sx2 + host.x) / 2, sy2, (sz2 + host.z) / 2);
+    brk.rotation.y = srot;
+    worldGroup.add(brk);
+    if (i < 5) addLightPoint(sx2, sy2, sz2, nc, 0.8, 16);
   }
 }
 
@@ -2348,6 +2694,33 @@ function addHazard(x, z, r, loc) {
 }
 
 /* ---------------- objective targets ---------------- */
+/* True if a box of the given footprint would intersect anything solid.
+   Used to keep objective targets and pickups out of walls and props. */
+function spotBlocked(x, z, r, minY, maxY) {
+  var i, c;
+  for (i = 0; i < colliders.length; i++) {
+    c = colliders[i];
+    if (c.maxY <= 0.6) continue;                 // floor slabs are fine
+    if (c.minY > (maxY === undefined ? 4 : maxY)) continue;
+    if (x + r < c.minX || x - r > c.maxX) continue;
+    if (z + r < c.minZ || z - r > c.maxZ) continue;
+    return true;
+  }
+  return false;
+}
+/* Nudge a point outward in a spiral until it clears geometry. */
+function findClearSpot(x, z, r, half) {
+  var tries, a, rad, nx, nz;
+  if (!spotBlocked(x, z, r)) return { x: x, z: z };
+  for (tries = 0; tries < 60; tries++) {
+    a = tries * 0.9;
+    rad = 2 + tries * 0.7;
+    nx = clamp(x + Math.sin(a) * rad, -half + r + 2, half - r - 2);
+    nz = clamp(z + Math.cos(a) * rad, -half + r + 2, half - r - 2);
+    if (!spotBlocked(nx, nz, r)) return { x: nx, z: nz };
+  }
+  return { x: x, z: z };
+}
 function addObjectiveTarget(x, z, loc, idx) {
   var g = new THREE.Group();
   var base = new THREE.Mesh(cylGeo(1.6, 1.9, 0.7, 10), matU(0x2a2028));
@@ -2551,7 +2924,10 @@ function spawnSlash(x, y, z, yaw, opts) {
   var geo = arcGeo(o.arc || 2.0, clamp((o.inner || 1.0) / outer, 0.05, 0.9), 18);
   var m = new THREE.Mesh(geo, matU(o.color || 0xfff0d0, o.color || 0xfff0d0, { transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
   m.rotation.x = -Math.PI / 2;
-  m.rotation.z = -yaw + (o.offset || 0);
+  // Verified against three.js: with rotation.x = -PI/2 the ring's local angle
+  // maps to world by (yaw - PI/2). The old (-yaw) form was ~perpendicular to
+  // the facing direction, so swings could render behind the character.
+  m.rotation.z = yaw - Math.PI / 2 + (o.offset || 0);
   if (o.vertical) { m.rotation.x = 0; m.rotation.y = yaw; m.rotation.z = 0; }
   m.position.set(x, y, z);
   m.renderOrder = 6;
@@ -3002,6 +3378,18 @@ function animateEntity(e, dt) {
   p.armR.userData.fore.rotation.x = damp(p.armR.userData.fore.rotation.x, foreR, 18, dt);
   p.armL.userData.fore.rotation.x = damp(p.armL.userData.fore.rotation.x, foreL, 18, dt);
 
+  // weapon pose — raise into the swing, drop back to a rest carry
+  if (p.weapon) {
+    var wTarget = WEAPON_REST;
+    if (e.atk) {
+      var wk = e.atk.kind, wt = e.atk.t / e.atk.total;
+      if (wk === 'heavy') wTarget = wt < 0.42 ? lerp(WEAPON_REST, 1.9, wt / 0.42) : WEAPON_SWING;
+      else if (wk === 'ranged') wTarget = 1.2;
+      else wTarget = wt < 0.3 ? lerp(WEAPON_REST, 0.9, wt / 0.3) : WEAPON_SWING;
+    } else if (e.stagger > 0) wTarget = 2.2;
+    p.weapon.rotation.x = damp(p.weapon.rotation.x, wTarget, 20, dt);
+  }
+
   // coat sway
   if (p.coat && p.coat.length) {
     var i, ph;
@@ -3392,6 +3780,7 @@ function killEntity(e, by) {
     emit(e.pos.x, e.pos.y + e.height * 0.5, e.pos.z, 26, { color: 0x604040, speed: 5, life: 1.1, gravity: -2, size: 1.2 });
     spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xff3040, 2.5, 0.45);
     G.killCount++;
+    G.beatKills = (G.beatKills || 0) + 1;   // gauntlet beats read this
     P.kills++;
     bumpCombo();
     addShake(e.boss ? 0.8 : 0.12);
@@ -3649,7 +4038,7 @@ function updateDownedHero(e, dt) {
 /* ---------------- camera ---------------- */
 function updateCamera(e, dt) {
   if (!_camTarget) { _camTarget = new THREE.Vector3(); _camDesired = new THREE.Vector3(); }
-  var sens = IN.touch ? 0.0026 : 0.0022;
+  var sens = (IN.touch ? 0.0026 : 0.0022) * (G.sens || 1);
   var hadLook = Math.abs(IN.look.x) > 0.01;
   camYaw -= IN.look.x * sens;
   camPitch += (G.invert ? -1 : 1) * IN.look.y * sens * 0.85;
@@ -3755,12 +4144,19 @@ function interactCheck(e) {
         addShake(0.3);
       }
     }
+    if (it.kind === 'relic' && !it.dead && d < it.radius && Math.abs(e.pos.y - it.y) < 4) {
+      it.dead = true;
+      fxGroup.remove(it.group);
+      SFX.pickup();
+      tone(880, 0.1, 'triangle', 0.1); tone(1320, 0.16, 'triangle', 0.09, 0, 0.07);
+      spawnRing(it.x, it.y - 1, it.z, 0xffd060, 4, 0.5);
+      emit(it.x, it.y, it.z, 26, { color: 0xffd060, speed: 6, life: 0.7, gravity: -3, up: 3 });
+      P.tokens += 3; P.totalTokens += 3; G.stageTokens += 3;
+      toast('Relic recovered');
+      updateHUD();
+    }
     if (it.kind === 'goal' && d < it.radius && !it.reached) {
-      if (G.stage.type === 'platform' && enemiesAlive() > 0 && G.waveIndex < G.totalWaves) {
-        // goal is open only after the route waves are handled
-      }
       it.reached = true;
-      onReachGoal();
     }
   }
 }
@@ -3868,6 +4264,7 @@ function updateAlly(e, dt) {
   physicsStep(e, dt);
   animateEntity(e, dt);
   pickupCheck(e);
+  interactCheck(e);
 }
 /* Prefers the enemy with the most neighbours: an AoE-capable partner
    naturally wades into the thickest group instead of chasing stragglers. */
@@ -4174,6 +4571,753 @@ function updateShockwaves(dt) {
 }
 
 /* ==========================================================================
+   [ACT] Continuous Act system
+   One large map per Act. Beats are laid out across separate zones and run
+   back-to-back with no reload, so an Act plays as a single 8–15 minute push
+   instead of four short stages.
+   ========================================================================== */
+
+/* Snake layout so consecutive zones are always neighbours — traversal routes
+   between them stay short enough to be jumpable. */
+function zoneLayout(n, half) {
+  var cols = n <= 3 ? n : (n <= 6 ? 3 : 4);
+  var rows = Math.ceil(n / cols);
+  var out = [], i, r, c, x, z;
+  var spanX = (half * 1.5), spanZ = (half * 1.5);
+  for (i = 0; i < n; i++) {
+    r = Math.floor(i / cols);
+    c = i % cols;
+    if (r % 2 === 1) c = cols - 1 - c;              // serpentine
+    x = cols === 1 ? 0 : (-spanX / 2 + c * (spanX / (cols - 1)));
+    z = spanZ / 2 - (rows === 1 ? 0 : r * (spanZ / (rows - 1)));
+    out.push({ x: x, z: z, i: i });
+  }
+  return out;
+}
+
+function buildActWorld(act) {
+  var loc = LOCATIONS[act.loc];
+  var nBeats = act.beats.length;
+  var size = clamp(104 + nBeats * 13, 118, 196);
+  var half = size / 2;
+
+  // synthetic stage object keeps every existing system working unchanged
+  var stage = {
+    id: act.id, loc: act.loc, name: act.n, type: 'act', size: size,
+    pool: act.pool, density: 1.15, tokens: 10 + nBeats * 3, index: act.index,
+    targets: 0, platforms: 0, hazards: Math.min(8, 2 + Math.floor(nBeats / 2)), secret: true, waves: 0
+  };
+  G.stage = stage;
+
+  clearWorld();
+  scene.background = new THREE.Color(loc.sky);
+  scene.fog = new THREE.Fog(loc.fog, loc.fogNear, Math.max(loc.fogFar, size * 1.15));
+
+  // ---- lighting rig ----
+  worldGroup.add(new THREE.HemisphereLight(loc.ambient, 0x0a0a10, 0.9));
+  var moon = new THREE.DirectionalLight(loc.sun, 0.62);
+  moon.position.set(size * 0.4, size * 0.8, -size * 0.3);
+  if (G.quality === 'high') {
+    moon.castShadow = true;
+    moon.shadow.mapSize.width = 1024; moon.shadow.mapSize.height = 1024;
+    moon.shadow.camera.near = 1; moon.shadow.camera.far = size * 2.4;
+    moon.shadow.camera.left = -half; moon.shadow.camera.right = half;
+    moon.shadow.camera.top = half; moon.shadow.camera.bottom = -half;
+    moon.shadow.bias = -0.0012;
+  }
+  worldGroup.add(moon); worldGroup.add(moon.target);
+
+  // ---- ground ----
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(size + 60, size + 60), matU(loc.ground));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+  worldGroup.add(ground);
+  var gi, gj, tileStep = 12;
+  for (gi = -half; gi < half; gi += tileStep) {
+    for (gj = -half; gj < half; gj += tileStep) {
+      if (((Math.round(gi / tileStep)) + (Math.round(gj / tileStep))) % 2 !== 0) continue;
+      var tile = new THREE.Mesh(new THREE.PlaneGeometry(tileStep, tileStep), matU(loc.ground2));
+      tile.rotation.x = -Math.PI / 2;
+      tile.position.set(gi + tileStep / 2, 0.02, gj + tileStep / 2);
+      tile.receiveShadow = true;
+      worldGroup.add(tile);
+    }
+  }
+  addCollider(0, -2, 0, size + 60, 2, size + 60, { walkable: true });
+  buildPerimeter(loc, size);
+
+  // ---- zones ----
+  var zones = zoneLayout(nBeats, half);
+  G.zones = zones;
+  clearZones.length = 0;
+  var zi;
+  for (zi = 0; zi < zones.length; zi++) clearZones.push({ x: zones[zi].x, z: zones[zi].z, r: 13 });
+
+  // traversal routes first — they reserve their own corridors
+  for (zi = 0; zi < nBeats; zi++) {
+    if (act.beats[zi].k === 'traverse' && zi > 0) {
+      buildTraverseRoute(zones[zi - 1], zones[zi], loc, half, zi);
+    }
+  }
+
+  // biome dressing (skips every reserved zone / corridor)
+  if (loc.props === 'city') buildCity(stage, loc, half);
+  else if (loc.props === 'docks') buildDocks(stage, loc, half);
+  else if (loc.props === 'castle') buildCastle(stage, loc, half);
+  else if (loc.props === 'catacombs') buildCatacombs(stage, loc, half);
+  else buildTemple(stage, loc, half);
+
+  // zone landmarks — a raised arena floor and a colour-coded pillar per zone
+  for (zi = 0; zi < zones.length; zi++) buildZoneLandmark(zones[zi], loc, act.beats[zi], zi);
+
+  // hazards away from zone centres
+  var hi;
+  for (hi = 0; hi < stage.hazards; hi++) {
+    var hx = rand(-half + 12, half - 12), hz = rand(-half + 12, half - 12);
+    if (inClearZone(hx, hz, 4, 4)) continue;
+    addHazard(hx, hz, rand(2.4, 4.0), loc);
+  }
+
+  // collectibles scattered across the whole map
+  var ti, tx, tz, ty;
+  for (ti = 0; ti < stage.tokens; ti++) {
+    tx = rand(-half + 8, half - 8); tz = rand(-half + 8, half - 8);
+    var sp = findClearSpot(tx, tz, 1, half);
+    ty = groundHeightAt(sp.x, sp.z, 40, 0.5) + 1.1;
+    spawnToken(sp.x, ty, sp.z, 1);
+  }
+  for (ti = 0; ti < 4 + Math.floor(nBeats / 2); ti++) {
+    tx = rand(-half + 8, half - 8); tz = rand(-half + 8, half - 8);
+    var sp2 = findClearSpot(tx, tz, 1, half);
+    spawnHealth(sp2.x, groundHeightAt(sp2.x, sp2.z, 40, 0.5) + 0.8, sp2.z);
+  }
+
+  // two secret caches per Act, tucked against the perimeter
+  buildSecretRoom(stage, loc, half);
+  buildSecretRoom(stage, loc, half);
+
+  if (loc.rain) weather = makeWeather('rain', loc);
+  else if (loc.snow) weather = makeWeather('snow', loc);
+  else if (loc.embers) weather = makeWeather('embers', loc);
+  if (loc.props === 'city' || loc.props === 'castle') addStars(loc);
+
+  return stage;
+}
+
+/* A visual anchor per zone so the player can read the map at a glance. */
+function buildZoneLandmark(zone, loc, beat, idx) {
+  var i, a, r;
+  addProp(zone.x, 0, zone.z, 22, 0.5, 22, loc.ground2, { walkable: true, force: true, castShadow: false });
+  for (i = 0; i < 6; i++) {
+    a = (i / 6) * Math.PI * 2;
+    r = 10.5;
+    addProp(zone.x + Math.sin(a) * r, 0.5, zone.z + Math.cos(a) * r, 1.6, rand(3.5, 6.5), 1.6, loc.ground2, { force: true });
+  }
+  var beacon = new THREE.Mesh(cylGeo(0.5, 0.5, 26, 8),
+    matU(loc.accent, loc.accent, { transparent: true, opacity: 0.14, depthWrite: false }));
+  beacon.position.set(zone.x, 13, zone.z);
+  worldGroup.add(beacon);
+  zone.beacon = beacon;
+  addLightPoint(zone.x, 6, zone.z, loc.accent, 1.0, 26);
+}
+
+/* Platform run linking two zones. Gaps capped so a sprint + double jump clears. */
+function buildTraverseRoute(from, to, loc, half, seed) {
+  var dx = to.x - from.x, dz = to.z - from.z;
+  var span = Math.sqrt(dx * dx + dz * dz);
+  var n = Math.max(6, Math.min(14, Math.floor(span / 8)));
+  var ux = dx / span, uz = dz / span;
+  var px = from.x, pz = from.z, y = 1.4, i;
+  for (i = 1; i <= n; i++) {
+    var t = i / (n + 1);
+    var lateral = Math.sin(i * 1.1 + seed) * Math.min(11, span * 0.16);
+    var x = from.x + dx * t - uz * lateral;
+    var z = from.z + dz * t + ux * lateral;
+    y += (i % 6 === 5) ? -1.2 : rand(0.9, 1.8);
+    y = clamp(y, 1.2, 19);
+    var gap = Math.sqrt(dist2(x, z, px, pz));
+    if (gap > 9.5) { x = px + (x - px) * (9.5 / gap); z = pz + (z - pz) * (9.5 / gap); }
+    x = clamp(x, -half + 8, half - 8); z = clamp(z, -half + 8, half - 8);
+    var w = rand(4.8, 6.6), d = rand(4.8, 6.6);
+    var m = addProp(x, y, z, w, 1.2, d, i % 3 === 0 ? loc.ground2 : loc.ground, { walkable: true, force: true });
+    platforms.push(m);
+    clearZones.push({ x: x, z: z, r: Math.max(w, d) * 0.5 + 3 });
+    if (i % 4 === 3 && i < n - 1) {
+      var c = m.userData.col;
+      var mv = { kind: 'move', mesh: m, col: c, t: rand(0, 6), ax: 1, amp: rand(3, 6),
+                 speed: rand(0.5, 0.85), baseX: x, baseZ: z, dx: 0, dz: 0, dy: 0 };
+      c.mover = mv; movers.push(mv);
+    }
+    if (i % 3 === 1) spawnToken(x, y + 2.0, z, 1);
+    // risk/reward side ledge: richer loot, off the lit path
+    if (i % 5 === 2) {
+      var bx = clamp(x - uz * rand(8, 10), -half + 7, half - 7);
+      var bz = clamp(z + ux * rand(8, 10), -half + 7, half - 7);
+      var bm = addProp(bx, y + rand(0.4, 1.2), bz, 4.0, 1.2, 4.0, loc.ground2, { walkable: true, force: true });
+      clearZones.push({ x: bx, z: bz, r: 5 });
+      spawnToken(bx, bm.position.y + 1.6, bz, 2);
+      spawnToken(bx + 0.9, bm.position.y + 1.6, bz - 0.9, 2);
+      if (Math.random() < 0.5) spawnHealth(bx - 0.9, bm.position.y + 1.4, bz + 0.9);
+    }
+    if (i % 2 === 0) addLightPoint(x, y + 3, z, loc.accent, 0.55, 12);
+    px = x; pz = z;
+  }
+}
+
+/* ---------------- relics (explore beats) ---------------- */
+function spawnRelic(x, y, z) {
+  var g = new THREE.Group();
+  var core = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), matU(0xffd060, 0xc08010));
+  g.add(core);
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.07, 6, 18), matU(0xfff0c0, 0xfff0c0));
+  ring.rotation.x = Math.PI / 2; g.add(ring);
+  var beam = new THREE.Mesh(cylGeo(0.22, 0.22, 14, 7), matU(0xffd060, 0xffd060, { transparent: true, opacity: 0.2, depthWrite: false }));
+  beam.position.y = 7; g.add(beam);
+  g.position.set(x, y, z);
+  fxGroup.add(g);
+  var rel = { kind: 'relic', group: g, core: core, x: x, y: y, z: z, dead: false, radius: 2.8 };
+  interactables.push(rel);
+  return rel;
+}
+
+/* ==========================================================================
+   [ACT] Beat director
+   ========================================================================== */
+function startAct(index, isVs) {
+  var act = (typeof index === 'object' && index) ? index : ACTS[clamp(index, 0, ACTS.length - 1)];
+  G.vs = !!isVs;
+  G.actIndex = act.index;
+  G.act = act;
+  G.locIndex = act.loc;
+  G.time = 0; G.killCount = 0; G.stageTokens = 0; G.comboCount = 0;
+  G.secretFound = false; G.ended = false;
+  G.shockwaves = []; G.pendingWaves = [];
+  G.slowmo = 1; G.slowmoT = 0; G.bossDeathT = 0; G.clearT = 0;
+  G.reviveT = 0; G.vsWave = 0;
+  G.beatIndex = -1; G.beat = null; G.beatKills = 0;
+
+  var stage = buildActWorld(act);
+  var z0 = G.zones[0];
+  G.safeX = z0.x; G.safeY = 0.5; G.safeZ = z0.z + 8;
+
+  blade = makeHero('blade', G.safeX, G.safeZ, true);
+  cacheMaterials(blade);
+  var partnerId = P.partner && P.heroes[P.partner] ? P.partner : 'whistler';
+  ally = makeHero(partnerId, G.safeX + 2.6, G.safeZ, false);
+  cacheMaterials(ally);
+  player = blade;
+  camYaw = 0; camPitch = 0.3;
+  camera.position.set(z0.x, 7, G.safeZ + 12);
+
+  refreshHUDNames();
+  updateHUD();
+  showScreen(null);
+  el('hud').classList.add('on');
+  el('bossBar').classList.remove('on');
+  G.mode = 'play';
+  menuMusicStop();
+  musicStart(act.loc, false);
+
+  banner('ACT ' + (act.index + 1), act.n.toUpperCase());
+  toast(LOCATIONS[act.loc].short + ' — ' + act.blurb);
+
+  // Intro is frame-driven, not timer-driven: a stalled timer must never be able
+  // to leave an Act running with no active beat.
+  G.introT = 0.8;
+  G.introScript = (!isVs && ACT_SCRIPT[act.index] && ACT_SCRIPT[act.index].pre) ? ACT_SCRIPT[act.index].pre : null;
+  G.beatAdvanceT = 0;
+  if (act.index === 0 && !isVs) setTimeout(showTutorial, 3200);
+}
+
+function beatEnter(i) {
+  var act = G.act;
+  if (!act || i >= act.beats.length) { actCleared(); return; }
+  G.beatIndex = i;
+  var def = act.beats[i];
+  var zone = G.zones[i];
+  G.beat = {
+    def: def, zone: zone, waveIndex: 0, timer: 1.2, kills: 0,
+    targets: [], relics: [], elites: [], bossRef: null, done: false, spawned: false
+  };
+  G.beatKills = 0;
+  // checkpoint — dying resumes here, not at the top of the Act
+  G.safeX = zone.x; G.safeY = 0.6; G.safeZ = zone.z;
+  G.checkpointBeat = i;
+
+  if (zone.beacon) zone.beacon.material.opacity = 0.3;
+  var prev = i > 0 ? G.zones[i - 1] : null;
+  if (prev && prev.beacon) prev.beacon.material.opacity = 0.08;
+
+  var k = def.k;
+  if (k === 'objective') {
+    var t, ang, rad, sp;
+    for (t = 0; t < def.n; t++) {
+      ang = (t / def.n) * Math.PI * 2 + rand(-0.3, 0.3);
+      rad = rand(6, 10);
+      sp = findClearSpot(zone.x + Math.sin(ang) * rad, zone.z + Math.cos(ang) * rad, 3, G.stage.size / 2);
+      G.beat.targets.push(addObjectiveTarget(sp.x, sp.z, LOCATIONS[act.loc], t));
+    }
+  } else if (k === 'explore') {
+    var r2, a2, rr2, sp3;
+    for (r2 = 0; r2 < def.n; r2++) {
+      a2 = (r2 / def.n) * Math.PI * 2 + rand(-0.5, 0.5);
+      rr2 = rand(10, 20);
+      sp3 = findClearSpot(zone.x + Math.sin(a2) * rr2, zone.z + Math.cos(a2) * rr2, 1.5, G.stage.size / 2);
+      G.beat.relics.push(spawnRelic(sp3.x, groundHeightAt(sp3.x, sp3.z, 40, 1) + 1.4, sp3.z));
+    }
+  } else if (k === 'traverse') {
+    addGoalZone(zone.x, zone.z, LOCATIONS[act.loc]);
+  } else if (k === 'hunt') {
+    var h, ah, rh;
+    for (h = 0; h < def.n; h++) {
+      ah = (h / def.n) * Math.PI * 2;
+      rh = rand(9, 15);
+      G.beat.elites.push(makeEnemy(pick(act.pool), zone.x + Math.sin(ah) * rh, zone.z + Math.cos(ah) * rh, true));
+    }
+  } else if (k === 'boss' || k === 'elite') {
+    spawnActBoss(def.b, zone, k === 'boss');
+  }
+
+  beatObjectiveText();
+  var mid = ACT_SCRIPT[act.index] && ACT_SCRIPT[act.index].mid;
+  if (mid && mid[i]) playDialogue(mid[i]);
+  if (i > 0) toast('Checkpoint — ' + beatLabel(def));
+}
+
+function beatLabel(def) {
+  var k = def.k;
+  if (k === 'fight') return 'Hold the ground';
+  if (k === 'gauntlet') return 'Gauntlet';
+  if (k === 'traverse') return 'Traversal';
+  if (k === 'objective') return 'Sabotage';
+  if (k === 'hunt') return 'Hunt';
+  if (k === 'explore') return 'Recovery';
+  if (k === 'elite') return 'Elite';
+  return 'Boss';
+}
+
+function beatObjectiveText() {
+  var b = G.beat;
+  if (!b) return;
+  var d = b.def, alive = enemiesAlive(), i, left;
+  var prog = 'Act ' + (G.act.index + 1) + ' · Beat ' + (G.beatIndex + 1) + '/' + G.act.beats.length;
+  if (d.k === 'fight') {
+    setObjective('Clear the ground', 'Wave ' + Math.min(b.waveIndex + (alive > 0 ? 0 : 1), d.w) + '/' + d.w + ' · ' + alive + ' hostiles · ' + prog);
+  } else if (d.k === 'gauntlet') {
+    setObjective('Survive the gauntlet', G.beatKills + '/' + d.n + ' killed · ' + prog);
+  } else if (d.k === 'traverse') {
+    setObjective('Reach the marked zone', 'Follow the beacon · ' + prog);
+  } else if (d.k === 'objective') {
+    left = 0;
+    for (i = 0; i < b.targets.length; i++) if (!b.targets[i].dead) left++;
+    setObjective('Destroy the caches', left + ' remaining · ' + alive + ' hostiles · ' + prog);
+  } else if (d.k === 'explore') {
+    left = 0;
+    for (i = 0; i < b.relics.length; i++) if (!b.relics[i].dead) left++;
+    setObjective('Recover the relics', (d.n - left) + '/' + d.n + ' found · ' + prog);
+  } else if (d.k === 'hunt') {
+    left = 0;
+    for (i = 0; i < b.elites.length; i++) if (!b.elites[i].dead) left++;
+    setObjective('Hunt the marked', left + ' remaining · ' + prog);
+  } else {
+    setObjective(d.k === 'boss' ? 'Kill the target' : 'Break the elite',
+      (b.bossRef && !b.bossRef.dead ? Math.round(b.bossRef.hp / b.bossRef.maxHp * 100) + '% left' : '') + ' · ' + prog);
+  }
+}
+
+function spawnActBoss(bossId, zone, major) {
+  var d = BOSSES[bossId];
+  var model = buildEnemyModel(d);
+  var e = makeEntity({
+    kind: major ? 'boss' : 'enemy', team: 'enemy', def: d, model: model,
+    x: zone.x, z: zone.z - 6, maxHp: d.hp
+  });
+  e.name = d.name;
+  e.dropTokens = major ? 0 : 14;
+  e.isElite = !major;
+  e.phaseCount = d.phases || 1;
+  e.moveCd = 2.0;
+  e.spawnT = 0.4;
+  e.baseScale = e.root.scale.x;
+  enemies.push(e);
+  cacheMaterials(e);
+  if (major) { boss = e; el('bossBar').classList.add('on'); el('bossName').textContent = d.name + ' — ' + d.sub; }
+  else { boss = e; el('bossBar').classList.add('on'); el('bossName').textContent = d.name + ' — ' + d.sub; }
+  G.beat.bossRef = e;
+  SFX.roar();
+  addShake(0.8);
+  banner(d.name.toUpperCase(), d.sub);
+  toast(d.intro);
+  spawnRing(zone.x, 0.1, zone.z - 6, 0xff2030, 9, 0.9);
+  musicStart(G.act.loc, true);
+}
+
+function spawnAtZone(zone, n, elite) {
+  var i, a, r, x, z, half = G.stage.size / 2;
+  for (i = 0; i < n; i++) {
+    a = rand(0, Math.PI * 2);
+    r = rand(9, 17);
+    x = clamp(zone.x + Math.sin(a) * r, -half + 5, half - 5);
+    z = clamp(zone.z + Math.cos(a) * r, -half + 5, half - 5);
+    if (player && dist2(x, z, player.pos.x, player.pos.z) < 49) { x += 8; z += 8; }
+    var y = groundHeightAt(x, z, 40, 0.6);
+    var e = makeEnemy(pick(G.act.pool), x, z, elite);
+    e.pos.y = y;
+    spawnRing(x, y + 0.1, z, 0x8a1020, 2.4, 0.5);
+    emit(x, y + 0.6, z, 12, { color: 0x8a1020, speed: 5, life: 0.5, gravity: -6 });
+  }
+  SFX.spawn();
+}
+
+/* Straggler regroup.
+   These maps are large. A last surviving enemy that wandered to the far side
+   used to leave the beat unfinishable — the automated play-through hit this on
+   4 of 24 Acts. If progress stalls, the remaining hostiles hunt the player
+   down instead, which also reads better than a silent objective. */
+function regroupStragglers(zone) {
+  var i, e, moved = 0;
+  for (i = 0; i < enemies.length; i++) {
+    e = enemies[i];
+    if (e.dead || e.boss) continue;
+    if (!player || distXZ(e.pos, player.pos) < 22) continue;
+    var a = rand(0, Math.PI * 2), r = rand(11, 16);
+    e.pos.x = clamp(player.pos.x + Math.sin(a) * r, -G.stage.size / 2 + 5, G.stage.size / 2 - 5);
+    e.pos.z = clamp(player.pos.z + Math.cos(a) * r, -G.stage.size / 2 + 5, G.stage.size / 2 - 5);
+    e.pos.y = groundHeightAt(e.pos.x, e.pos.z, 40, e.radius) + 0.2;
+    e.vel.set(0, 0, 0);
+    spawnRing(e.pos.x, e.pos.y + 0.1, e.pos.z, 0x8a1020, 3, 0.5);
+    emit(e.pos.x, e.pos.y + 0.8, e.pos.z, 12, { color: 0x8a1020, speed: 5, life: 0.5, gravity: -6 });
+    moved++;
+  }
+  if (moved) { SFX.spawn(); toast('They\'re closing in'); }
+  return moved;
+}
+
+function actDirector(dt) {
+  if (!G.act || G.ended || !G.beat) return;
+  if (G.vs) { vsDirector(dt, enemiesAlive()); return; }
+  var b = G.beat, d = b.def, zone = b.zone, alive = enemiesAlive();
+  if (b.done) return;
+
+  // watchdog: no progress for a while with only a few left → bring them to you
+  if (b.lastKills !== G.beatKills) { b.lastKills = G.beatKills; b.stallT = 0; }
+  b.stallT = (b.stallT || 0) + dt;
+  if (alive > 0 && alive <= 4 && b.stallT > 13) {
+    b.stallT = 0;
+    if (!regroupStragglers(zone)) {
+      // already close and still not dying — nudge the objective forward
+      b.stallT = -6;
+    }
+  }
+
+  if (d.k === 'fight') {
+    if (alive === 0) {
+      b.timer -= dt;
+      if (b.timer <= 0) {
+        if (b.waveIndex >= d.w) { beatComplete(); return; }
+        b.waveIndex++;
+        spawnAtZone(zone, 4 + Math.floor(b.waveIndex * 1.5) + G.locIndex, b.waveIndex === d.w && Math.random() < 0.5);
+        b.timer = 2.0;
+      }
+    }
+  } else if (d.k === 'gauntlet') {
+    b.timer -= dt;
+    var cap = 8 + G.locIndex;
+    if (b.timer <= 0 && alive < cap) {
+      b.timer = 3.2;
+      spawnAtZone(zone, 3 + Math.floor(G.locIndex * 0.7), Math.random() < 0.16);
+    }
+    if (G.beatKills >= d.n) { beatComplete(); return; }
+  } else if (d.k === 'traverse') {
+    b.timer -= dt;
+    if (b.timer <= 0) { b.timer = 12; spawnAtZone(zone, 2, false); }
+    var i, it;
+    for (i = 0; i < interactables.length; i++) {
+      it = interactables[i];
+      if (it.kind === 'goal' && it.reached) { beatComplete(); return; }
+    }
+  } else if (d.k === 'objective') {
+    var left = 0, j;
+    for (j = 0; j < b.targets.length; j++) if (!b.targets[j].dead) left++;
+    if (left === 0) { beatComplete(); return; }
+    b.timer -= dt;
+    if (b.timer <= 0 && alive < 6 + G.locIndex) { b.timer = 7; spawnAtZone(zone, 2, false); }
+  } else if (d.k === 'explore') {
+    var rleft = 0, k2;
+    for (k2 = 0; k2 < b.relics.length; k2++) if (!b.relics[k2].dead) rleft++;
+    if (rleft === 0) { beatComplete(); return; }
+    b.timer -= dt;
+    if (b.timer <= 0) { b.timer = 10; spawnAtZone(zone, 2, false); }
+  } else if (d.k === 'hunt') {
+    var hleft = 0, h2;
+    for (h2 = 0; h2 < b.elites.length; h2++) if (!b.elites[h2].dead) hleft++;
+    if (hleft === 0) { beatComplete(); return; }
+    b.timer -= dt;
+    if (b.timer <= 0 && alive < 8) { b.timer = 9; spawnAtZone(zone, 2, false); }
+  } else {
+    if (b.bossRef && b.bossRef.dead && !G.bossDeathT) { beatComplete(); return; }
+    b.timer -= dt;
+    if (b.timer <= 0 && alive < 5 + G.locIndex) { b.timer = 8; spawnAtZone(zone, 2, false); }
+  }
+  beatObjectiveText();
+}
+
+function beatComplete() {
+  var b = G.beat;
+  if (!b || b.done) return;
+  b.done = true;
+  var next = G.beatIndex + 1;
+  el('bossBar').classList.remove('on');
+  boss = null;
+  if (next >= G.act.beats.length) { actCleared(); return; }
+  SFX.win();
+  spawnRing(player.pos.x, player.pos.y, player.pos.z, 0xffd060, 6, 0.6);
+  banner('AREA SECURE', beatLabel(G.act.beats[next]).toUpperCase() + ' AHEAD');
+  musicStart(G.act.loc, false);
+  G.beat = null;
+  G.beatAdvanceT = 1.5;
+}
+function updateActIntro(dt) {
+  if (!G.introT || G.introT <= 0) return;
+  G.introT -= dt;
+  if (G.introT > 0) return;
+  G.introT = 0;
+  var s = G.introScript;
+  G.introScript = null;
+  if (s) playDialogue(s, function () { beatEnter(0); });
+  else beatEnter(0);
+}
+function updateBeatAdvance(dt) {
+  if (!G.beatAdvanceT || G.beatAdvanceT <= 0) return;
+  G.beatAdvanceT -= dt;
+  if (G.beatAdvanceT <= 0) { G.beatAdvanceT = 0; beatEnter(G.beatIndex + 1); }
+}
+
+function actCleared() {
+  if (G.ended) return;
+  G.ended = true;
+  G.clearT = 1.1;
+  G.slowmo = 0.45; G.slowmoT = 1.0;
+  SFX.win();
+  addShake(0.6);
+  if (player && !player.dead) {
+    spawnRing(player.pos.x, player.pos.y, player.pos.z, 0xffd060, 12, 1.0);
+    spawnRing(player.pos.x, player.pos.y, player.pos.z, 0xffffff, 6, 0.6);
+    emit(player.pos.x, player.pos.y + 1.4, player.pos.z, 60, { color: 0xffd060, speed: 10, life: 1.1, gravity: -3, up: 5 });
+  }
+  banner('ACT COMPLETE', G.act.n.toUpperCase());
+}
+
+function finishActClear() {
+  G.mode = 'result';
+  musicStop();
+  cineBars(false);
+  var act = G.act, bonus = 0, recruited = null;
+  if (!G.vs) {
+    if (!P.cleared[act.id]) { bonus += 20 + act.loc * 8; P.cleared[act.id] = true; }
+    if (G.secretFound) bonus += 15;
+    P.tokens += bonus; P.totalTokens += bonus;
+    if (act.index + 1 > P.story) P.story = act.index + 1;
+    G.selectedAct = Math.min(act.index + 1, ACTS.length - 1);
+    if (act.recruit && !P.heroes[act.recruit]) {
+      P.heroes[act.recruit] = true;
+      P.partner = act.recruit;
+      recruited = act.recruit;
+    }
+    saveProfile();
+  }
+  var post = ACT_SCRIPT[act.index] && ACT_SCRIPT[act.index].post;
+  if (post && !G.vs) {
+    playDialogue(post, function () { showResults(true, bonus, recruited); });
+    G.mode = 'dialogue';
+  } else {
+    showResults(true, bonus, recruited);
+  }
+}
+
+/* Death resumes at the current beat instead of restarting a 12-minute Act. */
+function resumeFromCheckpoint() {
+  var i;
+  for (i = enemies.length - 1; i >= 0; i--) removeEntity(enemies[i]);
+  enemies.length = 0;
+  for (i = projectiles.length - 1; i >= 0; i--) { fxGroup.remove(projectiles[i].group); }
+  projectiles.length = 0;
+  G.shockwaves = []; G.pendingWaves = [];
+  boss = null;
+  el('bossBar').classList.remove('on');
+  // clear objects the failed beat created
+  for (i = interactables.length - 1; i >= 0; i--) {
+    var it = interactables[i];
+    if (it.kind === 'target' && !it.dead) { worldGroup.remove(it.group); interactables.splice(i, 1); }
+    else if (it.kind === 'goal') { worldGroup.remove(it.group); interactables.splice(i, 1); }
+    else if (it.kind === 'relic' && !it.dead) { fxGroup.remove(it.group); interactables.splice(i, 1); }
+  }
+  var zone = G.zones[G.checkpointBeat || 0];
+  [blade, ally].forEach(function (h) {
+    if (!h) return;
+    h.dead = false; h.deadT = 0;
+    h.hp = h.maxHp;
+    h.root.rotation.z = 0;
+    h.invuln = 2.0;
+    h.vel.set(0, 0, 0);
+    h.meter = 0;
+    if (h.dayMode) endDaywalker(h);
+  });
+  player = blade; ally = (ally === blade) ? null : ally;
+  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, 1.0, zone.z + 6); }
+  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, 1.0, zone.z + 6); }
+  G.ended = false; G.clearT = 0; G.bossDeathT = 0;
+  G.slowmo = 1; G.slowmoT = 0;
+  el('dwVig').style.opacity = 0;
+  refreshHUDNames();
+  showScreen(null);
+  el('hud').classList.add('on');
+  G.mode = 'play';
+  musicStart(G.act.loc, false);
+  banner('CHECKPOINT', 'BEAT ' + ((G.checkpointBeat || 0) + 1));
+  beatEnter(G.checkpointBeat || 0);
+}
+
+/* ==========================================================================
+   [HUB] Walkable safehouse — an open garage with terminals you run between,
+   in the spirit of the Friend-or-Foe helicarrier.
+   ========================================================================== */
+var terminals = [];
+
+function buildHubWorld() {
+  clearWorld();
+  terminals.length = 0;
+  G.stage = { id: 'hub', loc: 0, name: 'The Garage', type: 'hub', size: 76, pool: ['thrall'], density: 1 };
+
+  scene.background = new THREE.Color(0x07070a);
+  scene.fog = new THREE.Fog(0x07070a, 24, 96);
+  worldGroup.add(new THREE.HemisphereLight(0x39323e, 0x0a0a10, 0.75));
+  var key = new THREE.DirectionalLight(0xa8b0d0, 0.5);
+  key.position.set(18, 30, 12);
+  worldGroup.add(key); worldGroup.add(key.target);
+
+  // floor + oil-stained slabs
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), matU(0x1a1a20));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
+  worldGroup.add(floor);
+  var i, j;
+  for (i = -36; i < 36; i += 12) {
+    for (j = -36; j < 36; j += 12) {
+      if (((i / 12) + (j / 12)) % 2 !== 0) continue;
+      var t = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), matU(0x22222a));
+      t.rotation.x = -Math.PI / 2; t.position.set(i + 6, 0.02, j + 6);
+      worldGroup.add(t);
+    }
+  }
+  addCollider(0, -2, 0, 100, 2, 100, { walkable: true });
+
+  // walls + ceiling
+  addProp(0, 0, -38, 80, 16, 3, 0x24242c, { force: true, castShadow: false });
+  addProp(0, 0, 38, 80, 16, 3, 0x24242c, { force: true, castShadow: false });
+  addProp(-38, 0, 0, 3, 16, 80, 0x24242c, { force: true, castShadow: false });
+  addProp(38, 0, 0, 3, 16, 80, 0x24242c, { force: true, castShadow: false });
+  var ceil = new THREE.Mesh(new THREE.PlaneGeometry(84, 84), matU(0x101014));
+  ceil.rotation.x = Math.PI / 2; ceil.position.y = 15;
+  worldGroup.add(ceil);
+
+  // support pillars + hanging lamps
+  for (i = 0; i < 4; i++) {
+    var px = (i % 2 ? 1 : -1) * 22, pz = (i < 2 ? 1 : -1) * 22;
+    addProp(px, 0, pz, 2.4, 15, 2.4, 0x2c2c34, { force: true });
+    addDecor(px, 12.6, pz, sphGeo(0.6, 8), 0xfff0c0, 0xffc880);
+    addLightPoint(px, 12, pz, 0xffb870, 1.0, 30);
+  }
+  addLightPoint(0, 11, 0, 0xff5060, 0.8, 40);
+
+  // Blade's car + weapon bench for flavour
+  addProp(-16, 0, 12, 3.0, 1.3, 6.4, 0x14141a, { force: true });
+  addDecor(-16, 2.1, 12, boxGeo(2.6, 0.9, 3.0), 0x0e0e14, 0x08080c);
+  addProp(14, 0, -12, 6.5, 1.1, 2.4, 0x3a3028, { force: true });
+  var wi;
+  for (wi = 0; wi < 4; wi++) {
+    addDecor(12 + wi * 1.4, 1.5, -12, boxGeo(0.1, 1.5, 0.05), 0xd8dce8, 0x303844);
+  }
+
+  // ---- terminals ----
+  addTerminal(0, -20, 'MISSIONS', 'missions', 0xff4a5a);
+  addTerminal(-20, -6, 'UPGRADES', 'upgrades', 0xffb04a);
+  addTerminal(20, -6, 'PARTNERS', 'partners', 0x40b0ff);
+  addTerminal(-20, 14, 'INTEL', 'intel', 0x8de0a0);
+  addTerminal(20, 14, 'VERSUS ARENA', 'versus', 0xb060ff);
+
+  blade = makeHero('blade', 0, 8, true);
+  cacheMaterials(blade);
+  ally = null;
+  player = blade;
+  camYaw = Math.PI; camPitch = 0.32;
+  camera.position.set(0, 7, 18);
+}
+
+function addTerminal(x, z, label, action, color) {
+  var g = new THREE.Group();
+  var base = new THREE.Mesh(boxGeo(3.0, 1.0, 1.8), matU(0x24242e)); base.position.y = 0.5; g.add(base);
+  var post = new THREE.Mesh(boxGeo(0.5, 1.6, 0.5), matU(0x1a1a22)); post.position.y = 1.6; g.add(post);
+  var screen = new THREE.Mesh(boxGeo(2.6, 1.7, 0.18), matU(color, color));
+  screen.position.set(0, 3.0, 0.1); screen.rotation.x = -0.32; g.add(screen);
+  var frame = new THREE.Mesh(boxGeo(2.9, 2.0, 0.1), matU(0x101016));
+  frame.position.set(0, 3.0, -0.02); frame.rotation.x = -0.32; g.add(frame);
+  g.position.set(x, 0, z);
+  g.rotation.y = Math.atan2(-x, -z);
+  worldGroup.add(g);
+  addCollider(x, 0, z, 3.0, 1.4, 2.0, { walkable: true });
+  addLightPoint(x, 4.0, z, color, 1.1, 14);
+  terminals.push({ x: x, z: z, label: label, action: action, group: g, screen: screen, color: color });
+}
+
+function updateHubWorld(dt) {
+  if (!player) return;
+  var i, t, best = null, bd = 1e9, d;
+  for (i = 0; i < terminals.length; i++) {
+    t = terminals[i];
+    d = Math.sqrt(dist2(player.pos.x, player.pos.z, t.x, t.z));
+    var pulse = 0.6 + Math.sin(G.time * 2 + i) * 0.12;
+    t.screen.material.opacity = 1;
+    t.group.position.y = Math.sin(G.time * 1.5 + i) * 0.06;
+    if (d < bd) { bd = d; best = t; }
+    if (d < 12 && Math.random() < 0.02) {
+      emit(t.x, 3.4, t.z, 1, { color: t.color, speed: 0.6, life: 0.8, gravity: 0.6, size: 0.7 });
+    }
+    t.screen.scale.setScalar(d < 6 ? 1.06 : 1);
+    if (pulse < 0) t.screen.scale.setScalar(1);
+  }
+  G.hubNear = (best && bd < 5.5) ? best : null;
+  var prompt = el('hubPrompt');
+  if (G.hubNear) {
+    prompt.classList.add('on');
+    el('hubPromptTxt').textContent = G.hubNear.label;
+    if (bufHas('light') || bufHas('call')) {
+      bufTake('light'); bufTake('call');
+      SFX.ui();
+      openHubPanel(G.hubNear.action);
+    }
+  } else prompt.classList.remove('on');
+}
+
+function openHubPanel(action) {
+  G.hubReturn = true;
+  if (action === 'versus') { renderVs(); showScreen('scVs'); }
+  else {
+    hubTab = action;
+    var tabs = el('hubTabs').children, i;
+    for (i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('on', tabs[i].getAttribute('data-tab') === action);
+    }
+    renderHub();
+    showScreen('scHub');
+  }
+  G.mode = 'hubmenu';
+}
+function closeHubPanel() {
+  showScreen(null);
+  el('hud').classList.add('on');
+  G.mode = 'hub';
+}
+
+/* ==========================================================================
    [FLOW] Partner system — assist, tag swap, team-up
    This is the heart of the game, so it gets generous feedback:
    slow-mo, rings, banners, camera punch.
@@ -4373,63 +5517,8 @@ function hideRevivePrompt() {
 /* ==========================================================================
    [FLOW] Mission / wave director
    ========================================================================== */
-function startStage(index, isVs) {
-  var stage = STAGES[index];
-  G.vs = !!isVs;
-  G.stageIndex = index;
-  G.locIndex = stage.loc;
-  G.stage = stage;
-  G.time = 0;
-  G.killCount = 0;
-  G.stageTokens = 0;
-  G.comboCount = 0;
-  G.secretFound = false;
-  G.ended = false;
-  G.waveIndex = 0;
-  G.totalWaves = stage.waves;
-  G.waveTimer = 1.6;
-  G.spawnQueue = [];
-  G.shockwaves = [];
-  G.pendingWaves = [];
-  G.miniSpawned = false;
-  G.bossSpawned = false;
-  G.huntSpawned = false;
-  G.checkpoint = { wave: 0, tokens: 0 };
-  G.slowmo = 1; G.slowmoT = 0;
-  G.bossDeathT = 0;
-  G.clearT = 0;
-  G.vsWave = 0;
-  G.reviveT = 0;
-
-  buildStage(stage);
-  G.safeX = 0; G.safeY = 0; G.safeZ = stage.type === 'platform' ? stage.size / 2 - 12 : 0;
-
-  // heroes
-  blade = makeHero('blade', G.safeX, G.safeZ + 2, true);
-  cacheMaterials(blade);
-  var partnerId = P.partner && P.heroes[P.partner] ? P.partner : 'whistler';
-  ally = makeHero(partnerId, G.safeX + 2.4, G.safeZ + 2, false);
-  cacheMaterials(ally);
-  player = blade;
-  camYaw = 0; camPitch = 0.3;
-  camera.position.set(0, 6, G.safeZ + 12);
-
-  setObjective(stage.objText, '');
-  refreshHUDNames();
-  updateHUD();
-  showScreen(null);
-  el('hud').classList.add('on');
-  el('bossBar').classList.remove('on');
-  G.mode = 'play';
-  menuMusicStop();
-  musicStart(stage.loc, stage.type === 'boss');
-
-  banner((isVs ? 'ARENA · ' : 'ACT ' + (stage.loc + 1) + ' · ') + stage.name.toUpperCase(), LOCATIONS[stage.loc].short);
-  if (!isVs && SCRIPT[index] && SCRIPT[index].pre) {
-    setTimeout(function () { playDialogue(SCRIPT[index].pre); }, 900);
-  }
-  if (index === 0 && !isVs) setTimeout(showTutorial, 2600);
-}
+/* Kept as a thin alias — every caller now runs the continuous Act flow. */
+function startStage(index, isVs) { startAct(index, isVs); }
 
 function setObjective(main, sub) {
   G.objective = main; G.objectiveSub = sub || '';
@@ -4437,104 +5526,6 @@ function setObjective(main, sub) {
   el('waveText').textContent = G.objectiveSub;
 }
 
-function stageDirector(dt) {
-  var stage = G.stage;
-  if (!stage || G.ended) return;
-  var alive = enemiesAlive();
-
-  if (G.vs) { vsDirector(dt, alive); return; }
-
-  if (stage.type === 'boss') {
-    if (!G.bossSpawned) {
-      G.waveTimer -= dt;
-      if (G.waveTimer <= 0) {
-        G.bossSpawned = true;
-        var b = makeBoss(stage.boss, 0, -stage.size * 0.28);
-        cacheMaterials(b);
-        el('bossBar').classList.add('on');
-        el('bossName').textContent = b.name + ' — ' + BOSSES[stage.boss].sub;
-        SFX.roar();
-        banner(b.name.toUpperCase(), BOSSES[stage.boss].sub);
-        musicStart(stage.loc, true);
-        setObjective(stage.objText, '');
-      }
-    } else if (boss && boss.dead) {
-      // handled in onBossDefeated
-    } else {
-      // trickle adds
-      G.waveTimer -= dt;
-      if (G.waveTimer <= 0 && alive < 5 + G.locIndex) {
-        G.waveTimer = 7;
-        spawnWaveEnemies(stage, 2, false);
-      }
-      setObjective(stage.objText, 'Boss health ' + Math.round(boss.hp / boss.maxHp * 100) + '%');
-    }
-    return;
-  }
-
-  if (stage.type === 'platform') {
-    setObjective(stage.objText, 'Reach the glowing landing zone');
-    G.waveTimer -= dt;
-    if (G.waveTimer <= 0 && G.waveIndex < G.totalWaves) {
-      G.waveIndex++;
-      G.waveTimer = 16;
-      spawnWaveEnemies(stage, 2 + G.locIndex, false);
-    }
-    return;
-  }
-
-  if (stage.type === 'objective') {
-    var left = 0, i;
-    for (i = 0; i < G.objTargets.length; i++) if (!G.objTargets[i].dead) left++;
-    setObjective(stage.objText, left + ' remaining · ' + alive + ' hostiles');
-    G.waveTimer -= dt;
-    if (G.waveTimer <= 0 && alive < 6 + G.locIndex) {
-      G.waveTimer = 9;
-      spawnWaveEnemies(stage, 2 + Math.floor(G.locIndex * 0.6), false);
-    }
-    if (stage.mini && !G.miniSpawned && left <= Math.ceil(stage.targets / 2)) spawnMini(stage);
-    return;
-  }
-
-  if (stage.type === 'hunt') {
-    // spawn the marked elites first, THEN count — counting first cleared the
-    // stage on frame one because no elites existed yet.
-    if (!G.huntSpawned) {
-      G.huntSpawned = true;
-      var k;
-      for (k = 0; k < stage.targets; k++) {
-        var a = (k / stage.targets) * Math.PI * 2;
-        var r = stage.size * 0.3;
-        makeEnemy(pick(stage.pool), Math.sin(a) * r, Math.cos(a) * r, true);
-      }
-      G.waveTimer = 6;
-      return;
-    }
-    var marked = 0, j;
-    for (j = 0; j < enemies.length; j++) if (enemies[j].isElite && !enemies[j].dead) marked++;
-    setObjective(stage.objText, marked + ' scouts left');
-    G.waveTimer -= dt;
-    if (G.waveTimer <= 0 && alive < 7) { G.waveTimer = 8; spawnWaveEnemies(stage, 2, false); }
-    if (marked === 0) stageCleared();
-    return;
-  }
-
-  // ---- arena ----
-  setObjective(stage.objText, 'Wave ' + Math.min(G.waveIndex + (alive > 0 ? 0 : 1), G.totalWaves) + ' / ' + G.totalWaves + ' · ' + alive + ' hostiles');
-  if (alive === 0) {
-    G.waveTimer -= dt;
-    if (G.waveTimer <= 0) {
-      if (G.waveIndex >= G.totalWaves) { stageCleared(); return; }
-      G.waveIndex++;
-      G.checkpoint = { wave: G.waveIndex, tokens: G.stageTokens };
-      var n = 3 + G.waveIndex + Math.floor(G.locIndex * 0.8);
-      spawnWaveEnemies(stage, n, false);
-      G.waveTimer = 2.2;
-      if (G.waveIndex > 1) toast('Checkpoint — Wave ' + G.waveIndex);
-      if (stage.mini && !G.miniSpawned && G.waveIndex === Math.max(2, G.totalWaves - 1)) spawnMini(stage);
-    }
-  }
-}
 function spawnWaveEnemies(stage, n, elite) {
   var i, a, r, x, z, half = stage.size / 2;
   for (i = 0; i < n; i++) {
@@ -4570,18 +5561,8 @@ function spawnMini(stage) {
   toast(d.intro);
   spawnRing(e.pos.x, 0.1, e.pos.z, 0xff2030, 8, 0.8);
 }
-function checkObjectives() {
-  var stage = G.stage;
-  if (!stage || G.ended) return;
-  if (stage.type === 'objective') {
-    var i, left = 0;
-    for (i = 0; i < G.objTargets.length; i++) if (!G.objTargets[i].dead) left++;
-    if (left === 0) stageCleared();
-  }
-}
-function onReachGoal() {
-  if (G.stage.type === 'platform') stageCleared();
-}
+function checkObjectives() { /* handled by the beat director */ }
+function onReachGoal() { /* traverse beats detect the goal in actDirector */ }
 function onBossDefeated(b) {
   el('bossBar').classList.remove('on');
   G.slowmo = 0.25; G.slowmoT = 2.4;
@@ -4609,60 +5590,18 @@ function updateBossDeath(dt) {
   if (G.bossDeathT <= 0) { G.bossDeathT = 0; cineBars(false); stageCleared(); }
 }
 
-function stageCleared() {
-  if (G.ended) return;
-  G.ended = true;
-  // Celebration beat first — gold burst + slow-mo — results panel follows.
-  G.clearT = 0.95;
-  G.slowmo = 0.45; G.slowmoT = 0.9;
-  SFX.win();
-  addShake(0.5);
-  if (player && !player.dead) {
-    spawnRing(player.pos.x, player.pos.y, player.pos.z, 0xffd060, 10, 0.9);
-    spawnRing(player.pos.x, player.pos.y, player.pos.z, 0xffffff, 5, 0.5);
-    emit(player.pos.x, player.pos.y + 1.4, player.pos.z, 50, { color: 0xffd060, speed: 9, life: 1.0, gravity: -3, up: 5 });
-  }
-  banner('STAGE CLEAR', G.stage ? G.stage.name.toUpperCase() : '');
-}
+function stageCleared() { actCleared(); }
 function updateStageClear(dt) {
   if (!G.clearT || G.clearT <= 0) return;
   G.clearT -= dt;
   if (G.clearT > 0) return;
   G.clearT = 0;
-  finishStageClear();
-}
-function finishStageClear() {
-  G.mode = 'result';
-  musicStop();
-  cineBars(false);
-  var stage = G.stage;
-  var bonus = 0;
-  if (!G.vs) {
-    if (!P.cleared[stage.id]) { bonus += 10 + stage.loc * 5; P.cleared[stage.id] = true; }
-    if (G.secretFound) bonus += 12;
-    P.tokens += bonus; P.totalTokens += bonus;
-    if (stage.index + 1 > P.story) P.story = stage.index + 1;
-    G.selectedStage = Math.min(stage.index + 1, STAGES.length - 1);
-
-    // partner recruitment after a boss
-    var recruited = null;
-    if (stage.type === 'boss') {
-      var rid = BOSSES[stage.boss].recruit;
-      if (rid && !P.heroes[rid]) {
-        P.heroes[rid] = true;
-        P.partner = rid;
-        recruited = rid;
-      }
-    }
-    saveProfile();
-    showResults(true, bonus, recruited);
-  } else {
-    showResults(true, 0, null);
-  }
+  finishActClear();
 }
 function stageFailed() {
   if (G.ended) return;
   G.ended = true;
+  G.failedAt = G.beatIndex;
   G.mode = 'result';
   musicStop();
   SFX.lose();
@@ -4834,17 +5773,24 @@ function updateMarker() {
 }
 function currentMarkerTarget() {
   var i, it;
-  if (!G.stage) return null;
-  if (G.stage.type === 'objective') {
-    for (i = 0; i < G.objTargets.length; i++) if (!G.objTargets[i].dead) return G.objTargets[i];
+  if (G.mode !== 'play' || !G.act || !G.beat) return null;
+  var b = G.beat, d = b.def;
+  if (d.k === 'objective') {
+    for (i = 0; i < b.targets.length; i++) if (!b.targets[i].dead) return b.targets[i];
   }
-  if (G.stage.type === 'platform') {
+  if (d.k === 'explore') {
+    for (i = 0; i < b.relics.length; i++) if (!b.relics[i].dead) return b.relics[i];
+  }
+  if (d.k === 'traverse') {
     for (i = 0; i < interactables.length; i++) { it = interactables[i]; if (it.kind === 'goal' && !it.reached) return it; }
   }
-  if (boss && !boss.dead) return { x: boss.pos.x, y: boss.pos.y + 1, z: boss.pos.z };
-  var e = nearestEnemy(player ? player.pos.x : 0, player ? player.pos.z : 0, 90);
+  if (b.bossRef && !b.bossRef.dead) return { x: b.bossRef.pos.x, y: b.bossRef.pos.y + 1, z: b.bossRef.pos.z };
+  if (d.k === 'hunt') {
+    for (i = 0; i < b.elites.length; i++) if (!b.elites[i].dead) return { x: b.elites[i].pos.x, y: b.elites[i].pos.y + 1, z: b.elites[i].pos.z };
+  }
+  var e = nearestEnemy(player ? player.pos.x : 0, player ? player.pos.z : 0, 120);
   if (e) return { x: e.pos.x, y: e.pos.y + 1, z: e.pos.z };
-  return null;
+  return b.zone ? { x: b.zone.x, y: 2, z: b.zone.z } : null;
 }
 
 function showTutorial() {
@@ -4866,7 +5812,7 @@ function showTutorial() {
 /* ==========================================================================
    [FLOW] Screens / menus
    ========================================================================== */
-var SCREENS = ['scTitle', 'scCtrl', 'scHub', 'scPause', 'scResult', 'scVs'];
+var SCREENS = ['scTitle', 'scCtrl', 'scHub', 'scPause', 'scResult', 'scVs', 'scOptions'];
 function showScreen(id) {
   var i;
   for (i = 0; i < SCREENS.length; i++) el(SCREENS[i]).classList.remove('on');
@@ -4874,25 +5820,34 @@ function showScreen(id) {
   el('hud').classList.toggle('on', id === null);
   if (id && IN.pointerLocked) { try { document.exitPointerLock(); } catch (e) {} }
 }
+function syncHubTabs() {
+  var tn = el('hubTabs').children, ti;
+  for (ti = 0; ti < tn.length; ti++) tn[ti].classList.toggle('on', tn[ti].getAttribute('data-tab') === hubTab);
+}
 function goTitle() {
   G.mode = 'title';
   musicStop();
   menuMusicStart();
   showScreen('scTitle');
-  el('btnPlay').classList.toggle('off', P.story === 0 && P.totalTokens === 0);
+  seedAsh();
+  var fresh = (P.story === 0 && P.totalTokens === 0);
+  el('miContinue').classList.toggle('off', fresh);
+  el('miContinue').textContent = fresh ? 'Continue Hunt' : ('Continue — Act ' + Math.min(P.story + 1, ACTS.length));
 }
 function doPause() {
-  if (G.mode !== 'play') return;
+  if (G.mode !== 'play' && G.mode !== 'hub') return;
+  G.pauseFrom = G.mode;
   G.mode = 'pause';
   showScreen('scPause');
-  el('pauseTitle').textContent = G.stage ? G.stage.name : 'Stage';
+  el('pauseTitle').textContent = G.act && G.mode !== 'hub' ? ('Act ' + (G.act.index + 1) + ' — ' + G.act.n) : 'Safehouse';
   el('pauseObj').textContent = G.objective + (G.objectiveSub ? ' — ' + G.objectiveSub : '');
   updatePauseLabels();
 }
 function doResume() {
   if (G.mode !== 'pause') return;
-  G.mode = 'play';
+  G.mode = G.pauseFrom === 'hub' ? 'hub' : 'play';
   showScreen(null);
+  el('hud').classList.add('on');
 }
 function updatePauseLabels() {
   el('btnQuality').textContent = '◐ Quality: ' + (G.quality === 'high' ? 'High' : 'Low');
@@ -4919,8 +5874,10 @@ function showResults(win, bonus, recruited) {
     html += '<div class="hr"></div><div style="color:#ffd7a0"><b>' + HEROES[recruited].name + ' JOINED</b><br>' + HEROES[recruited].bio + '</div>';
   }
   el('resBody').innerHTML = html;
-  el('btnResNext').textContent = win ? '▸ Return to Safehouse' : '▸ Return to Safehouse';
+  el('btnResNext').textContent = '▸ Return to Safehouse';
+  el('btnResRetry').textContent = win ? '↺ Replay Act' : '↺ Retry from Checkpoint';
   el('btnResRetry').style.display = G.vs ? 'none' : 'block';
+  G.resultWon = win;
   G.pendingRecruit = recruited;
 }
 
@@ -4930,44 +5887,53 @@ function openHub() {
   G.mode = 'hub';
   musicStop();
   menuMusicStart();
-  showScreen('scHub');
-  clearWorld();
-  el('hubTok').textContent = P.tokens;
-  renderHub();
+  showScreen(null);
+  buildHubWorld();
+  el('hud').classList.add('on');
+  el('bossBar').classList.remove('on');
+  setObjective('Safehouse', 'Walk up to a terminal and press ' + (IN.touch ? 'SLASH' : 'J / E'));
+  updateHUD();
+  refreshHUDNames();
   if (G.pendingRecruit) {
-    var r = RECRUIT_LINES[G.pendingRecruit];
     var rr = G.pendingRecruit;
+    var r = RECRUIT_LINES[rr];
     G.pendingRecruit = null;
-    if (r) setTimeout(function () { toast(r[0] + ': ' + r[1]); }, 400);
-    toast(HEROES[rr].name + ' is now available as a partner');
+    if (r) setTimeout(function () { playDialogue([r]); }, 700);
+    toast(HEROES[rr].name + ' joined — set them as your partner at the PARTNERS terminal');
   }
 }
+
 function renderHub() {
   var body = el('hubBody');
   el('hubTok').textContent = P.tokens;
   var html = '', i, j;
   if (hubTab === 'missions') {
-    var locI;
+    var locI, shown;
     for (locI = 0; locI < LOCATIONS.length; locI++) {
       var loc = LOCATIONS[locI];
-      html += '<div style="margin-top:14px"><div class="hdr">Act ' + (locI + 1) + '</div>';
-      html += '<div class="ttl" style="font-size:18px">' + loc.name + '</div>';
-      html += '<div class="sub" style="margin:4px 0 8px">' + loc.blurb + '</div>';
-      for (i = 0; i < STAGES.length; i++) {
-        var s = STAGES[i];
+      shown = 0;
+      var block = '';
+      for (i = 0; i < ACTS.length; i++) {
+        var s = ACTS[i];
         if (s.loc !== locI) continue;
         var unlocked = i <= P.story;
         var done = !!P.cleared[s.id];
         var sec = !!P.secrets[s.id];
-        html += '<div class="stg' + (unlocked ? '' : ' lock') + (done ? ' done' : '') + '" data-stage="' + i + '">';
-        html += '<div class="num">' + (done ? '✓' : (unlocked ? (i + 1) : '🔒')) + '</div>';
-        html += '<b>' + s.name + '</b>';
-        html += '<i>' + s.type + (s.boss ? ' · BOSS' : (s.mini ? ' · ELITE' : '')) + (sec ? ' · ◈' : '') + '</i>';
-        html += '</div>';
+        var beatCount = s.beats.length;
+        var hasBoss = false, bi;
+        for (bi = 0; bi < s.beats.length; bi++) if (s.beats[bi].k === 'boss') hasBoss = true;
+        block += '<div class="stg' + (unlocked ? '' : ' lock') + (done ? ' done' : '') + '" data-act="' + i + '">';
+        block += '<div class="num">' + (done ? '✓' : (unlocked ? (i + 1) : '🔒')) + '</div>';
+        block += '<b>' + s.n + '</b>';
+        block += '<i>' + beatCount + ' beats' + (hasBoss ? ' · BOSS' : '') + (s.recruit ? ' · ALLY' : '') + (sec ? ' · ◈' : '') + '</i>';
+        block += '</div>';
+        shown++;
       }
-      html += '</div>';
+      if (!shown) continue;
+      html += '<div style="margin-top:14px"><div class="hdr">' + loc.name + '</div>';
+      html += '<div class="sub" style="margin:4px 0 8px">' + loc.blurb + '</div>' + block + '</div>';
     }
-  } else if (hubTab === 'partners') {
+  } else if (hubTab === 'partners') {  } else if (hubTab === 'partners') {
     html += '<div class="sub">Pick who rides with you. Partners are recruited by beating act bosses.</div><div class="grid">';
     for (i = 1; i < HERO_ORDER.length; i++) {
       var hid = HERO_ORDER[i], h = HEROES[hid];
@@ -5018,7 +5984,7 @@ function renderHub() {
   } else {
     html += '<div class="sub"><b>The Job</b><br>Vampires are moving something big through the city. Follow the blood upstream until you find whoever is drinking at the top. Kill them.</div>';
     html += '<div class="hr"></div>';
-    html += '<div class="sub">Stages cleared: <b>' + Object.keys(P.cleared).length + ' / ' + STAGES.length + '</b><br>';
+    html += '<div class="sub">Acts cleared: <b>' + Object.keys(P.cleared).length + ' / ' + ACTS.length + '</b><br>';
     html += 'Secrets found: <b>' + Object.keys(P.secrets).length + '</b><br>';
     html += 'Total kills: <b>' + (P.kills || 0) + '</b><br>';
     html += 'Bloodstones earned: <b>' + P.totalTokens + '</b><br>';
@@ -5037,17 +6003,17 @@ function renderHub() {
 }
 function wireHub() {
   var body = el('hubBody'), i;
-  var stgs = body.querySelectorAll('[data-stage]');
+  var stgs = body.querySelectorAll('[data-act]');
   for (i = 0; i < stgs.length; i++) {
     stgs[i].addEventListener('click', function () {
-      var idx = parseInt(this.getAttribute('data-stage'), 10);
-      if (idx > P.story) { toast('Locked — finish the previous stage'); return; }
+      var idx = parseInt(this.getAttribute('data-act'), 10);
+      if (idx > P.story) { toast('Locked — finish the previous Act'); return; }
       SFX.ui();
-      G.selectedStage = idx;
-      var nodes = body.querySelectorAll('[data-stage]'), n;
+      G.selectedAct = idx;
+      var nodes = body.querySelectorAll('[data-act]'), n;
       for (n = 0; n < nodes.length; n++) nodes[n].style.borderColor = '';
       this.style.borderColor = '#ffb04a';
-      toast('Selected: ' + STAGES[idx].name);
+      toast('Selected: Act ' + (idx + 1) + ' — ' + ACTS[idx].n);
     });
   }
   var prts = body.querySelectorAll('[data-partner]');
@@ -5107,7 +6073,7 @@ function renderVs() {
   }
   html += '</div><div class="hdr" style="margin-top:14px">Arena</div><div class="grid">';
   for (i = 0; i < LOCATIONS.length; i++) {
-    var open = P.story >= i * 4;
+    var open = P.story >= i * 5;
     html += '<div class="card' + (open ? '' : ' lock') + (vsLoc === i ? ' sel' : '') + '" data-vsloc="' + i + '">';
     html += '<h4>' + (open ? LOCATIONS[i].short : 'Locked') + '</h4><p>' + (open ? LOCATIONS[i].name : 'Reach Act ' + (i + 1)) + '</p></div>';
   }
@@ -5125,27 +6091,24 @@ function renderVs() {
   for (j = 0; j < ls.length; j++) {
     ls[j].addEventListener('click', function () {
       var li = parseInt(this.getAttribute('data-vsloc'), 10);
-      if (P.story < li * 4) { toast('Locked'); return; }
+      if (P.story < li * 5) { toast('Locked'); return; }
       vsLoc = li; SFX.ui(); renderVs();
     });
   }
 }
 function startVersus() {
-  var idx = vsLoc * 4;
+  var arenaAct = {
+    n: 'Versus Arena', loc: vsLoc, recruit: null, index: 0, id: 'vs',
+    blurb: 'Endless waves. Last as long as you can.',
+    pool: POOLS[vsLoc], beats: [{ k: 'fight', w: 9999 }]
+  };
   var prevPartner = P.partner;
-  if (vsHero !== 'blade') { /* play as the chosen hero via immediate tag */ }
-  startStage(idx, true);
-  G.totalWaves = 999;
+  startAct(arenaAct, true);
   G.vsWave = 0;
   G.waveTimer = 1.5;
-  // clear story objects for a pure arena
-  var i;
-  for (i = 0; i < G.objTargets.length; i++) { G.objTargets[i].dead = true; worldGroup.remove(G.objTargets[i].group); }
-  G.objTargets.length = 0;
   if (vsHero !== 'blade' && ally) {
-    // swap Blade out for the chosen hunter
-    scene.remove(ally.root); if (ally.shadow) scene.remove(ally.shadow);
-    ally = makeHero(vsHero, blade.pos.x + 2, blade.pos.z, false);
+    disposeEntity(ally);
+    ally = makeHero(vsHero, blade.pos.x + 2.5, blade.pos.z, false);
     cacheMaterials(ally);
     doTagSwap();
   }
@@ -5153,9 +6116,6 @@ function startVersus() {
   banner('VERSUS ARENA', LOCATIONS[vsLoc].short);
 }
 
-/* ==========================================================================
-   [FLOW] World object updates (movers, pickups, targets)
-   ========================================================================== */
 function updateWorld(dt) {
   var i, m;
   for (i = 0; i < movers.length; i++) {
@@ -5188,6 +6148,12 @@ function updateWorld(dt) {
       it.core.position.y = 1.7 + Math.sin(G.time * 2 + it.idx) * 0.12;
     } else if (it.kind === 'goal' && it.group) {
       it.group.rotation.y += dt * 0.6;
+    } else if (it.kind === 'relic' && !it.dead && it.group) {
+      it.group.rotation.y += dt * 1.6;
+      it.core.position.y = Math.sin(G.time * 2.2) * 0.18;
+    } else if (it.kind === 'relic' && !it.dead && it.group) {
+      it.group.rotation.y += dt * 1.6;
+      it.core.position.y = Math.sin(G.time * 2.2) * 0.18;
     } else if (it.kind === 'secret' && it.group) {
       it.group.rotation.z += dt * 0.8;
     }
@@ -5229,12 +6195,22 @@ function loop(now) {
     reviveCheck(raw);
     updateBossDeath(raw);
     updateStageClear(raw);
-    stageDirector(raw);
+    updateActIntro(raw);
+    updateBeatAdvance(raw);
+    actDirector(raw);
     musicTick(raw);
     updateHUD();
     updateMarker();
+  } else if (G.mode === 'hub') {
+    // walkable safehouse: player controller runs, no combat director
+    G.time += raw;
+    if (G.hitStop > 0) G.hitStop -= raw;
+    updatePlayer(player, raw);
+    updateWorld(raw);
+    updateHubWorld(raw);
   } else if (G.mode === 'dialogue') {
     updateDialogue(raw);
+    updateActIntro(raw);
     // keep the world breathing behind the dialogue
     if (player) { animateEntity(player, raw * 0.5); updateCamera(player, raw); }
     if (ally) animateEntity(ally, raw * 0.5);
@@ -5246,6 +6222,7 @@ function loop(now) {
   fxUpdateMeshes(raw);
   updateDamageNumbers(raw);
   updateBanner(raw);
+  updateTitleAmbience(raw);
   inputEndFrame(raw);   // clear edge triggers, decay input buffer, reset look delta
 
   renderer.render(scene, camera);
@@ -5282,9 +6259,107 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(W, H);
 }
+/* ---------------- fullscreen ---------------- */
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function toggleFullscreen() {
+  var el0 = document.documentElement;
+  try {
+    if (!isFullscreen()) {
+      if (el0.requestFullscreen) el0.requestFullscreen();
+      else if (el0.webkitRequestFullscreen) el0.webkitRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  } catch (e) { toast('Fullscreen unavailable here'); }
+  setTimeout(updateOptionLabels, 180);
+}
+
+/* ---------------- options ---------------- */
+var SENS_STEPS = [0.6, 0.8, 1.0, 1.35, 1.8];
+var SENS_NAMES = ['Very Low', 'Low', 'Normal', 'High', 'Very High'];
+function updateOptionLabels() {
+  var f = el('optFull'); if (f) f.textContent = isFullscreen() ? 'On' : 'Off';
+  var q = el('optQual'); if (q) q.textContent = G.quality === 'high' ? 'High' : 'Low';
+  var s = el('optSound'); if (s) s.textContent = G.sound ? 'On' : 'Off';
+  var v = el('optMusVol'); if (v) v.textContent = Math.round(G.musicVol * 100) + '%';
+  var iv = el('optInvert'); if (iv) iv.textContent = G.invert ? 'On' : 'Off';
+  var sn = el('optSens'); if (sn) sn.textContent = SENS_NAMES[G.sensIdx];
+  updatePauseLabels();
+}
+function applyQuality() {
+  renderer.shadowMap.enabled = (G.quality === 'high');
+  renderer.setPixelRatio(G.quality === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : 1);
+}
+function wireOptions() {
+  el('optFull').addEventListener('click', function () { SFX.ui(); toggleFullscreen(); });
+  el('optQual').addEventListener('click', function () {
+    G.quality = G.quality === 'high' ? 'low' : 'high'; applyQuality(); SFX.ui(); updateOptionLabels();
+  });
+  el('optSound').addEventListener('click', function () {
+    G.sound = !G.sound;
+    if (!G.sound) { musicStop(); if (menuAudio) menuAudio.pause(); }
+    else if (G.mode === 'title' || G.mode === 'hub' || G.mode === 'hubmenu') menuMusicStart();
+    else if (G.act) musicStart(G.act.loc, false);
+    SFX.ui(); updateOptionLabels();
+  });
+  el('optMusVol').addEventListener('click', function () {
+    G.musicVol = G.musicVol >= 0.99 ? 0 : Math.min(1, G.musicVol + 0.25);
+    if (menuAudio) menuAudio.volume = G.musicVol;
+    SFX.ui(); updateOptionLabels();
+  });
+  el('optInvert').addEventListener('click', function () { G.invert = !G.invert; SFX.ui(); updateOptionLabels(); });
+  el('optSens').addEventListener('click', function () {
+    G.sensIdx = (G.sensIdx + 1) % SENS_STEPS.length;
+    G.sens = SENS_STEPS[G.sensIdx];
+    SFX.ui(); updateOptionLabels();
+  });
+  el('btnOptBack').addEventListener('click', function () { SFX.ui(); goTitle(); });
+}
+
+/* ---------------- title ambience: ash + lightning ---------------- */
+function seedAsh() {
+  var host = el('titleBg'), i, d;
+  if (!host || host.getAttribute('data-ash')) return;
+  host.setAttribute('data-ash', '1');
+  var n = (('ontouchstart' in window) ? 16 : 30);
+  for (i = 0; i < n; i++) {
+    d = document.createElement('div');
+    d.className = 'ash';
+    var sz = 1.5 + Math.random() * 3.5;
+    d.style.width = sz + 'px';
+    d.style.height = sz + 'px';
+    d.style.left = (Math.random() * 100) + '%';
+    d.style.top = (100 + Math.random() * 30) + '%';
+    d.style.setProperty('--dx', (Math.random() * 130 - 40) + 'px');
+    d.style.animationDuration = (9 + Math.random() * 13) + 's';
+    d.style.animationDelay = (-Math.random() * 18) + 's';
+    if (Math.random() < 0.35) d.style.background = '#ffd0a0';
+    host.appendChild(d);
+  }
+}
+var lightningT = 4;
+function updateTitleAmbience(dt) {
+  if (G.mode !== 'title') return;
+  lightningT -= dt;
+  if (lightningT <= 0) {
+    lightningT = rand(5, 14);
+    var f = el('tFlash');
+    if (!f) return;
+    f.style.transition = 'none'; f.style.opacity = 0.30;
+    setTimeout(function () { f.style.transition = 'opacity .09s'; f.style.opacity = 0.05; }, 70);
+    setTimeout(function () { f.style.opacity = 0.22; }, 150);
+    setTimeout(function () { f.style.transition = 'opacity .5s'; f.style.opacity = 0; }, 230);
+    if (G.sound) { noise(0.7, 0.05, 'lowpass', 260, 0.35); tone(48, 1.0, 'sawtooth', 0.045, 30, 0.4); }
+  }
+}
+
 function renderControlsList() {
   var rows = [
     ['Move', 'W A S D / Left Stick'],
+    ['Use terminal (safehouse)', 'J or E / X'],
     ['Look', 'Mouse (locked) or right-drag / Right Stick'],
     ['Jump / Double Jump', 'SPACE / A'],
     ['Sprint', 'SHIFT'],
@@ -5297,27 +6372,43 @@ function renderControlsList() {
     ['Partner assist', 'E / LB'],
     ['Tag swap partner', 'R / LT'],
     ['Team-Up finisher', 'Z / R3'],
-    ['Pause', 'ESC / Start']
+    ['Pause', 'ESC / Start'],
+    ['Fullscreen', 'F11 or V']
   ];
   var html = '', i;
   for (i = 0; i < rows.length; i++) {
     html += '<div class="ctrlRow"><span>' + rows[i][0] + '</span><span class="kbd">' + rows[i][1] + '</span></div>';
   }
-  html += '<div class="sub" style="margin-top:12px">Tip: heavy attacks break enemy stagger resistance. Dodge through the red telegraph rings. Revive a downed partner by standing next to them.</div>';
+  html += '<div class="sub" style="margin-top:12px"><b>Gamepad (Friend-or-Foe layout):</b> A jump · X light · Y heavy · B dodge · LB assist · RB special · LT tag · RT Daywalker · L3 sprint · R3 Team-Up · Start pause. D-pad navigates menus.</div>';
+  html += '<div class="sub" style="margin-top:10px">Tip: heavy attacks break enemy stagger resistance. Dodge through the red telegraph rings. Revive a downed partner by standing next to them.</div>';
   el('ctrlList').innerHTML = html;
 }
 function wireMenus() {
-  el('btnPlay').addEventListener('click', function () { audioInit(); audioResume(); SFX.ui(); openHub(); });
-  el('btnNew').addEventListener('click', function () {
-    audioInit(); audioResume(); SFX.ui();
-    if (P.story > 0 && !window.confirm('Start a new hunt? This erases your progress.')) return;
-    P = defaultProfile(); saveProfile(); G.selectedStage = 0; openHub();
+  function menuGo(fn) { audioInit(); audioResume(); menuMusicPoke(); SFX.ui(); fn(); }
+  el('miContinue').addEventListener('click', function () {
+    if (this.classList.contains('off')) return;
+    menuGo(function () { openHub(); });
   });
-  el('btnCtrl').addEventListener('click', function () { SFX.ui(); showScreen('scCtrl'); });
+  el('miNew').addEventListener('click', function () {
+    menuGo(function () {
+      if (P.story > 0 && !window.confirm('Start a new hunt? This erases your progress.')) return;
+      P = defaultProfile(); saveProfile(); G.selectedAct = 0; openHub();
+    });
+  });
+  el('miPartners').addEventListener('click', function () {
+    menuGo(function () { G.hubReturn = false; hubTab = 'partners'; syncHubTabs(); renderHub(); showScreen('scHub'); G.mode = 'menu'; });
+  });
+  el('miUpgrades').addEventListener('click', function () {
+    menuGo(function () { G.hubReturn = false; hubTab = 'upgrades'; syncHubTabs(); renderHub(); showScreen('scHub'); G.mode = 'menu'; });
+  });
+  el('miVersus').addEventListener('click', function () {
+    menuGo(function () { G.hubReturn = false; renderVs(); showScreen('scVs'); G.mode = 'menu'; });
+  });
+  el('miControls').addEventListener('click', function () { menuGo(function () { showScreen('scCtrl'); G.mode = 'menu'; }); });
+  el('miOptions').addEventListener('click', function () {
+    menuGo(function () { updateOptionLabels(); showScreen('scOptions'); G.mode = 'menu'; });
+  });
   el('btnCtrlBack').addEventListener('click', function () { SFX.ui(); goTitle(); });
-  el('btnVs').addEventListener('click', function () { audioInit(); audioResume(); SFX.ui(); renderVs(); showScreen('scVs'); });
-  el('btnVsBack').addEventListener('click', function () { SFX.ui(); goTitle(); });
-  el('btnVsGo').addEventListener('click', function () { SFX.ui(); startVersus(); });
 
   var tabs = el('hubTabs').children, i;
   for (i = 0; i < tabs.length; i++) {
@@ -5332,13 +6423,17 @@ function wireMenus() {
   }
   el('btnDeploy').addEventListener('click', function () {
     SFX.ui();
-    var idx = (G.selectedStage !== undefined && G.selectedStage <= P.story) ? G.selectedStage : Math.min(P.story, STAGES.length - 1);
-    startStage(idx, false);
+    var idx = (G.selectedAct !== undefined && G.selectedAct <= P.story) ? G.selectedAct : Math.min(P.story, ACTS.length - 1);
+    startAct(idx, false);
   });
-  el('btnHubTitle').addEventListener('click', function () { SFX.ui(); goTitle(); });
+  el('btnHubTitle').addEventListener('click', function () {
+    SFX.ui();
+    if (G.hubReturn === true && G.mode === 'hubmenu') { G.hubReturn = false; closeHubPanel(); }
+    else goTitle();
+  });
 
   el('btnResume').addEventListener('click', function () { SFX.ui(); doResume(); });
-  el('btnRestart').addEventListener('click', function () { SFX.ui(); startStage(G.stageIndex, G.vs); });
+  el('btnRestart').addEventListener('click', function () { SFX.ui(); startAct(G.actIndex, G.vs); });
   el('btnQuality').addEventListener('click', function () {
     G.quality = G.quality === 'high' ? 'low' : 'high';
     renderer.shadowMap.enabled = (G.quality === 'high');
@@ -5356,8 +6451,20 @@ function wireMenus() {
   el('btnAbandon').addEventListener('click', function () { SFX.ui(); openHub(); });
 
   el('btnResNext').addEventListener('click', function () { SFX.ui(); openHub(); });
-  el('btnResRetry').addEventListener('click', function () { SFX.ui(); startStage(G.stageIndex, G.vs); });
+  el('btnResRetry').addEventListener('click', function () {
+    SFX.ui();
+    if (!G.resultWon && G.act && G.zones && G.zones.length) resumeFromCheckpoint();
+    else startAct(G.actIndex, G.vs);
+  });
 
+  // Versus buttons (these live on their own screen, not the title menu)
+  el('btnVsGo').addEventListener('click', function () { SFX.ui(); startVersus(); });
+  el('btnVsBack').addEventListener('click', function () {
+    SFX.ui();
+    if (G.hubReturn === true && G.mode === 'hubmenu') { G.hubReturn = false; closeHubPanel(); }
+    else goTitle();
+  });
+  wireOptions();
   el('dlg').addEventListener('click', function () { dlgAdvance(); });
   window.addEventListener('resize', onResize);
 }
