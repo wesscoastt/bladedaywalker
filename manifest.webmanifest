@@ -1,0 +1,17 @@
+{
+  "name": "Blade: Daywalker — Night Hunt",
+  "short_name": "BLADE",
+  "description": "A Marvel-style team-up action game: sword combos, partner tag-ins and vampire bosses across five acts.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#050406",
+  "theme_color": "#080608",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
