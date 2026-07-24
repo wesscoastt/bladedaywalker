@@ -603,6 +603,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
       <div class="hr"></div>
       <div class="btn" id="btnResume">▸ Resume</div>
       <div class="btn" id="btnRestart">↺ Restart Stage</div>
+      <div class="btn" id="btnOptions">⚙ Options</div>
       <div class="btn" id="btnQuality">◐ Quality: High</div>
       <div class="btn" id="btnSound">♪ Sound: On</div>
       <div class="btn" id="btnInvert">↕ Invert Look: Off</div>
@@ -643,12 +644,27 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
         <div class="optVal" id="optQual">High</div></div>
       <div class="optRow"><div><b>Sound &amp; Music</b><p>Menu theme and combat audio.</p></div>
         <div class="optVal" id="optSound">On</div></div>
-      <div class="optRow"><div><b>Music Volume</b><p>Menu theme only.</p></div>
+      <div class="optRow"><div><b>Music Volume</b><p>Menu theme.</p></div>
         <div class="optVal" id="optMusVol">55%</div></div>
+      <div class="optRow"><div><b>Effects Volume</b><p>Combat and interface audio.</p></div>
+        <div class="optVal" id="optSfxVol">55%</div></div>
+      <div class="optRow"><div><b>Brightness</b><p>Raise it if the night streets are too dark.</p></div>
+        <div class="optVal" id="optBright">100%</div></div>
+      <div class="optRow"><div><b>Difficulty</b><p>Enemy toughness and damage taken.</p></div>
+        <div class="optVal" id="optDiff">Hunter</div></div>
+      <div class="optRow"><div><b>Camera Shake</b><p>Impact and explosion shake.</p></div>
+        <div class="optVal" id="optShake">Normal</div></div>
+      <div class="optRow"><div><b>Damage Numbers</b><p>Floating hit values.</p></div>
+        <div class="optVal" id="optDmg">On</div></div>
       <div class="optRow"><div><b>Invert Look</b><p>Vertical camera axis.</p></div>
         <div class="optVal" id="optInvert">Off</div></div>
       <div class="optRow"><div><b>Camera Sensitivity</b><p>Mouse and right stick.</p></div>
         <div class="optVal" id="optSens">Normal</div></div>
+      <div class="hdr" style="margin-top:16px">Controller</div>
+      <div class="optRow"><div><b>Button Layout</b><p id="padDesc">A jump · X light · Y heavy · B dodge</p></div>
+        <div class="optVal" id="optPad">Friend or Foe</div></div>
+      <div class="optRow"><div><b>Stick Layout</b><p>Southpaw swaps move and look sticks.</p></div>
+        <div class="optVal" id="optStick">Standard</div></div>
       <div class="hr"></div>
       <div class="btn" id="btnOptBack">◂ Back</div>
     </div></div>
@@ -727,6 +743,13 @@ var G = {
   sens: 1.0,
   sensIdx: 2,
   musicVol: 0.55,
+  sfxVol: 0.55,
+  brightness: 1.0,
+  shakeScale: 1.0,
+  dmgNums: true,
+  diffIdx: 1,
+  padLayout: 'fof',
+  southpaw: false,
   vs: false,
   vsWave: 0,
   paused: false,
@@ -808,7 +831,8 @@ function defaultProfile() {
     story: 0,               // furthest stage unlocked
     vsBest: 0,
     kills: 0,
-    playtime: 0
+    playtime: 0,
+    settings: null
   };
 }
 function loadProfile() {
@@ -821,6 +845,33 @@ function loadProfile() {
   return P;
 }
 function saveProfile() { try { storeSet(SAVE_KEY, JSON.stringify(P)); } catch (e) {} }
+
+/* Options live in G at runtime and are mirrored into the profile so they
+   survive a reload. */
+var SETTING_KEYS = ['quality', 'sound', 'invert', 'sens', 'sensIdx', 'musicVol', 'sfxVol',
+                    'brightness', 'shakeScale', 'dmgNums', 'diffIdx', 'padLayout', 'southpaw'];
+function saveSettings() {
+  var o = {}, i;
+  for (i = 0; i < SETTING_KEYS.length; i++) o[SETTING_KEYS[i]] = G[SETTING_KEYS[i]];
+  P.settings = o;
+  saveProfile();
+}
+function loadSettings() {
+  if (!P.settings) return;
+  var i, k;
+  for (i = 0; i < SETTING_KEYS.length; i++) {
+    k = SETTING_KEYS[i];
+    if (P.settings[k] !== undefined && P.settings[k] !== null) G[k] = P.settings[k];
+  }
+}
+function applySettings() {
+  if (sfxGain) sfxGain.gain.value = G.sfxVol;
+  if (menuAudio) menuAudio.volume = G.musicVol;
+  if (musicGain) musicGain.gain.value = 0.22 * (G.musicVol / 0.55);
+  if (renderer && renderer.domElement) {
+    renderer.domElement.style.filter = (G.brightness === 1) ? '' : ('brightness(' + G.brightness.toFixed(2) + ')');
+  }
+}
 function upgOf(heroId) {
   if (!P.upgrades[heroId]) P.upgrades[heroId] = { dmg: 0, hp: 0, cd: 0, move: 0 };
   return P.upgrades[heroId];
@@ -868,7 +919,7 @@ function audioInit() {
     AC = new Ctx();
     masterGain = AC.createGain(); masterGain.gain.value = 0.9; masterGain.connect(AC.destination);
     musicGain = AC.createGain(); musicGain.gain.value = 0.22; musicGain.connect(masterGain);
-    sfxGain = AC.createGain(); sfxGain.gain.value = 0.55; sfxGain.connect(masterGain);
+    sfxGain = AC.createGain(); sfxGain.gain.value = G.sfxVol; sfxGain.connect(masterGain);
   } catch (e) { AC = null; }
 }
 function audioResume() { if (AC && AC.state === 'suspended') { try { AC.resume(); } catch (e) {} } }
@@ -1161,6 +1212,15 @@ function bindTouchBtn(id, act) {
 }
 
 // Gamepad polling — standard mapping
+var PAD_LAYOUTS = {
+  fof: { name: 'Friend or Foe',
+    map: { 0: 'jump', 2: 'light', 3: 'heavy', 1: 'dash', 4: 'call', 5: 'special', 6: 'tag', 7: 'day', 10: 'sprint', 11: 'team' } },
+  brawler: { name: 'Brawler',
+    map: { 0: 'jump', 2: 'light', 3: 'heavy', 1: 'dash', 4: 'tag', 5: 'call', 6: 'day', 7: 'special', 10: 'sprint', 11: 'team' } },
+  triggers: { name: 'Triggers',
+    map: { 0: 'jump', 2: 'light', 3: 'heavy', 1: 'dash', 6: 'call', 7: 'special', 4: 'tag', 5: 'day', 10: 'sprint', 11: 'team' } }
+};
+var PAD_ORDER = ['fof', 'brawler', 'triggers'];
 var padPrev = {};
 function pollGamepad() {
   if (!navigator.getGamepads) return;
@@ -1168,10 +1228,10 @@ function pollGamepad() {
   for (i = 0; i < pads.length; i++) { if (pads[i] && pads[i].connected) { gp = pads[i]; break; } }
   if (!gp) return;
   var dz = 0.22;
-  var ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+  var ax = gp.axes[G.southpaw ? 2 : 0] || 0, ay = gp.axes[G.southpaw ? 3 : 1] || 0;
   if (Math.abs(ax) > dz || Math.abs(ay) > dz) { IN.move.x = ax; IN.move.y = -ay; }
   else if (!IN.touch) { IN.move.x = 0; IN.move.y = 0; }
-  var rx = gp.axes[2] || 0, ry = gp.axes[3] || 0;
+  var rx = gp.axes[G.southpaw ? 0 : 2] || 0, ry = gp.axes[G.southpaw ? 1 : 3] || 0;
   if (Math.abs(rx) > dz) IN.look.x += rx * 22;
   if (Math.abs(ry) > dz) IN.look.y += ry * 18;
   function btn(n) { return gp.buttons[n] && gp.buttons[n].pressed; }
@@ -1179,20 +1239,9 @@ function pollGamepad() {
     var v = btn(n);
     if (v !== padPrev[n]) { setAct(a, v); padPrev[n] = v; }
   }
-  /* Friend-or-Foe style layout:
-       A jump · X light · Y heavy · B dodge
-       LB partner assist · RB special · LT tag · RT Daywalker
-       L3 sprint · R3 Team-Up · Start pause */
-  map(0, 'jump');
-  map(2, 'light');
-  map(3, 'heavy');
-  map(1, 'dash');
-  map(4, 'call');
-  map(5, 'special');
-  map(6, 'tag');
-  map(7, 'day');
-  map(10, 'sprint');
-  map(11, 'team');
+  /* Selectable pad layouts. 'fof' mirrors Spider-Man: Friend or Foe. */
+  var layout = PAD_LAYOUTS[G.padLayout] || PAD_LAYOUTS.fof, bi;
+  for (bi in layout.map) { if (layout.map.hasOwnProperty(bi)) map(parseInt(bi, 10), layout.map[bi]); }
   if (btn(9) && !padPrev.p9) { if (G.mode === 'play' || G.mode === 'hub') doPause(); else if (G.mode === 'pause') doResume(); }
   padPrev.p9 = btn(9);
   // menu navigation on the d-pad
@@ -1250,6 +1299,13 @@ function readMoveKeys() {
    Each hero drives model building, combat tuning and AI behaviour.
    style: 'melee' | 'ranged' | 'hybrid'
    ========================================================================== */
+/* Difficulty presets — scale enemy toughness and the damage you take. */
+var DIFFS = [
+  { name: 'Story', hp: 0.78, dmg: 0.65 },
+  { name: 'Hunter', hp: 1.0, dmg: 1.0 },
+  { name: 'Daywalker', hp: 1.3, dmg: 1.5 }
+];
+
 var HEROES = {
   blade: {
     id: 'blade', name: 'Blade', title: 'The Daywalker', style: 'melee',
@@ -1738,8 +1794,12 @@ var ACT_SCRIPT = {
    [BUILD] Shared geometry / material caches (keeps draw setup cheap)
    ========================================================================== */
 var GEO = {};
-/* Weapon pose: blade hangs down-forward at rest, extends along the arm mid-swing. */
-var WEAPON_REST = 2.55, WEAPON_SWING = 0.05;
+/* Weapon pose.
+   The hand sits ~0.6 above the floor and the blade is ~1.7 long, so ANY
+   downward carry angle buries the tip. Rest is therefore a low trailing carry:
+   blade held back and just below horizontal, tip clear of the ground. The
+   animator swings it up in line with the arm to strike. */
+var WEAPON_REST = -1.78, WEAPON_SWING = -0.38;
 var MATC = {};
 function boxGeo(w, h, d) {
   var k = 'b' + w + '_' + h + '_' + d;
@@ -1801,7 +1861,12 @@ function makeHumanoid(cfg) {
   var skinM = matU(skinC);
   var accM = matU(accC, cfg.emis ? accC : 0x000000);
 
-  var hip = new THREE.Group(); g.add(hip);
+  /* Foot soles land 0.23 below the group origin (hip 0.84 - thigh 0.5 - shin 0.5
+     - half a boot). The entity origin sits ON the ground, so without this lift
+     the character wades ankle-deep through every floor. */
+  var hip = new THREE.Group();
+  hip.position.y = 0.23;
+  g.add(hip);
 
   // torso
   var torso = new THREE.Group(); hip.add(torso);
@@ -1810,22 +1875,26 @@ function makeHumanoid(cfg) {
   var shoulders = new THREE.Mesh(boxGeo(1.0, 0.22, 0.46), bodyM); shoulders.position.y = 1.66; torso.add(shoulders);
   // accent shoulder pads + chest emblem: silhouettes read per-hero at a glance
   if (cfg.pads !== false) {
-    var padL = new THREE.Mesh(boxGeo(0.24, 0.14, 0.5), accM); padL.position.set(-0.5, 1.7, 0); torso.add(padL);
-    var padR = padL.clone(); padR.position.x = 0.5; torso.add(padR);
+    // Pads must not share a face plane with the shoulder block or the two
+    // surfaces z-fight and strobe. Shoulders span y 1.55-1.77, so the pads sit
+    // proud of that on every axis.
+    var padL = new THREE.Mesh(boxGeo(0.26, 0.18, 0.52), accM);
+    padL.position.set(-0.52, 1.73, 0); torso.add(padL);
+    var padR = padL.clone(); padR.position.x = 0.52; torso.add(padR);
   }
   if (cfg.emblem) {
-    var emb = new THREE.Mesh(boxGeo(0.26, 0.26, 0.05), matU(cfg.emblem, cfg.emblem));
-    emb.position.set(0, 1.34, 0.25); emb.rotation.z = Math.PI / 4; torso.add(emb);
+    var emb = new THREE.Mesh(boxGeo(0.19, 0.19, 0.05), matU(cfg.emblem, cfg.emblem));
+    emb.position.set(0, 1.36, 0.243); emb.rotation.z = Math.PI / 4; torso.add(emb);
   }
   var buckle = new THREE.Mesh(boxGeo(0.18, 0.12, 0.05), matU(trimC));
-  buckle.position.set(0, 0.84, 0.25); torso.add(buckle);
+  buckle.position.set(0, 0.84, 0.253); torso.add(buckle);
 
   // head
   var headG = new THREE.Group(); headG.position.y = 1.9; torso.add(headG);
   var head = new THREE.Mesh(boxGeo(0.42, 0.46, 0.42), skinM); headG.add(head);
   if (cfg.glasses) {
-    var vis = new THREE.Mesh(boxGeo(0.44, 0.11, 0.06), matU(0x0a0a0c, 0x201014));
-    vis.position.set(0, 0.06, 0.21); headG.add(vis);
+    var vis = new THREE.Mesh(boxGeo(0.46, 0.12, 0.08), matU(0x0a0a0c, 0x201014));
+    vis.position.set(0, 0.06, 0.228); headG.add(vis);
   }
   if (cfg.hood) {
     var hood = new THREE.Mesh(boxGeo(0.52, 0.5, 0.5), bodyM);
@@ -1854,12 +1923,16 @@ function makeHumanoid(cfg) {
     var f2 = f1.clone(); f2.position.x = 0.07; headG.add(f2);
   }
   // eyes + brow give unmasked faces an actual expression
+  // Face details sit PROUD of the head's front face (z = 0.21). Sitting exactly
+  // on it made the forehead z-fight and strobe.
   if (!cfg.mask && !cfg.skull) {
-    var eyeMat = matU(0x0e0c10);
-    var el1 = new THREE.Mesh(boxGeo(0.08, 0.06, 0.03), eyeMat); el1.position.set(-0.10, 0.05, 0.21); headG.add(el1);
-    var el2 = el1.clone(); el2.position.x = 0.10; headG.add(el2);
-    var brow = new THREE.Mesh(boxGeo(0.30, 0.04, 0.03), matU(cfg.hair || 0x241a16));
-    brow.position.set(0, 0.13, 0.21); brow.rotation.z = cfg.fangs ? 0.14 : 0; headG.add(brow);
+    if (!cfg.glasses) {
+      var eyeMat = matU(0x0e0c10);
+      var el1 = new THREE.Mesh(boxGeo(0.08, 0.06, 0.04), eyeMat); el1.position.set(-0.10, 0.05, 0.226); headG.add(el1);
+      var el2 = el1.clone(); el2.position.x = 0.10; headG.add(el2);
+    }
+    var brow = new THREE.Mesh(boxGeo(0.30, 0.05, 0.04), matU(cfg.hair || 0x241a16));
+    brow.position.set(0, 0.15, 0.226); brow.rotation.z = cfg.fangs ? 0.14 : 0; headG.add(brow);
   }
   // neck so the head doesn't float
   var neck = new THREE.Mesh(boxGeo(0.2, 0.14, 0.2), skinM); neck.position.y = 1.78; torso.add(neck);
@@ -1884,8 +1957,8 @@ function makeHumanoid(cfg) {
     var shin = new THREE.Group(); shin.position.y = -0.5; l.add(shin);
     var calf = new THREE.Mesh(boxGeo(0.24, 0.5, 0.26), bodyM); calf.position.y = -0.25; shin.add(calf);
     var foot = new THREE.Mesh(boxGeo(0.26, 0.14, 0.4), matU(0x14141a)); foot.position.set(0, -0.5, 0.06); shin.add(foot);
-    var kneepad = new THREE.Mesh(boxGeo(0.26, 0.16, 0.1), accM); kneepad.position.set(0, 0.02, 0.13); shin.add(kneepad);
-    var bootTrim = new THREE.Mesh(boxGeo(0.27, 0.06, 0.28), accM); bootTrim.position.set(0, -0.4, 0); shin.add(bootTrim);
+    var kneepad = new THREE.Mesh(boxGeo(0.27, 0.16, 0.1), accM); kneepad.position.set(0, 0.02, 0.15); shin.add(kneepad);
+    var bootTrim = new THREE.Mesh(boxGeo(0.285, 0.06, 0.3), accM); bootTrim.position.set(0, -0.41, 0.01); shin.add(bootTrim);
     l.userData.shin = shin;
     hip.add(l);
     return l;
@@ -1896,6 +1969,7 @@ function makeHumanoid(cfg) {
   var coatPieces = [];
   if (cfg.coat) {
     var coatM = matU(cfg.coatColor || bodyC, 0x000000);
+    coatM.polygonOffset = true; coatM.polygonOffsetFactor = -1; coatM.polygonOffsetUnits = -1;
     var i, seg;
     for (i = 0; i < 3; i++) {
       seg = new THREE.Group();
@@ -1910,10 +1984,10 @@ function makeHumanoid(cfg) {
   var weapon = new THREE.Group();
   var wtype = cfg.weapon;
   if (wtype === 'sword') {
-    var bladeM = new THREE.Mesh(boxGeo(0.1, 1.9, 0.03), matU(0xd8dce8, 0x2a3040));
-    bladeM.position.y = 0.95; weapon.add(bladeM);
-    var edge = new THREE.Mesh(boxGeo(0.03, 1.9, 0.05), matU(0xffffff, 0x606880));
-    edge.position.set(0.05, 0.95, 0); weapon.add(edge);
+    var bladeM = new THREE.Mesh(boxGeo(0.1, 1.68, 0.03), matU(0xd8dce8, 0x2a3040));
+    bladeM.position.y = 0.84; weapon.add(bladeM);
+    var edge = new THREE.Mesh(boxGeo(0.035, 1.68, 0.055), matU(0xffffff, 0x606880));
+    edge.position.set(0.052, 0.84, 0); weapon.add(edge);
     var guard = new THREE.Mesh(boxGeo(0.42, 0.08, 0.12), matU(accC, accC)); guard.position.y = 0.06; weapon.add(guard);
     var grip = new THREE.Mesh(boxGeo(0.09, 0.34, 0.09), matU(0x14100e)); grip.position.y = -0.16; weapon.add(grip);
   } else if (wtype === 'crossbow') {
@@ -2354,6 +2428,94 @@ function addStars(loc) {
   var moonDisc = new THREE.Mesh(sphGeo(14, 16), matU(0xf0f0e0, 0xd8d8c8));
   moonDisc.position.set(-90, 110, -160);
   worldGroup.add(moonDisc);
+}
+
+/* ==========================================================================
+   Floor paving.
+   The old hard checkerboard read as a placeholder. This lays a base plane plus
+   irregular low-contrast slabs (tint jittered toward ground2, never a regular
+   grid), then per-biome surface detail on top: road markings, wet planking,
+   flagstone mortar, bone dust or blood veins.
+   ========================================================================== */
+function floorQuad(x, z, w, d, colorHex, y, rot) {
+  var m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), matU(colorHex));
+  m.rotation.x = -Math.PI / 2;
+  if (rot) m.rotation.z = rot;
+  m.position.set(x, y === undefined ? 0.02 : y, z);
+  m.receiveShadow = true;
+  worldGroup.add(m);
+  return m;
+}
+function paveFloor(loc, size, half) {
+  var base = new THREE.Mesh(new THREE.PlaneGeometry(size + 60, size + 60), matU(loc.ground));
+  base.rotation.x = -Math.PI / 2;
+  base.receiveShadow = true;
+  worldGroup.add(base);
+
+  var c1 = new THREE.Color(loc.ground), c2 = new THREE.Color(loc.ground2), c;
+  var step = 15, i, j, y = 0.02;
+  for (i = -half - step; i < half + step; i += step) {
+    for (j = -half - step; j < half + step; j += step) {
+      if (Math.random() < 0.42) continue;
+      c = c1.clone().lerp(c2, rand(0.2, 0.8));
+      floorQuad(i + step / 2 + rand(-2.5, 2.5), j + step / 2 + rand(-2.5, 2.5),
+                step * rand(0.55, 1.0), step * rand(0.55, 1.0), c.getHex(), y + Math.random() * 0.006);
+    }
+  }
+  var det = new THREE.Color(loc.ground2).lerp(new THREE.Color(0xffffff), 0.12).getHex();
+
+  if (loc.props === 'city') {
+    // asphalt: lane markings + kerbs + manholes
+    for (i = -half; i < half; i += 34) {
+      for (j = -half; j < half; j += 9) floorQuad(i, j, 0.45, 4.2, 0xb0a070, 0.035);
+      floorQuad(i + 17, 0, 0.3, size, 0x8a8470, 0.032);
+    }
+    for (i = 0; i < 10; i++) {
+      var mx = rand(-half + 6, half - 6), mz = rand(-half + 6, half - 6);
+      var man = new THREE.Mesh(new THREE.CircleGeometry(0.9, 12), matU(0x2e2e34));
+      man.rotation.x = -Math.PI / 2; man.position.set(mx, 0.038, mz);
+      worldGroup.add(man);
+    }
+  } else if (loc.props === 'docks') {
+    // wet planking + puddles
+    for (i = -half; i < half; i += 2.4) floorQuad(0, i, size, 0.35, 0x1c2426, 0.032);
+    for (i = 0; i < 16; i++) {
+      var px = rand(-half + 5, half - 5), pz = rand(-half + 5, half - 5);
+      var pud = new THREE.Mesh(new THREE.CircleGeometry(rand(1.6, 4.2), 14),
+        matU(0x101c22, 0x0a1418, { transparent: true, opacity: 0.75 }));
+      pud.rotation.x = -Math.PI / 2; pud.position.set(px, 0.042, pz);
+      worldGroup.add(pud);
+    }
+  } else if (loc.props === 'castle') {
+    // flagstones: mortar lines both ways
+    for (i = -half; i < half; i += 7.5) {
+      floorQuad(0, i, size, 0.22, 0x1c1820, 0.033);
+      floorQuad(i, 0, 0.22, size, 0x1c1820, 0.033);
+    }
+    for (i = 0; i < 14; i++) floorQuad(rand(-half, half), rand(-half, half), rand(3, 7), rand(3, 7), det, 0.028, rand(0, 1.5));
+  } else if (loc.props === 'catacombs') {
+    // bone dust drifts + cracks
+    for (i = 0; i < 26; i++) {
+      var bx = rand(-half, half), bz = rand(-half, half);
+      var dust = new THREE.Mesh(new THREE.CircleGeometry(rand(2, 5.5), 10), matU(0x585040));
+      dust.rotation.x = -Math.PI / 2; dust.position.set(bx, 0.034, bz); dust.rotation.z = rand(0, 3);
+      worldGroup.add(dust);
+    }
+    for (i = 0; i < 18; i++) floorQuad(rand(-half, half), rand(-half, half), rand(4, 12), 0.22, 0x14140f, 0.04, rand(0, 3.14));
+  } else {
+    // temple: blood veins radiating from the centre + scorched rings
+    for (i = 0; i < 20; i++) {
+      var a = (i / 20) * Math.PI * 2;
+      var len = rand(size * 0.25, size * 0.5);
+      floorQuad(Math.sin(a) * len * 0.5, Math.cos(a) * len * 0.5, 0.5, len, 0x5a0a12, 0.035, -a);
+    }
+    for (i = 0; i < 10; i++) {
+      var sx = rand(-half, half), sz = rand(-half, half);
+      var scorch = new THREE.Mesh(new THREE.CircleGeometry(rand(2, 5), 12), matU(0x1a0a0e));
+      scorch.rotation.x = -Math.PI / 2; scorch.position.set(sx, 0.032, sz);
+      worldGroup.add(scorch);
+    }
+  }
 }
 
 /* ---------------- biome builders ---------------- */
@@ -3010,7 +3172,7 @@ function initDamageNumbers() {
 }
 var _v3 = null;
 function showDamage(x, y, z, amount, kind) {
-  if (!dmgPool.length) return;
+  if (!dmgPool.length || G.dmgNums === false) return;
   var i, slot = null;
   for (i = 0; i < dmgPool.length; i++) { if (dmgPool[i].life <= 0) { slot = dmgPool[i]; break; } }
   if (!slot) return;
@@ -3040,7 +3202,7 @@ function updateDamageNumbers(dt) {
 
 /* ---------- camera shake / hit-stop / slow-mo ---------- */
 var shake = { amt: 0, t: 0 };
-function addShake(a) { shake.amt = Math.min(1.4, shake.amt + a); }
+function addShake(a) { shake.amt = Math.min(1.4, shake.amt + a * (G.shakeScale === undefined ? 1 : G.shakeScale)); }
 function hitStop(t) { G.hitStop = Math.max(G.hitStop, t); }
 
 /* ---------- screen flash helpers ---------- */
@@ -3251,7 +3413,7 @@ function makeEnemy(typeId, x, z, elite) {
   var d = ENEMIES[typeId];
   if (!d) d = ENEMIES.thrall;
   var model = buildEnemyModel(d);
-  var hpMul = 1 + 0.055 * G.locIndex + (G.vs ? G.vsWave * 0.09 : 0);
+  var hpMul = (1 + 0.055 * G.locIndex + (G.vs ? G.vsWave * 0.09 : 0)) * DIFFS[G.diffIdx === undefined ? 1 : G.diffIdx].hp;
   var e = makeEntity({
     kind: 'enemy', team: 'enemy', def: d, model: model, x: x, z: z,
     maxHp: Math.round(d.hp * hpMul * (elite ? 2.4 : 1)), elite: elite
@@ -3360,7 +3522,10 @@ function animateEntity(e, dt) {
       p.torso.rotation.x = 0.05;
     } else { // light combo — alternate sides
       var dir = (e.comboIdx % 2 === 0) ? 1 : -1;
-      poseArmR = t < 0.35 ? lerp(-0.3, -1.9 * dir, t / 0.35) : lerp(-1.9 * dir, 0.6 * dir, (t - 0.35) / 0.65);
+      // Backswings can go deep; forward swings are capped so the blade stays
+      // above the floor at full extension.
+      var peak = clamp(-1.85 * dir, -1.85, 1.3);
+      poseArmR = t < 0.35 ? lerp(-0.3, peak, t / 0.35) : lerp(peak, 0.55 * dir, (t - 0.35) / 0.65);
       poseArmL = -poseArmR * 0.35;
       p.torso.rotation.y = damp(p.torso.rotation.y, Math.sin(t * Math.PI) * 0.7 * dir, 16, dt);
       foreR = 0.25;
@@ -3386,7 +3551,7 @@ function animateEntity(e, dt) {
       if (wk === 'heavy') wTarget = wt < 0.42 ? lerp(WEAPON_REST, 1.9, wt / 0.42) : WEAPON_SWING;
       else if (wk === 'ranged') wTarget = 1.2;
       else wTarget = wt < 0.3 ? lerp(WEAPON_REST, 0.9, wt / 0.3) : WEAPON_SWING;
-    } else if (e.stagger > 0) wTarget = 2.2;
+    } else if (e.stagger > 0) wTarget = -1.2;
     p.weapon.rotation.x = damp(p.weapon.rotation.x, wTarget, 20, dt);
   }
 
@@ -3695,6 +3860,8 @@ function damageEntity(e, amount, srcX, srcZ, opts) {
   if (e.invuln > 0 && !o.ignoreInvuln) return;
   if (e.team === 'player' && G.godmode) return;
 
+  // difficulty scales incoming damage on the player's side only
+  if (e.team === 'player') amount *= DIFFS[G.diffIdx === undefined ? 1 : G.diffIdx].dmg;
   amount = Math.max(1, amount);
   e.hp -= amount;
   e.hitFlash = 0.18;
@@ -4628,20 +4795,7 @@ function buildActWorld(act) {
   worldGroup.add(moon); worldGroup.add(moon.target);
 
   // ---- ground ----
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(size + 60, size + 60), matU(loc.ground));
-  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
-  worldGroup.add(ground);
-  var gi, gj, tileStep = 12;
-  for (gi = -half; gi < half; gi += tileStep) {
-    for (gj = -half; gj < half; gj += tileStep) {
-      if (((Math.round(gi / tileStep)) + (Math.round(gj / tileStep))) % 2 !== 0) continue;
-      var tile = new THREE.Mesh(new THREE.PlaneGeometry(tileStep, tileStep), matU(loc.ground2));
-      tile.rotation.x = -Math.PI / 2;
-      tile.position.set(gi + tileStep / 2, 0.02, gj + tileStep / 2);
-      tile.receiveShadow = true;
-      worldGroup.add(tile);
-    }
-  }
+  paveFloor(loc, size, half);
   addCollider(0, -2, 0, size + 60, 2, size + 60, { walkable: true });
   buildPerimeter(loc, size);
 
@@ -5188,61 +5342,132 @@ function buildHubWorld() {
   terminals.length = 0;
   G.stage = { id: 'hub', loc: 0, name: 'The Garage', type: 'hub', size: 76, pool: ['thrall'], density: 1 };
 
-  scene.background = new THREE.Color(0x07070a);
-  scene.fog = new THREE.Fog(0x07070a, 24, 96);
-  worldGroup.add(new THREE.HemisphereLight(0x39323e, 0x0a0a10, 0.75));
-  var key = new THREE.DirectionalLight(0xa8b0d0, 0.5);
-  key.position.set(18, 30, 12);
+  var HALF = 34;
+  scene.background = new THREE.Color(0x06060a);
+  scene.fog = new THREE.Fog(0x06060a, 30, 110);
+  worldGroup.add(new THREE.HemisphereLight(0x2e2830, 0x0a0a10, 0.55));
+  var key = new THREE.DirectionalLight(0x8894b8, 0.35);
+  key.position.set(18, 34, 14);
   worldGroup.add(key); worldGroup.add(key.target);
 
-  // floor + oil-stained slabs
-  var floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), matU(0x1a1a20));
+  /* ---- floor: poured concrete, oil stains, painted bay lines ---- */
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(96, 96), matU(0x1e1e22));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
   worldGroup.add(floor);
   var i, j;
-  for (i = -36; i < 36; i += 12) {
-    for (j = -36; j < 36; j += 12) {
-      if (((i / 12) + (j / 12)) % 2 !== 0) continue;
-      var t = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), matU(0x22222a));
-      t.rotation.x = -Math.PI / 2; t.position.set(i + 6, 0.02, j + 6);
-      worldGroup.add(t);
+  for (i = -HALF; i < HALF; i += 13) {                       // slab variation
+    for (j = -HALF; j < HALF; j += 13) {
+      if (Math.random() < 0.4) continue;
+      floorQuad(i + 6.5 + rand(-2, 2), j + 6.5 + rand(-2, 2), rand(8, 13), rand(8, 13),
+        Math.random() < 0.5 ? 0x24242a : 0x1a1a1f, 0.02 + Math.random() * 0.005);
     }
+  }
+  for (i = -HALF; i < HALF; i += 8) floorQuad(0, i, 76, 0.14, 0x2c2c32, 0.03);   // expansion joints
+  for (i = -HALF; i < HALF; i += 8) floorQuad(i, 0, 0.14, 76, 0x2c2c32, 0.03);
+  floorQuad(-16, 12, 8, 15, 0xb8a038, 0.034);                                    // vehicle bay outline
+  floorQuad(-16, 12, 7.2, 14.2, 0x1e1e22, 0.036);
+  for (i = 0; i < 14; i++) {                                                     // oil / blood stains
+    var ox = rand(-HALF + 4, HALF - 4), oz = rand(-HALF + 4, HALF - 4);
+    var st = new THREE.Mesh(new THREE.CircleGeometry(rand(1.1, 3.4), 12),
+      matU(Math.random() < 0.3 ? 0x2a0a10 : 0x121216));
+    st.rotation.x = -Math.PI / 2; st.position.set(ox, 0.038, oz); st.rotation.z = rand(0, 3);
+    worldGroup.add(st);
   }
   addCollider(0, -2, 0, 100, 2, 100, { walkable: true });
 
-  // walls + ceiling
-  addProp(0, 0, -38, 80, 16, 3, 0x24242c, { force: true, castShadow: false });
-  addProp(0, 0, 38, 80, 16, 3, 0x24242c, { force: true, castShadow: false });
-  addProp(-38, 0, 0, 3, 16, 80, 0x24242c, { force: true, castShadow: false });
-  addProp(38, 0, 0, 3, 16, 80, 0x24242c, { force: true, castShadow: false });
-  var ceil = new THREE.Mesh(new THREE.PlaneGeometry(84, 84), matU(0x101014));
+  /* ---- shell: panelled walls, ceiling, roller door ---- */
+  addProp(0, 0, -HALF - 2, 76, 17, 3, 0x22222a, { force: true, castShadow: false });
+  addProp(0, 0, HALF + 2, 76, 17, 3, 0x22222a, { force: true, castShadow: false });
+  addProp(-HALF - 2, 0, 0, 3, 17, 76, 0x22222a, { force: true, castShadow: false });
+  addProp(HALF + 2, 0, 0, 3, 17, 76, 0x22222a, { force: true, castShadow: false });
+  for (i = -HALF; i < HALF; i += 6) {                        // wall ribs
+    addDecor(i, 4.2, -HALF, boxGeo(0.5, 8.4, 0.5), 0x2c2c36);
+    addDecor(i, 4.2, HALF, boxGeo(0.5, 8.4, 0.5), 0x2c2c36);
+    addDecor(-HALF, 4.2, i, boxGeo(0.5, 8.4, 0.5), 0x2c2c36);
+    addDecor(HALF, 4.2, i, boxGeo(0.5, 8.4, 0.5), 0x2c2c36);
+  }
+  addDecor(0, 8.6, -HALF + 0.2, boxGeo(74, 0.4, 0.4), 0x3a2a2c);   // dado stripe
+  addDecor(0, 8.6, HALF - 0.2, boxGeo(74, 0.4, 0.4), 0x3a2a2c);
+  var ceil = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), matU(0x0e0e12));
   ceil.rotation.x = Math.PI / 2; ceil.position.y = 15;
   worldGroup.add(ceil);
-
-  // support pillars + hanging lamps
+  for (i = -HALF; i < HALF; i += 9) addDecor(i, 14.4, 0, boxGeo(0.7, 0.8, 72), 0x181820);  // roof beams
+  // roller shutter door
+  addDecor(0, 5.5, -HALF + 0.4, boxGeo(16, 11, 0.4), 0x2a2a30);
+  for (i = 0; i < 11; i++) addDecor(0, 0.6 + i, -HALF + 0.65, boxGeo(15.6, 0.7, 0.2), i % 2 ? 0x33333a : 0x282830);
+  // pipes along the ceiling
   for (i = 0; i < 4; i++) {
-    var px = (i % 2 ? 1 : -1) * 22, pz = (i < 2 ? 1 : -1) * 22;
-    addProp(px, 0, pz, 2.4, 15, 2.4, 0x2c2c34, { force: true });
-    addDecor(px, 12.6, pz, sphGeo(0.6, 8), 0xfff0c0, 0xffc880);
-    addLightPoint(px, 12, pz, 0xffb870, 1.0, 30);
-  }
-  addLightPoint(0, 11, 0, 0xff5060, 0.8, 40);
-
-  // Blade's car + weapon bench for flavour
-  addProp(-16, 0, 12, 3.0, 1.3, 6.4, 0x14141a, { force: true });
-  addDecor(-16, 2.1, 12, boxGeo(2.6, 0.9, 3.0), 0x0e0e14, 0x08080c);
-  addProp(14, 0, -12, 6.5, 1.1, 2.4, 0x3a3028, { force: true });
-  var wi;
-  for (wi = 0; wi < 4; wi++) {
-    addDecor(12 + wi * 1.4, 1.5, -12, boxGeo(0.1, 1.5, 0.05), 0xd8dce8, 0x303844);
+    var pz = -22 + i * 14;
+    addDecor(0, 13.4, pz, cylGeo(0.34, 0.34, 70, 8), i % 2 ? 0x3a3038 : 0x2e3640).rotation.z = Math.PI / 2;
   }
 
-  // ---- terminals ----
-  addTerminal(0, -20, 'MISSIONS', 'missions', 0xff4a5a);
-  addTerminal(-20, -6, 'UPGRADES', 'upgrades', 0xffb04a);
-  addTerminal(20, -6, 'PARTNERS', 'partners', 0x40b0ff);
-  addTerminal(-20, 14, 'INTEL', 'intel', 0x8de0a0);
-  addTerminal(20, 14, 'VERSUS ARENA', 'versus', 0xb060ff);
+  /* ---- pillars + hanging work lamps ---- */
+  for (i = 0; i < 4; i++) {
+    var px = (i % 2 ? 1 : -1) * 21, pz2 = (i < 2 ? 1 : -1) * 21;
+    addProp(px, 0, pz2, 2.6, 15, 2.6, 0x2a2a32, { force: true });
+    addDecor(px, 7.5, pz2, boxGeo(3.0, 0.5, 3.0), 0x33333c);
+    addDecor(px, 12.4, pz2, cylGeo(0.08, 0.08, 2.2, 6), 0x14141a);
+    addDecor(px, 11.2, pz2, cylGeo(0.95, 0.55, 0.6, 10), 0x3a3a42);
+    addDecor(px, 10.9, pz2, sphGeo(0.42, 8), 0xfff2cc, 0xffd898);
+    addLightPoint(px, 10.4, pz2, 0xffc286, 1.15, 30);
+  }
+  addLightPoint(0, 11, 0, 0xff4050, 0.55, 46);
+
+  /* ---- Blade's car ---- */
+  var carX = -16, carZ = 12;
+  addProp(carX, 0, carZ, 3.1, 1.15, 6.6, 0x121218, { force: true });
+  addDecor(carX, 1.75, carZ - 0.3, boxGeo(2.75, 1.0, 3.1), 0x0c0c12);
+  addDecor(carX, 1.78, carZ - 1.72, boxGeo(2.5, 0.72, 0.14), 0x223040, 0x101820);
+  addDecor(carX, 0.42, carZ - 3.35, boxGeo(2.9, 0.34, 0.2), 0xd03040, 0x801020);
+  addDecor(carX, 0.42, carZ + 3.35, boxGeo(2.9, 0.34, 0.2), 0xd03040, 0x801020);
+  for (i = 0; i < 4; i++) {
+    addDecor(carX + (i % 2 ? 1.6 : -1.6), 0.55, carZ + (i < 2 ? 2.3 : -2.3), cylGeo(0.55, 0.55, 0.42, 10), 0x0a0a0c)
+      .rotation.z = Math.PI / 2;
+  }
+
+  /* ---- weapon bench + rack ---- */
+  var bx = 15, bz = -14;
+  addProp(bx, 0, bz, 8.5, 1.15, 2.6, 0x3a2d22, { force: true });
+  addDecor(bx, 1.24, bz, boxGeo(8.6, 0.16, 2.7), 0x4a3a2a);
+  for (i = 0; i < 5; i++) {                                  // swords racked on the wall
+    var sx2 = bx - 3.2 + i * 1.6;
+    addDecor(sx2, 3.5, bz - 1.2, boxGeo(0.12, 2.1, 0.05), 0xd8dce8, 0x343c4c);
+    addDecor(sx2, 2.35, bz - 1.2, boxGeo(0.42, 0.1, 0.12), 0xb8202c);
+  }
+  addDecor(bx, 5.1, bz - 1.25, boxGeo(9.0, 0.22, 0.3), 0x2a2a32);
+  for (i = 0; i < 6; i++) addDecor(bx - 3.5 + i * 1.4, 1.6, bz + 0.5, boxGeo(0.5, 0.55, 0.5), 0x6a5a30);  // ammo boxes
+  addLightPoint(bx, 4, bz, 0xffd0a0, 0.8, 18);
+
+  /* ---- lockers, crates, med bay, training dummy ---- */
+  for (i = 0; i < 6; i++) addProp(-HALF + 3.2, 0, -18 + i * 4.2, 2.2, 5.2, 3.4, i % 2 ? 0x2a3038 : 0x232a30, { force: true });
+  for (i = 0; i < 9; i++) {
+    var cx2 = rand(-HALF + 6, HALF - 6), cz2 = rand(-HALF + 6, HALF - 6);
+    if (Math.abs(cx2) < 12 && Math.abs(cz2) < 12) continue;
+    var hgt = randi(1, 2);
+    for (j = 0; j < hgt; j++) addProp(cx2, j * 1.7, cz2, 1.7, 1.7, 1.7, j % 2 ? 0x4a3c26 : 0x3c3020, { force: true });
+  }
+  addProp(HALF - 6, 0, 14, 4.5, 1.0, 2.4, 0xd8d8dc, { force: true });     // med table
+  addDecor(HALF - 6, 1.35, 14, boxGeo(4.6, 0.2, 2.5), 0xe8e8ec);
+  addDecor(HALF - 6, 3.4, 14, boxGeo(1.2, 1.2, 0.14), 0xc02028, 0x600810);
+  addDecor(HALF - 6, 3.4, 14.08, boxGeo(0.9, 0.26, 0.16), 0xffffff, 0x888888);
+  addDecor(HALF - 6, 3.4, 14.08, boxGeo(0.26, 0.9, 0.16), 0xffffff, 0x888888);
+  addLightPoint(HALF - 6, 4.4, 14, 0xff6070, 0.7, 16);
+  addProp(-6, 0, -24, 1.2, 0.5, 1.2, 0x2a2a30, { force: true });          // training dummy
+  addDecor(-6, 2.1, -24, cylGeo(0.36, 0.42, 3.4, 8), 0x5a4a3a);
+  addDecor(-6, 4.05, -24, sphGeo(0.52, 8), 0x6a5a48);
+  addDecor(-6, 2.6, -24, boxGeo(1.7, 0.28, 0.28), 0x4a3c2e);
+
+  /* ---- neon safehouse sign over the door ---- */
+  addDecor(0, 12.2, -HALF + 1.1, boxGeo(13, 0.9, 0.22), 0xff2436, 0xff2436);
+  addDecor(0, 10.9, -HALF + 1.1, boxGeo(9, 0.3, 0.18), 0x40b0ff, 0x40b0ff);
+  addLightPoint(0, 11.6, -HALF + 4, 0xff3040, 1.3, 26);
+
+  /* ---- terminals ---- */
+  addTerminal(0, -18, 'MISSIONS', 'missions', 0xff4a5a);
+  addTerminal(-19, -5, 'UPGRADES', 'upgrades', 0xffb04a);
+  addTerminal(19, -5, 'PARTNERS', 'partners', 0x40b0ff);
+  addTerminal(-19, 15, 'INTEL', 'intel', 0x8de0a0);
+  addTerminal(19, 15, 'VERSUS ARENA', 'versus', 0xb060ff);
 
   blade = makeHero('blade', 0, 8, true);
   cacheMaterials(blade);
@@ -6280,13 +6505,37 @@ function toggleFullscreen() {
 /* ---------------- options ---------------- */
 var SENS_STEPS = [0.6, 0.8, 1.0, 1.35, 1.8];
 var SENS_NAMES = ['Very Low', 'Low', 'Normal', 'High', 'Very High'];
+var SHAKE_STEPS = [0, 0.5, 1.0, 1.5];
+var SHAKE_NAMES = ['Off', 'Low', 'Normal', 'High'];
+function pct(v) { return Math.round(v * 100) + '%'; }
+function shakeName() {
+  var i, best = 2;
+  for (i = 0; i < SHAKE_STEPS.length; i++) if (Math.abs(SHAKE_STEPS[i] - G.shakeScale) < 0.01) best = i;
+  return best;
+}
 function updateOptionLabels() {
   var f = el('optFull'); if (f) f.textContent = isFullscreen() ? 'On' : 'Off';
   var q = el('optQual'); if (q) q.textContent = G.quality === 'high' ? 'High' : 'Low';
   var s = el('optSound'); if (s) s.textContent = G.sound ? 'On' : 'Off';
-  var v = el('optMusVol'); if (v) v.textContent = Math.round(G.musicVol * 100) + '%';
+  var v = el('optMusVol'); if (v) v.textContent = pct(G.musicVol);
+  var sv = el('optSfxVol'); if (sv) sv.textContent = pct(G.sfxVol);
+  var br = el('optBright'); if (br) br.textContent = pct(G.brightness);
+  var df = el('optDiff'); if (df) df.textContent = DIFFS[G.diffIdx].name;
+  var sh = el('optShake'); if (sh) sh.textContent = SHAKE_NAMES[shakeName()];
+  var dn = el('optDmg'); if (dn) dn.textContent = G.dmgNums ? 'On' : 'Off';
   var iv = el('optInvert'); if (iv) iv.textContent = G.invert ? 'On' : 'Off';
   var sn = el('optSens'); if (sn) sn.textContent = SENS_NAMES[G.sensIdx];
+  var pd = el('optPad'); if (pd) pd.textContent = PAD_LAYOUTS[G.padLayout].name;
+  var pdd = el('padDesc');
+  if (pdd) {
+    var m = PAD_LAYOUTS[G.padLayout].map, txt = [], bi;
+    var human = { jump: 'jump', light: 'light', heavy: 'heavy', dash: 'dodge', call: 'assist',
+                  special: 'special', tag: 'tag', day: 'Daywalker', sprint: 'sprint', team: 'Team-Up' };
+    var names = { 0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT', 10: 'L3', 11: 'R3' };
+    for (bi in m) { if (m.hasOwnProperty(bi) && names[bi]) txt.push(names[bi] + ' ' + human[m[bi]]); }
+    pdd.textContent = txt.join(' · ');
+  }
+  var st2 = el('optStick'); if (st2) st2.textContent = G.southpaw ? 'Southpaw' : 'Standard';
   updatePauseLabels();
 }
 function applyQuality() {
@@ -6294,29 +6543,38 @@ function applyQuality() {
   renderer.setPixelRatio(G.quality === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : 1);
 }
 function wireOptions() {
-  el('optFull').addEventListener('click', function () { SFX.ui(); toggleFullscreen(); });
-  el('optQual').addEventListener('click', function () {
-    G.quality = G.quality === 'high' ? 'low' : 'high'; applyQuality(); SFX.ui(); updateOptionLabels();
-  });
-  el('optSound').addEventListener('click', function () {
+  function bind(id, fn) {
+    var n = el(id);
+    if (!n) return;
+    n.addEventListener('click', function () { SFX.ui(); fn(); applySettings(); saveSettings(); updateOptionLabels(); });
+  }
+  bind('optFull', function () { toggleFullscreen(); });
+  bind('optQual', function () { G.quality = G.quality === 'high' ? 'low' : 'high'; applyQuality(); });
+  bind('optSound', function () {
     G.sound = !G.sound;
     if (!G.sound) { musicStop(); if (menuAudio) menuAudio.pause(); }
-    else if (G.mode === 'title' || G.mode === 'hub' || G.mode === 'hubmenu') menuMusicStart();
+    else if (G.mode === 'title' || G.mode === 'hub' || G.mode === 'hubmenu' || G.mode === 'menu') menuMusicStart();
     else if (G.act) musicStart(G.act.loc, false);
-    SFX.ui(); updateOptionLabels();
   });
-  el('optMusVol').addEventListener('click', function () {
-    G.musicVol = G.musicVol >= 0.99 ? 0 : Math.min(1, G.musicVol + 0.25);
-    if (menuAudio) menuAudio.volume = G.musicVol;
-    SFX.ui(); updateOptionLabels();
+  bind('optMusVol', function () { G.musicVol = G.musicVol >= 0.99 ? 0 : Math.min(1, G.musicVol + 0.25); });
+  bind('optSfxVol', function () { G.sfxVol = G.sfxVol >= 0.99 ? 0 : Math.min(1, G.sfxVol + 0.25); });
+  bind('optBright', function () { G.brightness = G.brightness >= 1.59 ? 0.7 : Math.min(1.6, G.brightness + 0.15); });
+  bind('optDiff', function () { G.diffIdx = (G.diffIdx + 1) % DIFFS.length; });
+  bind('optShake', function () { G.shakeScale = SHAKE_STEPS[(shakeName() + 1) % SHAKE_STEPS.length]; });
+  bind('optDmg', function () { G.dmgNums = !G.dmgNums; });
+  bind('optInvert', function () { G.invert = !G.invert; });
+  bind('optSens', function () { G.sensIdx = (G.sensIdx + 1) % SENS_STEPS.length; G.sens = SENS_STEPS[G.sensIdx]; });
+  bind('optPad', function () {
+    var i = PAD_ORDER.indexOf(G.padLayout);
+    G.padLayout = PAD_ORDER[(i + 1) % PAD_ORDER.length];
+    padPrev = {};
   });
-  el('optInvert').addEventListener('click', function () { G.invert = !G.invert; SFX.ui(); updateOptionLabels(); });
-  el('optSens').addEventListener('click', function () {
-    G.sensIdx = (G.sensIdx + 1) % SENS_STEPS.length;
-    G.sens = SENS_STEPS[G.sensIdx];
-    SFX.ui(); updateOptionLabels();
+  bind('optStick', function () { G.southpaw = !G.southpaw; });
+  el('btnOptBack').addEventListener('click', function () {
+    SFX.ui();
+    if (G.optReturn === 'pause') { G.optReturn = null; showScreen('scPause'); G.mode = 'pause'; }
+    else goTitle();
   });
-  el('btnOptBack').addEventListener('click', function () { SFX.ui(); goTitle(); });
 }
 
 /* ---------------- title ambience: ash + lightning ---------------- */
@@ -6448,6 +6706,9 @@ function wireMenus() {
     updatePauseLabels(); SFX.ui();
   });
   el('btnInvert').addEventListener('click', function () { G.invert = !G.invert; updatePauseLabels(); SFX.ui(); });
+  el('btnOptions').addEventListener('click', function () {
+    SFX.ui(); G.optReturn = 'pause'; updateOptionLabels(); showScreen('scOptions');
+  });
   el('btnAbandon').addEventListener('click', function () { SFX.ui(); openHub(); });
 
   el('btnResNext').addEventListener('click', function () { SFX.ui(); openHub(); });
@@ -6471,6 +6732,7 @@ function wireMenus() {
 
 function init() {
   loadProfile();
+  loadSettings();
   setLoading(10, 'Loading the arsenal…');
   initRenderer();
   fxInit();
@@ -6478,6 +6740,8 @@ function init() {
   inputInit();
   wireMenus();
   renderControlsList();
+  applyQuality();
+  applySettings();
   setLoading(60, 'Sharpening…');
   G.shockwaves = [];
   G.pendingWaves = [];
