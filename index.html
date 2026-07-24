@@ -1795,11 +1795,12 @@ var ACT_SCRIPT = {
    ========================================================================== */
 var GEO = {};
 /* Weapon pose.
-   The hand sits ~0.6 above the floor and the blade is ~1.7 long, so ANY
-   downward carry angle buries the tip. Rest is therefore a low trailing carry:
-   blade held back and just below horizontal, tip clear of the ground. The
-   animator swings it up in line with the arm to strike. */
-var WEAPON_REST = -1.78, WEAPON_SWING = -0.38;
+   Rest is a forward guard — blade out in front and angled slightly down, the
+   way Blade carries it in the original game. (+X rotation swings the blade
+   toward +Z, which is the character's facing direction.) The hand sits ~0.7
+   above the floor and the blade is 1.68 long, so the angle is kept shallow
+   enough that the tip never reaches the ground. */
+var WEAPON_REST = 1.62, WEAPON_SWING = -0.38;
 var MATC = {};
 function boxGeo(w, h, d) {
   var k = 'b' + w + '_' + h + '_' + d;
@@ -1893,8 +1894,13 @@ function makeHumanoid(cfg) {
   var headG = new THREE.Group(); headG.position.y = 1.9; torso.add(headG);
   var head = new THREE.Mesh(boxGeo(0.42, 0.46, 0.42), skinM); headG.add(head);
   if (cfg.glasses) {
-    var vis = new THREE.Mesh(boxGeo(0.46, 0.12, 0.08), matU(0x0a0a0c, 0x201014));
-    vis.position.set(0, 0.06, 0.228); headG.add(vis);
+    var vis = new THREE.Mesh(boxGeo(0.46, 0.13, 0.09), matU(0x08080a, 0x18101a));
+    vis.position.set(0, 0.065, 0.225); headG.add(vis);
+    var sheen = new THREE.Mesh(boxGeo(0.42, 0.03, 0.02), matU(0x5a6478, 0x2a3040));
+    sheen.position.set(0, 0.10, 0.272); headG.add(sheen);
+    var tmplL = new THREE.Mesh(boxGeo(0.04, 0.09, 0.3), matU(0x08080a));
+    tmplL.position.set(-0.216, 0.065, 0.09); headG.add(tmplL);
+    var tmplR = tmplL.clone(); tmplR.position.x = 0.216; headG.add(tmplR);
   }
   if (cfg.hood) {
     var hood = new THREE.Mesh(boxGeo(0.52, 0.5, 0.5), bodyM);
@@ -1912,11 +1918,23 @@ function makeHumanoid(cfg) {
     var eyeL = new THREE.Mesh(boxGeo(0.10, 0.12, 0.06), matU(accC, accC)); eyeL.position.set(-0.11, 0.04, 0.2); headG.add(eyeL);
     var eyeR = eyeL.clone(); eyeR.position.x = 0.11; headG.add(eyeR);
   }
+  /* Hair sits ON TOP of the skull (narrower than the head so no side faces
+     line up) and stops well above the brow strip — the two used to touch,
+     which is what made the forehead strobe. */
   if (cfg.hair) {
-    var hair = new THREE.Mesh(boxGeo(0.46, 0.18, 0.46), matU(cfg.hair));
-    hair.position.set(0, 0.26, -0.02); headG.add(hair);
-    var pony = new THREE.Mesh(boxGeo(0.16, 0.5, 0.16), matU(cfg.hair));
-    pony.position.set(0, 0.02, -0.28); headG.add(pony);
+    var hairH = cfg.flatTop ? 0.13 : 0.19;
+    var hair = new THREE.Mesh(boxGeo(0.40, hairH, 0.40), matU(cfg.hair));
+    hair.position.set(0, 0.23 + hairH / 2 - 0.04, -0.01);
+    headG.add(hair);
+    if (cfg.flatTop) {                       // tight fade at the temples
+      var fadeL = new THREE.Mesh(boxGeo(0.03, 0.16, 0.36), matU(cfg.hair));
+      fadeL.position.set(-0.215, 0.12, -0.01); headG.add(fadeL);
+      var fadeR = fadeL.clone(); fadeR.position.x = 0.215; headG.add(fadeR);
+    }
+    if (cfg.pony) {
+      var pony = new THREE.Mesh(boxGeo(0.16, 0.5, 0.16), matU(cfg.hair));
+      pony.position.set(0, 0.02, -0.29); headG.add(pony);
+    }
   }
   if (cfg.fangs) {
     var f1 = new THREE.Mesh(coneGeo(0.03, 0.1, 5), matU(0xffffff)); f1.position.set(-0.07, -0.14, 0.2); f1.rotation.x = Math.PI; headG.add(f1);
@@ -1931,8 +1949,10 @@ function makeHumanoid(cfg) {
       var el1 = new THREE.Mesh(boxGeo(0.08, 0.06, 0.04), eyeMat); el1.position.set(-0.10, 0.05, 0.226); headG.add(el1);
       var el2 = el1.clone(); el2.position.x = 0.10; headG.add(el2);
     }
-    var brow = new THREE.Mesh(boxGeo(0.30, 0.05, 0.04), matU(cfg.hair || 0x241a16));
-    brow.position.set(0, 0.15, 0.226); brow.rotation.z = cfg.fangs ? 0.14 : 0; headG.add(brow);
+    if (!cfg.glasses) {
+      var brow = new THREE.Mesh(boxGeo(0.30, 0.05, 0.04), matU(cfg.hair || 0x241a16));
+      brow.position.set(0, 0.145, 0.226); brow.rotation.z = cfg.fangs ? 0.14 : 0; headG.add(brow);
+    }
   }
   // neck so the head doesn't float
   var neck = new THREE.Mesh(boxGeo(0.2, 0.14, 0.2), skinM); neck.position.y = 1.78; torso.add(neck);
@@ -2026,13 +2046,38 @@ function makeHumanoid(cfg) {
   weapon.rotation.x = WEAPON_REST;
   armR.userData.fore.add(weapon);
 
+  /* Back scabbard. A second, static sword worn across the back; the animator
+     cross-fades it with the hand weapon during the draw/sheathe reach so the
+     blade is never visible in two places at once. */
+  var sheath = null;
+  if (cfg.backSheath && wtype === 'sword') {
+    sheath = new THREE.Group();
+    var scab = new THREE.Mesh(boxGeo(0.15, 1.55, 0.1), matU(0x17120f));
+    scab.position.y = 0.5; sheath.add(scab);
+    var scabTip = new THREE.Mesh(boxGeo(0.13, 0.16, 0.09), matU(accC, accC));
+    scabTip.position.y = -0.32; sheath.add(scabTip);
+    var sGuard = new THREE.Mesh(boxGeo(0.38, 0.08, 0.11), matU(accC, accC));
+    sGuard.position.y = 1.3; sheath.add(sGuard);
+    var sGrip = new THREE.Mesh(boxGeo(0.09, 0.32, 0.09), matU(0x14100e));
+    sGrip.position.y = 1.5; sheath.add(sGrip);
+    var sPommel = new THREE.Mesh(boxGeo(0.13, 0.1, 0.13), matU(accC, accC));
+    sPommel.position.y = 1.69; sheath.add(sPommel);
+    // strap across the chest
+    var strap = new THREE.Mesh(boxGeo(0.12, 1.5, 0.05), matU(0x201814));
+    strap.position.set(0.06, 1.3, 0.24); strap.rotation.z = 0.55; torso.add(strap);
+    sheath.position.set(0.05, 0.78, -0.36);
+    sheath.rotation.z = 0.5;
+    sheath.rotation.x = -0.14;
+    torso.add(sheath);
+  }
+
   // scale + shadow flags
   g.scale.setScalar(s);
   g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
 
   return {
     group: g,
-    parts: { hip: hip, torso: torso, head: headG, armL: armL, armR: armR, legL: legL, legR: legR, weapon: weapon, coat: coatPieces, chest: chest }
+    parts: { hip: hip, torso: torso, head: headG, armL: armL, armR: armR, legL: legL, legR: legR, weapon: weapon, sheath: sheath, coat: coatPieces, chest: chest }
   };
 }
 
@@ -2047,11 +2092,12 @@ function buildHeroModel(heroId, skinIdx) {
     cfg.body = sk.body; cfg.accent = sk.accent; cfg.trim = sk.trim; cfg.coatColor = sk.body;
   }
   cfg.emblem = d.accent;
-  if (heroId === 'blade') { cfg.hair = 0x100c0a; cfg.emblem = 0xd8d8e0; }
-  if (heroId === 'whistler') { cfg.hair = 0xe8d8a0; cfg.emblem = 0x38b0c8; }
+  cfg.backSheath = (d.weapon === 'sword');
+  if (heroId === 'blade') { cfg.hair = 0x140f0c; cfg.flatTop = true; cfg.pony = false; cfg.emblem = 0x9aa2b8; }
+  if (heroId === 'whistler') { cfg.hair = 0xe8d8a0; cfg.pony = true; cfg.emblem = 0x38b0c8; }
   if (heroId === 'spider') { cfg.mask = true; cfg.maskColor = 0xc02030; cfg.emblem = 0x111114; cfg.pads = false; }
   if (heroId === 'rider') { cfg.skull = true; cfg.coatColor = 0x141418; cfg.emis = true; cfg.emblem = 0xff6a12; }
-  if (heroId === 'elsa') { cfg.hair = 0xc03828; cfg.coatColor = 0x3a2028; cfg.emblem = 0xd83048; }
+  if (heroId === 'elsa') { cfg.hair = 0xc03828; cfg.pony = true; cfg.coatColor = 0x3a2028; cfg.emblem = 0xd83048; }
   if (heroId === 'knight') { cfg.hood = true; cfg.coatColor = 0xe8e8e8; cfg.emblem = 0xf5f5ff; }
   return makeHumanoid(cfg);
 }
@@ -3538,10 +3584,34 @@ function animateEntity(e, dt) {
     poseArmR = 0.9; poseArmL = 1.1; p.torso.rotation.x = -0.4;
     p.head.rotation.x = 0.3;
   }
+  if (e.drawReach > 0.02 && !e.atk) {
+    poseArmR = lerp(poseArmR, -2.45, e.drawReach);
+    foreR = lerp(foreR, 1.25, e.drawReach);
+    p.torso.rotation.y = damp(p.torso.rotation.y, -0.28 * e.drawReach, 12, dt);
+  }
   p.armR.rotation.x = damp(p.armR.rotation.x, poseArmR, 22, dt);
   p.armL.rotation.x = damp(p.armL.rotation.x, poseArmL, 22, dt);
   p.armR.userData.fore.rotation.x = damp(p.armR.userData.fore.rotation.x, foreR, 18, dt);
   p.armL.userData.fore.rotation.x = damp(p.armL.userData.fore.rotation.x, foreL, 18, dt);
+
+  /* ---- draw / sheathe ----
+     Out of combat the sword rides on Blade's back. Entering combat plays a
+     reach-over-the-shoulder draw; the hand weapon and the back scabbard swap
+     visibility at the midpoint so the blade is never in two places at once. */
+  if (p.sheath) {
+    var wantDrawn = !!e.atk || (e.combatT || 0) > 0;
+    if (e.drawA === undefined) e.drawA = wantDrawn ? 1 : 0;
+    e.drawA = damp(e.drawA, wantDrawn ? 1 : 0, 7, dt);
+    if (e.drawA > 0.995) e.drawA = 1;
+    if (e.drawA < 0.005) e.drawA = 0;
+    p.sheath.visible = (e.drawA < 0.5);
+    p.weapon.visible = (e.drawA >= 0.5);
+    // reach arc peaks mid-transition
+    e.drawReach = (e.drawA > 0.01 && e.drawA < 0.99) ? Math.sin(e.drawA * Math.PI) : 0;
+    if (e.drawReach > 0.02 && !e.wasDrawn !== !wantDrawn) { /* transition running */ }
+    if (wantDrawn && !e.wasDrawn && e.drawA < 0.2) { SFX.swing(0); }
+    e.wasDrawn = wantDrawn;
+  }
 
   // weapon pose — raise into the swing, drop back to a rest carry
   if (p.weapon) {
@@ -3722,6 +3792,7 @@ function attackSpec(e, kind) {
 }
 function startAttack(e, kind) {
   if (e.dead || e.stagger > 0) return false;
+  if (e.kind === 'hero') { e.combatT = 6; if (e.drawA !== undefined && e.drawA < 1) e.drawA = 1; }
   e.atk = attackSpec(e, kind);
   e.state = 'attack';
   if (kind === 'light') SFX.swing(e.comboIdx);
@@ -3910,6 +3981,7 @@ function damageEntity(e, amount, srcX, srcZ, opts) {
   }
 
   if (e.team === 'player') {
+    e.combatT = 6;
     e.stagger = Math.max(e.stagger, o.source === 'hazard' ? 0 : 0.22);
     if (e === player) { flashHurt(clamp(amount / 40, 0.2, 0.85)); addShake(0.4); }
     e.invuln = Math.max(e.invuln, 0.35);
@@ -4159,6 +4231,7 @@ function updatePlayer(e, dt) {
   if (bufHas('tag')) { bufTake('tag'); doTagSwap(); }
   if (bufHas('team')) { bufTake('team'); doTeamUp(); }
 
+  updateCombatTimer(e, dt);
   if (e.atk) updateAttack(e, dt);
   physicsStep(e, dt);
 
@@ -4179,6 +4252,14 @@ function updatePlayer(e, dt) {
   updateCamera(e, dt);
   pickupCheck(e);
   interactCheck(e);
+}
+/* Keeps a hero "in combat" for a few seconds after the last threat so the
+   sword doesn't stow and re-draw between waves. */
+function updateCombatTimer(e, dt) {
+  if (!e || e.kind !== 'hero') return;
+  if (e.atk || e.stagger > 0 || e.dayMode) { e.combatT = 6; return; }
+  if (nearestEnemy(e.pos.x, e.pos.z, 26)) { e.combatT = Math.max(e.combatT || 0, 4); return; }
+  e.combatT = Math.max(0, (e.combatT || 0) - dt);
 }
 function faceTarget(e, t) { e.yaw = angleTo(e.pos.x, e.pos.z, t.pos.x, t.pos.z); }
 function softLockTarget(e) {
@@ -4427,6 +4508,7 @@ function updateAlly(e, dt) {
       if (ahead > e.pos.y + 0.6 && ahead < e.pos.y + 4) e.vel.y = 11.5;
     }
   }
+  updateCombatTimer(e, dt);
   if (e.atk) updateAttack(e, dt);
   physicsStep(e, dt);
   animateEntity(e, dt);
