@@ -323,6 +323,21 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
   border:1px solid #6b232b;color:#d78a92;margin-top:7px;}
 .chip.good{border-color:#2e7a45;color:#7fd39a;}
 .swatch{width:100%;height:52px;margin-bottom:9px;border:1px solid rgba(255,255,255,.1);}
+/* roster portrait, assembled from blocks to echo the in-game models */
+.figure{position:relative;width:100%;height:96px;margin-bottom:9px;border:1px solid rgba(255,255,255,.1);overflow:hidden;}
+.figure i{position:absolute;display:block;}
+.f-head{left:50%;top:12px;width:22px;height:22px;margin-left:-11px;border-radius:2px;}
+.f-eyes{left:50%;top:20px;width:16px;height:4px;margin-left:-8px;}
+.f-body{left:50%;top:33px;width:34px;height:34px;margin-left:-17px;border-radius:2px;}
+.f-shoulder{top:32px;width:9px;height:11px;border-radius:2px;}
+.f-shoulder.l{left:50%;margin-left:-26px;}
+.f-shoulder.r{left:50%;margin-left:17px;}
+.f-belt{left:50%;top:63px;width:34px;height:5px;margin-left:-17px;}
+.f-legL,.f-legR{top:68px;width:12px;height:22px;border-radius:2px;}
+.f-legL{left:50%;margin-left:-14px;}
+.f-legR{left:50%;margin-left:2px;}
+.f-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:30px;font-style:normal;color:#6a6a74;background:rgba(6,6,10,.55);}
 .stg{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #341418;background:rgba(14,9,11,.8);
   margin:5px 0;cursor:pointer;transition:border-color .12s,transform .1s;}
 .stg:hover{border-color:#c4303c;transform:translateX(3px);}
@@ -1073,6 +1088,7 @@ function resetInputState() {
   for (k in IN.hit) IN.hit[k] = false;
   for (k in IN.buffer) IN.buffer[k] = 0;
   IN.move.x = 0; IN.move.y = 0; IN.look.x = 0; IN.look.y = 0;
+  IN.padMoving = false;
   touchState.stickId = -1; touchState.lookId = -1;
   if (typeof dragState !== 'undefined' && dragState) dragState.active = false;
   var nub = el('stickN'); if (nub) nub.style.transform = '';
@@ -1258,8 +1274,15 @@ function pollGamepad() {
   if (!gp) return;
   var dz = 0.22;
   var ax = gp.axes[G.southpaw ? 2 : 0] || 0, ay = gp.axes[G.southpaw ? 3 : 1] || 0;
-  if (Math.abs(ax) > dz || Math.abs(ay) > dz) { IN.move.x = ax; IN.move.y = -ay; }
-  else if (!IN.touch) { IN.move.x = 0; IN.move.y = 0; }
+  /* On a touch device IN.touch is true, and the old release branch was gated on
+     !IN.touch — so centring the stick never zeroed the vector and the character
+     kept walking. Ownership is now tracked explicitly. */
+  var touchStickDown = (touchState.stickId >= 0);
+  if (Math.abs(ax) > dz || Math.abs(ay) > dz) {
+    IN.move.x = ax; IN.move.y = -ay; IN.padMoving = true;
+  } else if (IN.padMoving && !touchStickDown) {
+    IN.move.x = 0; IN.move.y = 0; IN.padMoving = false;
+  }
   var rx = gp.axes[G.southpaw ? 0 : 2] || 0, ry = gp.axes[G.southpaw ? 1 : 3] || 0;
   if (Math.abs(rx) > dz) IN.look.x += rx * 22;
   if (Math.abs(ry) > dz) IN.look.y += ry * 18;
@@ -1311,6 +1334,9 @@ function padMenuActivate() {
 
 // Keyboard -> analog move vector (camera-relative resolution happens later)
 function readMoveKeys() {
+  // whoever is actively driving movement owns the vector
+  if (IN.padMoving) return;
+  if (touchState.stickId >= 0) return;
   if (IN.touch && (IN.move.x !== 0 || IN.move.y !== 0)) return;
   var x = 0, y = 0;
   if (actDown('fwd')) y += 1;
@@ -1329,6 +1355,28 @@ function readMoveKeys() {
    style: 'melee' | 'ranged' | 'hybrid'
    ========================================================================== */
 /* Difficulty presets — scale enemy toughness and the damage you take. */
+/* Kill quips. Fires occasionally so it stays a punctuation mark, not a
+   running commentary. The first is his line from the film. */
+var BLADE_QUIPS = [
+  'Some motherfuckers are always trying to ice skate uphill.',
+  'Catch you fuckers at a bad time?',
+  'There are worse things out tonight than vampires.',
+  'You picked the wrong block.',
+  'Burn.',
+  'Ash. That is all you were ever going to be.',
+  'Should have stayed underground.',
+  'That is one less.',
+  'Still thirsty?',
+  'Sun comes up in four hours. You will not see it.'
+];
+var PARTNER_QUIPS = {
+  whistler: ['Nice. Sloppy, but nice.', 'That is my shot.', 'Clear on your left.'],
+  spider: ['Okay, that one is definitely dead.', 'Not gonna lie, that was gross.', 'Team-up! ...anyone? No?'],
+  rider: ['Your soul is forfeit.', 'Judged.', 'The debt grows.'],
+  elsa: ['Textbook.', 'Do keep up.', 'One for the ledger.'],
+  knight: ['Khonshu saw that.', 'The moon is watching.', 'Marked.']
+};
+
 var DIFFS = [
   { name: 'Story', hp: 0.78, dmg: 0.65 },
   { name: 'Hunter', hp: 1.0, dmg: 1.0 },
@@ -1649,61 +1697,61 @@ var POOLS = [
 
 var ACTS = [
   /* ---------------- ACT I — NIGHT STREETS ---------------- */
-  { n: 'Cold Open', loc: 0, recruit: null, blurb: 'Three blocks. Forty people. No bodies.',
+  { n: 'Cold Open', loc: 0, layout: 'grid', recruit: null, blurb: 'Three blocks. Forty people. No bodies.',
     beats: [F(2), T(), F(2), X(3), F(3)] },
-  { n: 'The Night Market', loc: 0, recruit: null, indoor: true, blurb: 'An underground market beneath the parking structure. Close it.',
+  { n: 'The Night Market', loc: 0, layout: 'linear', recruit: null, indoor: true, blurb: 'An underground market beneath the parking structure. Close it.',
     beats: [X(3), O(3), Gt(16), T(), F(3)] },
-  { n: 'Rooftop Signal', loc: 0, recruit: null, blurb: 'Abigail has a fix on the relay. It is very high up.',
+  { n: 'Rooftop Signal', loc: 0, layout: 'rooftop', recruit: null, blurb: 'Abigail has a fix on the relay. It is very high up.',
     beats: [T(), F(3), Gt(14), T(), Hn(3), E('gorse')] },
-  { n: 'Blood Bank', loc: 0, recruit: 'spider', indoor: true, blurb: 'Inside the vault floor. Sable runs the caches.',
+  { n: 'Blood Bank', loc: 0, layout: 'linear', recruit: 'spider', indoor: true, blurb: 'Inside the vault floor. Sable runs the caches.',
     beats: [F(2), O(3), T(), Gt(18), B('sable')] },
-  { n: 'Exodus', loc: 0, recruit: null, blurb: 'They are leaving the city. Find out what they are carrying.',
+  { n: 'Exodus', loc: 0, layout: 'grid', recruit: null, blurb: 'They are leaving the city. Find out what they are carrying.',
     beats: [E('maw'), F(3), T(), X(3), F(4)] },
 
   /* ---------------- ACT II — ROTTEN HARBOR ---------------- */
-  { n: 'Container Yard', loc: 1, recruit: null, blurb: 'Everything going out full. Nothing coming back alive.',
+  { n: 'Container Yard', loc: 1, layout: 'grid', recruit: null, blurb: 'Everything going out full. Nothing coming back alive.',
     beats: [F(3), T(), O(4), F(3)] },
-  { n: 'The Long Pier', loc: 1, recruit: null, blurb: 'Kroven is selling the manifest. Buy it in blood.',
+  { n: 'The Long Pier', loc: 1, layout: 'linear', recruit: null, blurb: 'Kroven is selling the manifest. Buy it in blood.',
     beats: [Gt(20), T(), F(3), E('kroven'), X(3)] },
-  { n: 'Crane Line', loc: 1, recruit: null, blurb: 'Up the gantries. Do not look at the water.',
+  { n: 'Crane Line', loc: 1, layout: 'rooftop', recruit: null, blurb: 'Up the gantries. Do not look at the water.',
     beats: [T(), F(3), T(), Hn(3), T(), F(3)] },
-  { n: 'The Hold', loc: 1, recruit: 'rider', indoor: true, blurb: 'Below deck. Whatever they were shipping is awake now.',
+  { n: 'The Hold', loc: 1, layout: 'linear', recruit: 'rider', indoor: true, blurb: 'Below deck. Whatever they were shipping is awake now.',
     beats: [X(3), O(4), F(3), Gt(16), F(3), B('harvester')] },
-  { n: 'Drydock', loc: 1, recruit: null, blurb: 'One ship left. It came from a castle.',
+  { n: 'Drydock', loc: 1, layout: 'grid', recruit: null, blurb: 'One ship left. It came from a castle.',
     beats: [F(3), E('tidewrack'), T(), Gt(22), F(3)] },
 
   /* ---------------- ACT III — VRASTA KEEP ---------------- */
-  { n: 'Broken Gate', loc: 2, recruit: null, blurb: 'They shipped a castle across an ocean. Ask why.',
+  { n: 'Broken Gate', loc: 2, layout: 'grid', recruit: null, blurb: 'They shipped a castle across an ocean. Ask why.',
     beats: [F(3), T(), F(3), O(3), F(3)] },
-  { n: 'Hall of Portraits', loc: 2, recruit: null, indoor: true, blurb: 'Inside the keep. The same face, four hundred years of it.',
+  { n: 'Hall of Portraits', loc: 2, layout: 'linear', recruit: null, indoor: true, blurb: 'Inside the keep. The same face, four hundred years of it.',
     beats: [X(4), Hn(3), E('lamia'), F(3)] },
-  { n: 'Shattered Halls', loc: 2, recruit: null, blurb: 'The stairs are gone. Climb anyway.',
+  { n: 'Shattered Halls', loc: 2, layout: 'linear', recruit: null, blurb: 'The stairs are gone. Climb anyway.',
     beats: [T(), F(3), T(), X(3), T(), F(4)] },
-  { n: 'The Countess', loc: 2, recruit: 'elsa', blurb: 'Highblood. Old money. Older hunger.',
+  { n: 'The Countess', loc: 2, layout: 'grid', recruit: 'elsa', blurb: 'Highblood. Old money. Older hunger.',
     beats: [Gt(20), O(3), T(), F(3), Hn(3), B('vrasta')] },
-  { n: 'Under the Keep', loc: 2, recruit: null, blurb: 'The catacombs go down further than the castle goes up.',
+  { n: 'Under the Keep', loc: 2, layout: 'linear', recruit: null, indoor: true, blurb: 'The catacombs go down further than the castle goes up.',
     beats: [E('gorse'), F(3), T(), E('lamia'), X(3), F(3)] },
 
   /* ---------------- ACT IV — THE BONE CHOIR ---------------- */
-  { n: 'Ossuary', loc: 3, recruit: null, blurb: 'Mind the bones. Some of them are still employed.',
+  { n: 'Ossuary', loc: 3, layout: 'linear', recruit: null, indoor: true, blurb: 'Mind the bones. Some of them are still employed.',
     beats: [F(3), X(3), O(4), F(4)] },
-  { n: 'Drowned Crypt', loc: 3, recruit: null, blurb: 'Flooded. Singing. Neither of those should be true.',
+  { n: 'Drowned Crypt', loc: 3, layout: 'grid', recruit: null, indoor: true, blurb: 'Flooded. Singing. Neither of those should be true.',
     beats: [T(), F(3), Hn(3), T(), F(3)] },
-  { n: 'Rite of Marrow', loc: 3, recruit: null, blurb: 'Break the altars before the rite completes.',
+  { n: 'Rite of Marrow', loc: 3, layout: 'linear', recruit: null, indoor: true, blurb: 'Break the altars before the rite completes.',
     beats: [Gt(24), O(4), T(), F(3), E('ossuar')] },
-  { n: 'The Choirmaster', loc: 3, recruit: 'knight', blurb: 'Every bone in you already knows the tune.',
+  { n: 'The Choirmaster', loc: 3, layout: 'grid', recruit: 'knight', indoor: true, blurb: 'Every bone in you already knows the tune.',
     beats: [F(3), T(), X(3), F(4), B('bonecaller')] },
-  { n: 'The Open Door', loc: 3, recruit: null, blurb: 'The choir was never a ritual. It was a hinge.',
+  { n: 'The Open Door', loc: 3, layout: 'linear', recruit: null, blurb: 'The choir was never a ritual. It was a hinge.',
     beats: [E('ossuar'), Gt(26), T(), F(4), Hn(3)] },
 
   /* ---------------- ACT V — CRIMSON ASCENSION ---------------- */
-  { n: 'Ascension Steps', loc: 4, recruit: null, blurb: 'Climb the steps in blood. They were built for it.',
+  { n: 'Ascension Steps', loc: 4, layout: 'linear', recruit: null, blurb: 'Climb the steps in blood. They were built for it.',
     beats: [F(4), T(), Gt(26), O(3), F(4)] },
-  { n: 'The Red Span', loc: 4, recruit: null, blurb: 'The bridge is made of the ones who volunteered.',
+  { n: 'The Red Span', loc: 4, layout: 'linear', recruit: null, blurb: 'The bridge is made of the ones who volunteered.',
     beats: [T(), F(4), E('crimsonguard'), T(), X(4), F(4)] },
-  { n: 'Inner Sanctum', loc: 4, recruit: null, indoor: true, blurb: 'Inside the temple itself. The seals are not keeping us out.',
+  { n: 'Inner Sanctum', loc: 4, layout: 'grid', recruit: null, indoor: true, blurb: 'Inside the temple itself. The seals are not keeping us out.',
     beats: [O(3), F(4), E('lamia'), Gt(28), E('ossuar'), F(4)] },
-  { n: 'The First Thirst', loc: 4, recruit: null, blurb: 'He made your kind. Unmake him.',
+  { n: 'The First Thirst', loc: 4, layout: 'linear', recruit: null, blurb: 'He made your kind. Unmake him.',
     beats: [F(4), T(), E('crimsonguard'), Gt(24), B('vhalimar')] }
 ];
 
@@ -2105,9 +2153,14 @@ function makeHumanoid(cfg) {
     var spread = cfg.longCoat ? 0.22 : 0.3;
     for (i = 0; i < panels; i++) {
       seg = new THREE.Group();
-      seg.position.set((i - (panels - 1) / 2) * spread, 1.62, -0.26);
+      var segX = (i - (panels - 1) / 2) * spread;
+      seg.position.set(segX, 1.62, -0.3);
       var panel = new THREE.Mesh(boxGeo(spread * 1.12, panelH, 0.1), coatM);
       panel.position.y = -panelH / 2; seg.add(panel);
+      // which leg swings underneath this panel — the animator keeps the panel
+      // trailing behind that leg so the two never intersect
+      seg.userData.side = segX < -0.08 ? -1 : (segX > 0.08 ? 1 : 0);
+      seg.userData.len = panelH;
       torso.add(seg); coatPieces.push(seg);
     }
     if (cfg.longCoat) {                 // open front flaps
@@ -2314,10 +2367,10 @@ function makeHumanoid(cfg) {
   }
 
   // scale + shadow flags
-  if (cfg.hunch) {                    // feral crouch: chest forward, head low
+  if (cfg.hunch) {                    // feral crouch (enemies only)
     torso.rotation.x = cfg.hunch;
-    headG.position.z += 0.12;
-    headG.rotation.x = -cfg.hunch * 0.7;
+    headG.position.z += 0.1;
+    headG.rotation.x = -cfg.hunch * 0.95;   // head still faces forward
   }
   g.scale.setScalar(s);
   g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
@@ -2780,7 +2833,7 @@ function floorQuad(x, z, w, d, colorHex, y, rot) {
   worldGroup.add(m);
   return m;
 }
-function paveFloor(loc, size, half) {
+function paveFloor(loc, size, half, indoor) {
   var base = new THREE.Mesh(new THREE.PlaneGeometry(size + 60, size + 60), matU(loc.ground));
   base.rotation.x = -Math.PI / 2;
   base.receiveShadow = true;
@@ -2797,6 +2850,27 @@ function paveFloor(loc, size, half) {
     }
   }
   var det = new THREE.Color(loc.ground2).lerp(new THREE.Color(0xffffff), 0.12).getHex();
+
+  if (indoor) {
+    /* Interiors get a poured-concrete floor: expansion joints, bay markings
+       and stains. Painting street markings inside a building looked absurd. */
+    for (i = -half; i < half; i += 9) {
+      floorQuad(0, i, size, 0.16, det, 0.031);
+      floorQuad(i, 0, 0.16, size, det, 0.031);
+    }
+    for (i = 0; i < 12; i++) {
+      var ix = rand(-half + 6, half - 6), iz = rand(-half + 6, half - 6);
+      var stain = new THREE.Mesh(new THREE.CircleGeometry(rand(1.2, 3.6), 12), matU(0x121216));
+      stain.rotation.x = -Math.PI / 2; stain.position.set(ix, 0.034, iz); stain.rotation.z = rand(0, 3);
+      worldGroup.add(stain);
+    }
+    for (i = 0; i < 6; i++) {
+      var hx = rand(-half + 12, half - 12), hz = rand(-half + 12, half - 12);
+      floorQuad(hx, hz, 10, 0.3, 0xb8a038, 0.033);       // hazard / bay lines
+      floorQuad(hx, hz + 5, 10, 0.3, 0xb8a038, 0.033);
+    }
+    return;
+  }
 
   if (loc.props === 'city') {
     /* Two crossing streets, and markings ONLY on them. Painting lane lines
@@ -2892,26 +2966,75 @@ function buildCity(stage, loc, half) {
       }
     }
   }
-  // street blocks inside the arena (recorded so neon signs can mount on them)
+  /* Buildings LINE the streets instead of standing in them. Two rows face each
+     road, backed by taller towers so the playable street matches the skyline. */
   var cityBlocks = [];
-  var lc;
-  for (lc = 0; lc < 4; lc++) addLedgeCluster(rand(-half + 10, half - 10), rand(-half + 10, half - 10), loc);
-  var count = Math.floor(13 * stage.density);
-  for (i = 0; i < count; i++) {
-    x = rand(-half + 10, half - 10); z = rand(-half + 10, half - 10);
-    if (dist2(x, z, 0, 0) < 130) continue;
-    w = rand(6, 13); d = rand(6, 13); h = rand(4, 11);
-    if (addProp(x, 0, z, w, h, d, 0x22242e)) cityBlocks.push({ x: x, z: z, w: w, d: d, h: h });
-    if (Math.random() < 0.5) addProp(x + rand(-3, 3), h, z + rand(-3, 3), 3, 1.4, 3, 0x2a2c36);
+  var lc, roadHalf = 8, frontage = roadHalf + 4;
+
+  function facade(bx, bz, bw, bd, bh, faceAxis, faceSign) {
+    var m = addProp(bx, 0, bz, bw, bh, bd, Math.random() < 0.5 ? 0x22242e : 0x1d2029);
+    if (!m) return;
+    cityBlocks.push({ x: bx, z: bz, w: bw, d: bd, h: bh });
+    // window grid on the street-facing side
+    var rows = Math.max(2, Math.floor(bh / 4.2)), cols = Math.max(2, Math.floor((faceAxis === 'z' ? bw : bd) / 3.2));
+    var ri, ci2;
+    for (ri = 0; ri < rows; ri++) {
+      for (ci2 = 0; ci2 < cols; ci2++) {
+        if (Math.random() < 0.42) continue;
+        var lit = Math.random() < 0.55;
+        var win = new THREE.Mesh(boxGeo(faceAxis === 'z' ? 1.2 : 0.24, 1.05, faceAxis === 'z' ? 0.24 : 1.2),
+          matU(lit ? 0xffd890 : 0x171a22, lit ? 0xffbe60 : 0x000000));
+        var off = (ci2 - (cols - 1) / 2) * ((faceAxis === 'z' ? bw : bd) / cols);
+        if (faceAxis === 'z') win.position.set(bx + off, 2.4 + ri * 4.2, bz + faceSign * (bd / 2 + 0.14));
+        else win.position.set(bx + faceSign * (bw / 2 + 0.14), 2.4 + ri * 4.2, bz + off);
+        worldGroup.add(win);
+      }
+    }
+    // ground-floor doorway + awning
+    var dw = 2.2;
+    if (faceAxis === 'z') {
+      addDecor(bx, 1.3, bz + faceSign * (bd / 2 + 0.16), boxGeo(dw, 2.6, 0.3), 0x0d0f14);
+      addDecor(bx, 2.85, bz + faceSign * (bd / 2 + 0.5), boxGeo(dw + 1.4, 0.22, 1.1), 0x50202a);
+    } else {
+      addDecor(bx + faceSign * (bw / 2 + 0.16), 1.3, bz, boxGeo(0.3, 2.6, dw), 0x0d0f14);
+      addDecor(bx + faceSign * (bw / 2 + 0.5), 2.85, bz, boxGeo(1.1, 0.22, dw + 1.4), 0x50202a);
+    }
+    // roof parapet + rooftop box
+    addDecor(bx, bh + 0.35, bz, boxGeo(bw + 0.3, 0.7, bd + 0.3), 0x2c2f3a);
+    if (Math.random() < 0.6) addProp(bx + rand(-bw * 0.2, bw * 0.2), bh, bz + rand(-bd * 0.2, bd * 0.2), 3, 1.6, 3, 0x2a2c36);
   }
-  // cars
-  for (i = 0; i < 10; i++) {
-    x = rand(-half + 6, half - 6); z = rand(-half + 6, half - 6);
-    if (dist2(x, z, 0, 0) < 60) continue;
-    var carC = pick([0x8a2028, 0x203a6a, 0x2a2a2e, 0x6a5a20]);
-    addProp(x, 0, z, 2.2, 1.2, 4.6, carC, { rotY: rand(0, 3.14) });
-    var cab = new THREE.Mesh(boxGeo(2.0, 0.9, 2.2), matU(0x101018, 0x0a0a12));
-    cab.position.set(x, 1.6, z); worldGroup.add(cab);
+
+  // rows facing the north-south street
+  var pos2;
+  for (pos2 = -half + 12; pos2 < half - 12; pos2 += rand(13, 19)) {
+    var bw1 = rand(9, 15), bd1 = rand(10, 16);
+    facade(-(frontage + bd1 / 2), pos2, bd1, bw1, rand(12, 30), 'x', 1);
+    var bw2 = rand(9, 15), bd2 = rand(10, 16);
+    facade(frontage + bd2 / 2, pos2 + rand(-4, 4), bd2, bw2, rand(12, 30), 'x', -1);
+  }
+  // rows facing the east-west street
+  for (pos2 = -half + 12; pos2 < half - 12; pos2 += rand(14, 20)) {
+    if (Math.abs(pos2) < frontage + 10) continue;
+    var bw3 = rand(9, 15);
+    facade(pos2, -(frontage + 7), bw3, 14, rand(10, 26), 'z', 1);
+    facade(pos2 + rand(-4, 4), frontage + 7, bw3, 14, rand(10, 26), 'z', -1);
+  }
+  // taller towers behind the frontage so the street matches the backdrop
+  for (i = 0; i < 14; i++) {
+    x = rand(-half, half); z = rand(-half, half);
+    if (Math.abs(x) < frontage + 16 && Math.abs(z) < frontage + 16) continue;
+    if (inClearZone(x, z, 16, 16)) continue;
+    addProp(x, 0, z, rand(12, 20), rand(30, 58), rand(12, 20), 0x171a24, { castShadow: false });
+  }
+  for (lc = 0; lc < 3; lc++) addLedgeCluster(rand(-half + 12, half - 12), rand(-half + 12, half - 12), loc);
+  // parked traffic, sitting in the street lanes where cars belong
+  for (i = 0; i < 9; i++) {
+    var onZ2 = Math.random() < 0.5;
+    x = onZ2 ? rand(-5, 5) : rand(-half + 10, half - 10);
+    z = onZ2 ? rand(-half + 10, half - 10) : rand(-5, 5);
+    if (dist2(x, z, 0, 0) < 90) continue;
+    if (inClearZone(x, z, 7, 7)) continue;
+    buildMuscleCar(x, z, onZ2 ? 0 : Math.PI / 2, pick([0x8a2028, 0x203a6a, 0x2a2a2e, 0x6a5a20, 0x1a3a2a]));
   }
   // street lamps
   for (i = 0; i < 12; i++) {
@@ -3236,7 +3359,7 @@ function findClearSpot(x, z, r, half) {
   }
   return { x: x, z: z };
 }
-function addObjectiveTarget(x, z, loc, idx) {
+function addObjectiveTarget(x, z, loc, idx, baseY) {
   var g = new THREE.Group();
   var base = new THREE.Mesh(cylGeo(1.6, 1.9, 0.7, 10), matU(0x2a2028));
   base.position.y = 0.35; g.add(base);
@@ -3247,12 +3370,13 @@ function addObjectiveTarget(x, z, loc, idx) {
   // sky beam: objective targets are visible across the whole arena
   var beam = new THREE.Mesh(cylGeo(0.45, 0.45, 30, 8), matU(loc.accent, loc.accent, { transparent: true, opacity: 0.22, depthWrite: false }));
   beam.position.y = 15.8; g.add(beam);
-  g.position.set(x, 0, z);
+  var by = baseY || 0;
+  g.position.set(x, by, z);
   worldGroup.add(g);
-  addLightPoint(x, 2.4, z, 0xff3040, 1.2, 16);
-  addCollider(x, 0, z, 3, 1.2, 3, { walkable: true });
+  addLightPoint(x, by + 2.4, z, 0xff3040, 1.2, 16);
+  addCollider(x, by, z, 3, 1.2, 3, { walkable: true });
   var t = {
-    kind: 'target', x: x, z: z, y: 0, group: g, core: core, ring: ring,
+    kind: 'target', x: x, z: z, y: by, group: g, core: core, ring: ring,
     hp: 220, maxHp: 220, dead: false, idx: idx, radius: 2.2
   };
   interactables.push(t);
@@ -3260,7 +3384,7 @@ function addObjectiveTarget(x, z, loc, idx) {
   return t;
 }
 
-function addGoalZone(x, z, loc) {
+function addGoalZone(x, z, loc, fromY) {
   var g = new THREE.Group();
   var disc = new THREE.Mesh(new THREE.CircleGeometry(4, 24), matU(loc.accent, loc.accent, { transparent: true, opacity: 0.35 }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = 0.08; g.add(disc);
@@ -3271,7 +3395,7 @@ function addGoalZone(x, z, loc) {
   }
   var beam = new THREE.Mesh(cylGeo(0.6, 0.6, 34, 8), matU(loc.accent, loc.accent, { transparent: true, opacity: 0.26, depthWrite: false }));
   beam.position.y = 17.6; g.add(beam);
-  var y = groundHeightAt(x, z, 40, 3);
+  var y = groundHeightAt(x, z, fromY === undefined ? 40 : fromY, 3);
   g.position.set(x, y, z);
   worldGroup.add(g);
   addLightPoint(x, y + 4, z, loc.accent, 1.4, 26);
@@ -3367,6 +3491,7 @@ function fxReset() {
   if (!pLife) return;
   for (i = 0; i < PMAX; i++) { pLife[i] = 0; pPos[i * 3 + 1] = -999; }
   slashPool.length = 0; ringPool.length = 0;
+  if (typeof gibs !== 'undefined') gibs.length = 0;
 }
 function emit(x, y, z, count, opts) {
   if (!pLife) return;
@@ -3508,6 +3633,75 @@ function fxUpdateMeshes(dt) {
       s.mesh.scale.setScalar(s.base * (1 + (1 - f) * s.maxR));
     }
   }
+}
+
+/* Flying limbs. On death a few of the victim's actual body parts are detached
+   into simple physics chunks that tumble, bounce and fade — stylised, matching
+   the ash-burst dissolve rather than gore. */
+var gibs = [];
+function spawnGibs(e, dirX, dirZ) {
+  if (G.quality === 'low' && Math.random() < 0.5) return;
+  var p = e.parts, pool = [], i, src;
+  if (p.armL) pool.push(p.armL);
+  if (p.armR) pool.push(p.armR);
+  if (p.legL) pool.push(p.legL);
+  if (p.legR) pool.push(p.legR);
+  if (p.head) pool.push(p.head);
+  shuffle(pool);
+  var n = Math.min(pool.length, randi(2, 3));
+  for (i = 0; i < n; i++) {
+    src = pool[i];
+    if (!src || !src.parent) continue;
+    src.updateMatrixWorld(true);
+    var wp = new THREE.Vector3();
+    src.getWorldPosition(wp);
+    var clone = src.clone(true);
+    clone.position.copy(wp);
+    clone.rotation.set(rand(0, 3), rand(0, 3), rand(0, 3));
+    clone.scale.copy(e.root.scale);
+    fxGroup.add(clone);
+    src.visible = false;
+    gibs.push({
+      obj: clone, life: 2.6,
+      vx: dirX * rand(3, 7) + rand(-3, 3),
+      vy: rand(5, 9),
+      vz: dirZ * rand(3, 7) + rand(-3, 3),
+      rx: rand(-9, 9), ry: rand(-9, 9), rz: rand(-9, 9),
+      floor: e.pos.y
+    });
+    emit(wp.x, wp.y, wp.z, 8, { color: 0xc41028, speed: 5, life: 0.5, gravity: -14 });
+  }
+}
+function updateGibs(dt) {
+  var i, g2;
+  for (i = gibs.length - 1; i >= 0; i--) {
+    g2 = gibs[i];
+    g2.life -= dt;
+    g2.vy -= 26 * dt;
+    g2.obj.position.x += g2.vx * dt;
+    g2.obj.position.y += g2.vy * dt;
+    g2.obj.position.z += g2.vz * dt;
+    g2.obj.rotation.x += g2.rx * dt;
+    g2.obj.rotation.y += g2.ry * dt;
+    g2.obj.rotation.z += g2.rz * dt;
+    if (g2.obj.position.y < g2.floor + 0.12) {
+      g2.obj.position.y = g2.floor + 0.12;
+      g2.vy *= -0.32; g2.vx *= 0.6; g2.vz *= 0.6;
+      g2.rx *= 0.4; g2.ry *= 0.4; g2.rz *= 0.4;
+      if (Math.abs(g2.vy) < 1.2) g2.vy = 0;
+    }
+    if (g2.life < 0.6) {
+      g2.obj.traverse(function (o) {
+        if (o.isMesh && o.material) { o.material.transparent = true; o.material.opacity = Math.max(0, g2.life / 0.6); }
+      });
+    }
+    if (g2.life <= 0) { fxGroup.remove(g2.obj); gibs.splice(i, 1); }
+  }
+}
+function clearGibs() {
+  var i;
+  for (i = 0; i < gibs.length; i++) fxGroup.remove(gibs[i].obj);
+  gibs.length = 0;
 }
 
 /* ---------- floating damage numbers (DOM, pooled) ---------- */
@@ -3728,12 +3922,15 @@ function makeEntity(cfg) {
   e.root.position.copy(e.pos);
   scene.add(e.root);
 
-  // ground shadow blob
-  var sh = new THREE.Mesh(new THREE.CircleGeometry(e.radius * 1.5, 12), matU(0x000000, 0x000000, { transparent: true, opacity: 0.34, depthWrite: false }));
-  sh.rotation.x = -Math.PI / 2;
-  sh.renderOrder = 1;
-  scene.add(sh);
-  e.shadow = sh;
+  /* Blob shadow is a stand-in for the low-quality path only. With shadow
+     mapping enabled it doubles up with the real cast shadow. */
+  if (G.quality !== 'high') {
+    var sh = new THREE.Mesh(new THREE.CircleGeometry(e.radius * 1.5, 12), matU(0x000000, 0x000000, { transparent: true, opacity: 0.3, depthWrite: false }));
+    sh.rotation.x = -Math.PI / 2;
+    sh.renderOrder = 1;
+    scene.add(sh);
+    e.shadow = sh;
+  }
 
   // floating health bar (enemies only)
   if (cfg.kind !== 'hero') {
@@ -3762,15 +3959,44 @@ function makeHero(heroId, x, z, isPlayer) {
   return e;
 }
 
+/* Cosmetic strains: same stat block, different look, so a horde doesn't read
+   as one model copy-pasted twenty times. */
+var VAMP_STRAINS = [
+  { tag: '', bodyMul: 1.0, accent: null, scale: 1.0 },
+  { tag: 'Pale', bodyMul: 1.5, accent: 0xa0c8d8, scale: 1.04 },
+  { tag: 'Ashen', bodyMul: 0.62, accent: 0x7a6a60, scale: 0.96 },
+  { tag: 'Bloodgorged', bodyMul: 0.85, accent: 0xff2030, scale: 1.12 },
+  { tag: 'Feral', bodyMul: 0.7, accent: 0xc8a020, scale: 0.92 },
+  { tag: 'Nightborn', bodyMul: 0.5, accent: 0x8a30d8, scale: 1.0 }
+];
+function tintHex(hex, mul) {
+  var r = Math.min(255, Math.round(((hex >> 16) & 255) * mul));
+  var g = Math.min(255, Math.round(((hex >> 8) & 255) * mul));
+  var b = Math.min(255, Math.round((hex & 255) * mul));
+  return (r << 16) | (g << 8) | b;
+}
 function makeEnemy(typeId, x, z, elite) {
   var d = ENEMIES[typeId];
   if (!d) d = ENEMIES.thrall;
-  var model = buildEnemyModel(d);
+  // roll a cosmetic strain
+  var strain = pick(VAMP_STRAINS);
+  var dv = d;
+  if (strain.tag) {
+    dv = {};
+    var kk;
+    for (kk in d) dv[kk] = d[kk];
+    dv.body = tintHex(d.body, strain.bodyMul);
+    dv.skin = tintHex(d.skin, 0.6 + strain.bodyMul * 0.4);
+    if (strain.accent) dv.accent = strain.accent;
+    dv.scale = d.scale * strain.scale;
+  }
+  var model = buildEnemyModel(dv);
   var hpMul = (1 + 0.055 * G.locIndex + (G.vs ? G.vsWave * 0.09 : 0)) * DIFFS[G.diffIdx === undefined ? 1 : G.diffIdx].hp;
   var e = makeEntity({
-    kind: 'enemy', team: 'enemy', def: d, model: model, x: x, z: z,
+    kind: 'enemy', team: 'enemy', def: dv, model: model, x: x, z: z,
     maxHp: Math.round(d.hp * hpMul * (elite ? 2.4 : 1)), elite: elite
   });
+  if (strain.tag) e.name = strain.tag + ' ' + d.name;
   if (elite) {
     e.root.scale.multiplyScalar(1.22);
     e.baseScale = e.root.scale.x;
@@ -3834,9 +4060,11 @@ function animateEntity(e, dt) {
   // reset toward neutral
   var idleBob = Math.sin(a.breathe * 1.8) * 0.035;
   p.torso.position.y = idleBob + (moving ? Math.abs(sw2) * 0.06 : 0);
-  p.torso.rotation.x = damp(p.torso.rotation.x, moving ? 0.16 : 0.02, 8, dt);
+  // A 0.16 rad permanent stoop read as elderly. Small lean, head stays level.
+  var leanFwd = moving ? clamp(0.02 + amp * 0.05, 0, 0.09) : 0.01;
+  p.torso.rotation.x = damp(p.torso.rotation.x, leanFwd, 8, dt);
   p.torso.rotation.z = damp(p.torso.rotation.z, a.lean, 8, dt);
-  p.head.rotation.x = damp(p.head.rotation.x, moving ? -0.1 : 0, 6, dt);
+  p.head.rotation.x = damp(p.head.rotation.x, -leanFwd, 8, dt);   // counter-rotate: eyes on the horizon
 
   // legs
   if (!e.grounded && !e.flying) {
@@ -3895,9 +4123,17 @@ function animateEntity(e, dt) {
     p.head.rotation.x = 0.3;
   }
   if (e.drawReach > 0.02 && !e.atk) {
-    poseArmR = lerp(poseArmR, -2.45, e.drawReach);
-    foreR = lerp(foreR, 1.25, e.drawReach);
-    p.torso.rotation.y = damp(p.torso.rotation.y, -0.28 * e.drawReach, 12, dt);
+    poseArmR = lerp(poseArmR, -2.5, e.drawReach);
+    foreR = lerp(foreR, 1.35, e.drawReach);
+    poseArmL = lerp(poseArmL, -0.5, e.drawReach * 0.6);          // off-hand braces
+    p.torso.rotation.y = damp(p.torso.rotation.y, -0.34 * e.drawReach + 0.5 * (e.drawFlourish || 0), 12, dt);
+    p.head.rotation.y = damp(p.head.rotation.y, 0.3 * e.drawReach, 10, dt);
+  } else if (p.head.rotation.y !== 0) {
+    p.head.rotation.y = damp(p.head.rotation.y, 0, 8, dt);
+  }
+  if (e.drawFlourish > 0.02 && !e.atk) {
+    poseArmRZ = lerp(poseArmRZ, -0.85, e.drawFlourish);          // blade sweeps out
+    poseArmR = lerp(poseArmR, -1.15, e.drawFlourish);
   }
   p.armR.rotation.x = damp(p.armR.rotation.x, poseArmR, 22, dt);
   p.armR.rotation.z = damp(p.armR.rotation.z, poseArmRZ, 22, dt);
@@ -3912,15 +4148,25 @@ function animateEntity(e, dt) {
   if (p.sheath) {
     var wantDrawn = !!e.atk || (e.combatT || 0) > 0;
     if (e.drawA === undefined) e.drawA = wantDrawn ? 1 : 0;
-    e.drawA = damp(e.drawA, wantDrawn ? 1 : 0, 7, dt);
+    e.drawA = damp(e.drawA, wantDrawn ? 1 : 0, 6, dt);
     if (e.drawA > 0.995) e.drawA = 1;
     if (e.drawA < 0.005) e.drawA = 0;
-    p.sheath.visible = (e.drawA < 0.5);
-    p.weapon.visible = (e.drawA >= 0.5);
-    // reach arc peaks mid-transition
-    e.drawReach = (e.drawA > 0.01 && e.drawA < 0.99) ? Math.sin(e.drawA * Math.PI) : 0;
-    if (e.drawReach > 0.02 && !e.wasDrawn !== !wantDrawn) { /* transition running */ }
-    if (wantDrawn && !e.wasDrawn && e.drawA < 0.2) { SFX.swing(0); }
+    /* Three-stage draw: reach over the shoulder, pull the blade clear along
+       its own axis, then snap into the guard with a small flourish. The blade
+       swaps from the scabbard to the hand at the moment of the pull. */
+    var dA = e.drawA;
+    p.sheath.visible = (dA < 0.45);
+    p.weapon.visible = (dA >= 0.45);
+    e.drawReach = (dA > 0.01 && dA < 0.99) ? Math.sin(Math.min(1, dA / 0.7) * Math.PI) : 0;
+    e.drawPull = (dA > 0.4 && dA < 0.92) ? Math.sin((dA - 0.4) / 0.52 * Math.PI) : 0;
+    e.drawFlourish = (dA > 0.75 && dA < 1) ? Math.sin((dA - 0.75) / 0.25 * Math.PI) : 0;
+    if (p.weapon.visible) {
+      // slide the blade out along its length, then settle
+      p.weapon.position.y = -0.6 - e.drawPull * 0.55;
+      p.weapon.position.x = e.drawPull * 0.1;
+    }
+    if (wantDrawn && !e.wasDrawn) { SFX.swing(0); noise(0.3, 0.16, 'bandpass', 3200); }
+    if (!wantDrawn && e.wasDrawn) { noise(0.26, 0.12, 'bandpass', 2200); }
     e.wasDrawn = wantDrawn;
   }
 
@@ -3975,11 +4221,20 @@ function animateEntity(e, dt) {
   }
 
   // coat sway
+  /* Coat tails track the leg beneath them.
+     A static hem gets walked straight through: a back-swinging thigh reaches
+     ~0.36 behind the hip while a hanging panel sits at ~0.30. Each panel now
+     lifts by whatever its leg is doing, so the leg is always in front of it. */
   if (p.coat && p.coat.length) {
-    var i, ph;
+    var i, ph, side, legRot, kick;
+    var rotL = Math.max(0, p.legL.rotation.x);      // positive = swung backward
+    var rotR = Math.max(0, p.legR.rotation.x);
     for (i = 0; i < p.coat.length; i++) {
-      ph = Math.sin(a.run * 0.5 + i) * 0.16 * amp;
-      p.coat[i].rotation.x = damp(p.coat[i].rotation.x, -0.12 - amp * 0.5 + ph, 9, dt);
+      side = p.coat[i].userData.side;
+      legRot = side < 0 ? rotL : (side > 0 ? rotR : Math.max(rotL, rotR));
+      kick = legRot * 1.15;   // stay further back than the leg itself
+      ph = Math.sin(a.run * 0.5 + i) * 0.12 * amp;
+      p.coat[i].rotation.x = damp(p.coat[i].rotation.x, 0.1 + amp * 0.4 + kick + ph, 14, dt);
       p.coat[i].rotation.z = damp(p.coat[i].rotation.z, Math.sin(a.breathe * 1.2 + i) * 0.06, 6, dt);
     }
   }
@@ -4033,7 +4288,7 @@ function physicsStep(e, dt) {
     e.pos.x += e.vel.x * dt;
     e.pos.y += e.vel.y * dt;
     e.pos.z += e.vel.z * dt;
-    if (e.pos.y < -12) { // fell off the world
+    if (e.pos.y < ((G.beat && G.beat.zone && (G.beat.zone.y || 0) > 4) ? -6 : -12)) { // fell off the world
       if (e.team === 'player') { damageEntity(e, 30, e.pos.x, e.pos.z, { knock: 0, source: 'fall' }); respawnAtSafe(e); }
       else { killEntity(e, null); return; }
     }
@@ -4080,6 +4335,15 @@ function physicsStep(e, dt) {
   }
 }
 function respawnAtSafe(e) {
+  // On rooftop Acts, put them back on the current deck — a fall shouldn't
+  // cost the beat, just some health and momentum.
+  if (G.beat && G.beat.zone && (G.beat.zone.y || 0) > 4) {
+    e.pos.set(G.beat.zone.x, G.beat.zone.y + 1.5, G.beat.zone.z);
+    e.vel.set(0, 0, 0);
+    e.invuln = Math.max(e.invuln, 1.2);
+    spawnRing(e.pos.x, e.pos.y, e.pos.z, 0x80c0ff, 3, 0.5);
+    return;
+  }
   e.pos.set(G.safeX || 0, (G.safeY || 0) + 1.2, G.safeZ || 0);
   e.vel.set(0, 0, 0);
   e.invuln = Math.max(e.invuln, 1.0);
@@ -4289,6 +4553,8 @@ function damageEntity(e, amount, srcX, srcZ, opts) {
   e.hp -= amount;
   e.hitFlash = 0.18;
   e.lastAttacker = o.by || null;
+  e.lastHitKind = o.source || '';
+  e.lastHitX = srcX; e.lastHitZ = srcZ;
 
   var hitY = e.pos.y + e.height * 0.55;
   var bloodColor = (e.team === 'enemy') ? 0xc41028 : 0xff4040;
@@ -4359,6 +4625,19 @@ function healEntity(e, amount) {
     emit(e.pos.x, e.pos.y + 1, e.pos.z, 5, { color: 0x50ff90, speed: 2.4, life: 0.5, gravity: 3 });
   }
 }
+/* Occasional one-liner on a kill, rate-limited so it never chatters. */
+function maybeQuip(hero, victim) {
+  if (!G.quipT) G.quipT = 0;
+  if (G.time < G.quipT) return;
+  var chance = victim.boss ? 1 : (victim.isElite ? 0.5 : 0.1);
+  if (Math.random() > chance) return;
+  G.quipT = G.time + rand(9, 16);
+  var line;
+  if (hero.heroId === 'blade') line = pick(BLADE_QUIPS);
+  else if (PARTNER_QUIPS[hero.heroId]) line = pick(PARTNER_QUIPS[hero.heroId]);
+  else line = pick(BLADE_QUIPS);
+  toast(hero.def.name + ': ' + line);
+}
 function killEntity(e, by) {
   if (e.dead) return;
   e.dead = true; e.deadT = 0; e.atk = null; e.hp = 0;
@@ -4370,6 +4649,14 @@ function killEntity(e, by) {
     emit(e.pos.x, e.pos.y + e.height * 0.5, e.pos.z, 34, { color: 0xc41028, speed: 8, life: 0.7, gravity: -10 });
     emit(e.pos.x, e.pos.y + e.height * 0.5, e.pos.z, 26, { color: 0x604040, speed: 5, life: 1.1, gravity: -2, size: 1.2 });
     spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xff3040, 2.5, 0.45);
+    // sword and heavy kills tear them apart
+    var lastKind = e.lastHitKind || '';
+    if (lastKind === 'heavy' || lastKind === 'special' || lastKind === 'team' || Math.random() < 0.45) {
+      var gdx = e.pos.x - (e.lastHitX === undefined ? e.pos.x - 1 : e.lastHitX);
+      var gdz = e.pos.z - (e.lastHitZ === undefined ? e.pos.z : e.lastHitZ);
+      var gl = Math.sqrt(gdx * gdx + gdz * gdz) || 1;
+      spawnGibs(e, gdx / gl, gdz / gl);
+    }
     G.killCount++;
     G.beatKills = (G.beatKills || 0) + 1;   // gauntlet beats read this
     P.kills++;
@@ -4379,7 +4666,11 @@ function killEntity(e, by) {
     var n = e.dropTokens, i;
     for (i = 0; i < n; i++) spawnToken(e.pos.x + rand(-1, 1), e.pos.y + 1, e.pos.z + rand(-1, 1), 1);
     if (Math.random() < (e.isElite ? 0.8 : 0.12)) spawnHealth(e.pos.x + rand(-1, 1), e.pos.y + 0.8, e.pos.z + rand(-1, 1));
-    if (by && by.kind === 'hero') { addMeter(by, e.boss ? 40 : (e.isElite ? 22 : 9)); addDayMeter(by, e.boss ? 30 : 7); }
+    if (by && by.kind === 'hero') {
+      addMeter(by, e.boss ? 40 : (e.isElite ? 22 : 9));
+      addDayMeter(by, e.boss ? 30 : 7);
+      maybeQuip(by, e);
+    }
     if (e.def && HEROES[e.def.id] && HEROES[e.def.id].fromBoss) {
       G.bossesBeaten = G.bossesBeaten || [];
       if (G.bossesBeaten.indexOf(e.def.id) < 0) {
@@ -4966,8 +5257,19 @@ function updateEnemy(e, dt) {
     e.vel.x = damp(e.vel.x, dx * sp + ox, 8, dt);
     e.vel.z = damp(e.vel.z, dz * sp + oz, 8, dt);
     if (e.grounded && !e.flying) {
-      var ah = groundHeightAt(e.pos.x + dx * 1.1, e.pos.z + dz * 1.1, e.pos.y + 1.2, 0.5);
-      if (ah > e.pos.y + 0.55 && ah < e.pos.y + 3.5) e.vel.y = 10.5;
+      var ah = groundHeightAt(e.pos.x + dx * 1.3, e.pos.z + dz * 1.3, e.pos.y + 1.6, 0.6);
+      if (ah > e.pos.y + 0.4 && ah < e.pos.y + 5.5) e.vel.y = 12.5;
+    }
+    /* Stuck watchdog: chasing but not actually covering ground means we're
+       snagged on a step or a corner — hop and shove sideways to break free. */
+    var movedSq = dist2(e.pos.x, e.pos.z, e.lastX === undefined ? e.pos.x : e.lastX, e.lastZ === undefined ? e.pos.z : e.lastZ);
+    e.stuckT = (movedSq < 0.0009) ? (e.stuckT || 0) + dt : 0;
+    e.lastX = e.pos.x; e.lastZ = e.pos.z;
+    if (e.stuckT > 0.5) {
+      e.stuckT = 0;
+      if (e.grounded) e.vel.y = 12.5;
+      e.vel.x += Math.sin(want + Math.PI / 2) * 5 * (Math.random() < 0.5 ? 1 : -1);
+      e.vel.z += Math.cos(want + Math.PI / 2) * 5 * (Math.random() < 0.5 ? 1 : -1);
     }
   } else if (strafe !== 0) {
     var sx = Math.sin(want + Math.PI / 2) * 2.4 * strafe + Math.sin(want) * strafe * 2;
@@ -5187,7 +5489,26 @@ function updateShockwaves(dt) {
 
 /* Snake layout so consecutive zones are always neighbours — traversal routes
    between them stay short enough to be jumpable. */
-function zoneLayout(n, half) {
+function zoneLayout(n, half, style) {
+  var out2 = [], i2, t2;
+  if (style === 'linear' || style === 'rooftop') {
+    /* Friend-or-Foe style: one route, front to back. Zones sit on a line with
+       a slight weave so it doesn't read as a corridor of identical boxes. */
+    var span = half * 1.72;
+    for (i2 = 0; i2 < n; i2++) {
+      t2 = (n === 1) ? 0.5 : i2 / (n - 1);
+      out2.push({
+        x: Math.sin(i2 * 1.25) * Math.min(15, half * 0.2),
+        z: span / 2 - span * t2,
+        i: i2,
+        y: style === 'rooftop' ? (20 + Math.sin(i2 * 0.9) * 6) : 0
+      });
+    }
+    return out2;
+  }
+  return zoneGrid(n, half);
+}
+function zoneGrid(n, half) {
   var cols = n <= 3 ? n : (n <= 6 ? 3 : 4);
   var rows = Math.ceil(n / cols);
   var out = [], i, r, c, x, z;
@@ -5236,21 +5557,45 @@ function buildActWorld(act) {
   worldGroup.add(moon); worldGroup.add(moon.target);
 
   // ---- ground ----
-  paveFloor(loc, size, half);
-  addCollider(0, -2, 0, size + 60, 2, size + 60, { walkable: true });
-  buildPerimeter(loc, size);
+  if (style === 'rooftop') buildRooftopBase(loc, size, half);
+  else paveFloor(loc, size, half, act.indoor);
+  if (style !== 'rooftop') {
+    addCollider(0, -2, 0, size + 60, 2, size + 60, { walkable: true });
+    buildPerimeter(loc, size);
+  }
 
   // ---- zones ----
-  var zones = zoneLayout(nBeats, half);
+  var style = act.layout || 'grid';
+  var zones = zoneLayout(nBeats, half, style);
   G.zones = zones;
   clearZones.length = 0;
   var zi;
   for (zi = 0; zi < zones.length; zi++) clearZones.push({ x: zones[zi].x, z: zones[zi].z, r: 13 });
+  /* Reserve a walkable corridor between consecutive zones. Without this the
+     building rows can form an unbroken wall across the map and strand a zone —
+     the automated run caught exactly that on Act 1. */
+  var za, zb, steps, si2, tt2;
+  for (zi = 1; zi < zones.length; zi++) {
+    za = zones[zi - 1]; zb = zones[zi];
+    steps = Math.ceil(Math.sqrt(dist2(za.x, za.z, zb.x, zb.z)) / 7);
+    for (si2 = 1; si2 < steps; si2++) {
+      tt2 = si2 / steps;
+      clearZones.push({ x: lerp(za.x, zb.x, tt2), z: lerp(za.z, zb.z, tt2), r: 8 });
+    }
+  }
 
   // traversal routes first — they reserve their own corridors
   for (zi = 0; zi < nBeats; zi++) {
     if (act.beats[zi].k === 'traverse' && zi > 0) {
       buildTraverseRoute(zones[zi - 1], zones[zi], loc, half, zi);
+    }
+  }
+  /* Rooftop Acts have no ground, so any pair of zones NOT joined by a traverse
+     beat still needs a way across — otherwise the run simply dead-ends. */
+  if (style === 'rooftop') {
+    for (zi = 1; zi < nBeats; zi++) {
+      if (act.beats[zi].k === 'traverse') continue;
+      buildRoofBridge(zones[zi - 1], zones[zi], loc);
     }
   }
 
@@ -5261,8 +5606,12 @@ function buildActWorld(act) {
   else if (loc.props === 'catacombs') buildCatacombs(stage, loc, half);
   else buildTemple(stage, loc, half);
 
-  // zone landmarks — a raised arena floor and a colour-coded pillar per zone
-  for (zi = 0; zi < zones.length; zi++) buildZoneLandmark(zones[zi], loc, act.beats[zi], zi);
+  // zone landmarks
+  for (zi = 0; zi < zones.length; zi++) {
+    if (style === 'rooftop') buildRoofPad(zones[zi], loc, half);
+    else buildZoneLandmark(zones[zi], loc, act.beats[zi], zi);
+  }
+  if (style === 'linear') buildCorridorWalls(zones, loc, half);
 
   // hazards away from zone centres
   var hi;
@@ -5273,30 +5622,120 @@ function buildActWorld(act) {
   }
 
   // collectibles scattered across the whole map
-  var ti, tx, tz, ty;
+  var ti, tx, tz, ty, zpick;
   for (ti = 0; ti < stage.tokens; ti++) {
-    tx = rand(-half + 8, half - 8); tz = rand(-half + 8, half - 8);
+    zpick = zones[randi(0, zones.length - 1)];
+    tx = clamp(zpick.x + rand(-13, 13), -half + 8, half - 8);
+    tz = clamp(zpick.z + rand(-13, 13), -half + 8, half - 8);
     var sp = findClearSpot(tx, tz, 1, half);
-    ty = groundHeightAt(sp.x, sp.z, 40, 0.5) + 1.1;
+    ty = groundHeightAt(sp.x, sp.z, (zpick.y || 0) + 6, 0.5) + 1.1;
     spawnToken(sp.x, ty, sp.z, 1);
   }
   for (ti = 0; ti < 4 + Math.floor(nBeats / 2); ti++) {
-    tx = rand(-half + 8, half - 8); tz = rand(-half + 8, half - 8);
+    zpick = zones[randi(0, zones.length - 1)];
+    tx = clamp(zpick.x + rand(-12, 12), -half + 8, half - 8);
+    tz = clamp(zpick.z + rand(-12, 12), -half + 8, half - 8);
     var sp2 = findClearSpot(tx, tz, 1, half);
-    spawnHealth(sp2.x, groundHeightAt(sp2.x, sp2.z, 40, 0.5) + 0.8, sp2.z);
+    spawnHealth(sp2.x, groundHeightAt(sp2.x, sp2.z, (zpick.y || 0) + 6, 0.5) + 0.8, sp2.z);
   }
 
   // two secret caches per Act, tucked against the perimeter
-  buildSecretRoom(stage, loc, half);
-  buildSecretRoom(stage, loc, half);
+  if (style !== 'rooftop') { buildSecretRoom(stage, loc, half); buildSecretRoom(stage, loc, half); }
 
-  if (loc.rain) weather = makeWeather('rain', loc);
-  else if (loc.snow) weather = makeWeather('snow', loc);
-  else if (loc.embers) weather = makeWeather('embers', loc);
+  // weather only outdoors — rain was falling through the Night Market's roof
+  if (!act.indoor) {
+    if (loc.rain) weather = makeWeather('rain', loc);
+    else if (loc.snow) weather = makeWeather('snow', loc);
+    else if (loc.embers) weather = makeWeather('embers', loc);
+  }
   if (!act.indoor && (loc.props === 'city' || loc.props === 'castle')) addStars(loc);
   if (act.indoor) buildInterior(loc, size, half);
 
   return stage;
+}
+
+/* Rooftop Acts: no ground at all. Buildings rise out of a dark drop, the
+   zones are their roofs, and falling puts you back at the last checkpoint.
+   The city continues below and around you for depth. */
+function buildRooftopBase(loc, size, half) {
+  var i, x, z, h;
+  scene.fog = new THREE.Fog(loc.fog, 40, size * 2.0);
+  // distant skyline in every direction
+  for (i = 0; i < 90; i++) {
+    var a = (i / 90) * Math.PI * 2 + rand(-0.05, 0.05);
+    var r = half * rand(0.75, 2.1);
+    x = Math.sin(a) * r; z = Math.cos(a) * r;
+    h = rand(6, 26);
+    var b = addProp(x, -30, z, rand(12, 24), h + 26, rand(12, 24), i % 3 ? 0x131620 : 0x171a26,
+      { solid: false, castShadow: false });
+    var wi, wj;
+    for (wi = 0; wi < 3; wi++) {
+      for (wj = 0; wj < 3; wj++) {
+        if (Math.random() < 0.55) continue;
+        var win = new THREE.Mesh(boxGeo(1.5, 0.9, 0.3), matU(0xffd890, 0xffbe60));
+        win.position.set(x + (wj - 1) * 4.5, -26 + wi * 8, z + 12);
+        worldGroup.add(win);
+      }
+    }
+  }
+  // street glow far below
+  var glow = new THREE.Mesh(new THREE.PlaneGeometry(size * 3, size * 3), matU(0x0c0d16, 0x0a0b12));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = -34;
+  worldGroup.add(glow);
+  addStars(loc);
+}
+
+/* A plain span between two roofs — planks, a couple of stepping slabs and
+   rope rails. Always walkable, so no rooftop zone can be stranded. */
+function buildRoofBridge(from, to, loc) {
+  var dx = to.x - from.x, dz = to.z - from.z;
+  var span = Math.sqrt(dx * dx + dz * dz);
+  if (span < 1) return;
+  var n = Math.max(3, Math.floor(span / 7)), i, t, x, z, y;
+  var ux = dx / span, uz = dz / span;
+  /* Wide and walled. Narrow planks read nicely but made the route a coin flip;
+     the automated run kept walking off the side and stranding the Act. */
+  var W = 13;
+  for (i = 1; i <= n; i++) {
+    t = i / (n + 1);
+    x = from.x + dx * t;
+    z = from.z + dz * t;
+    y = lerp(from.y || 1.4, to.y || 1.4, t) + Math.sin(t * Math.PI) * 0.9;
+    addProp(x, y - 0.8, z, Math.abs(ux) > 0.5 ? 8 : W, 0.8, Math.abs(ux) > 0.5 ? W : 8, loc.ground,
+      { walkable: true, force: true });
+    clearZones.push({ x: x, z: z, r: 8 });
+    // solid parapets down both sides so you cannot walk off
+    addProp(x - uz * (W / 2 - 0.5), y, z + ux * (W / 2 - 0.5), Math.abs(ux) > 0.5 ? 8 : 1.2, 1.6,
+      Math.abs(ux) > 0.5 ? 1.2 : 8, loc.ground2, { force: true });
+    addProp(x + uz * (W / 2 - 0.5), y, z - ux * (W / 2 - 0.5), Math.abs(ux) > 0.5 ? 8 : 1.2, 1.6,
+      Math.abs(ux) > 0.5 ? 1.2 : 8, loc.ground2, { force: true });
+    if (i % 2 === 0) addLightPoint(x, y + 2.5, z, loc.accent, 0.5, 14);
+    if (i % 3 === 1) spawnToken(x, y + 1.6, z, 1);
+  }
+}
+
+/* Rooftop platform for one zone: slab, parapet, roof clutter. */
+function buildRoofPad(zone, loc, half) {
+  var y = zone.y || 20, w = rand(32, 40), d = rand(32, 40), i;
+  addProp(zone.x, y - 1.4, zone.z, w, 1.4, d, loc.ground2, { walkable: true, force: true });
+  addProp(zone.x, y - 30, zone.z, w * 0.86, 28.6, d * 0.86, 0x141824, { force: true, castShadow: false });
+  // parapet: a low wall you can see over but not walk off by accident
+  addProp(zone.x, y, zone.z - d / 2 + 0.4, w, 1.5, 0.8, loc.ground, { force: true });
+  addProp(zone.x, y, zone.z + d / 2 - 0.4, w, 1.5, 0.8, loc.ground, { force: true });
+  addProp(zone.x - w / 2 + 0.4, y, zone.z, 0.8, 1.5, d, loc.ground, { force: true });
+  addProp(zone.x + w / 2 - 0.4, y, zone.z, 0.8, 1.5, d, loc.ground, { force: true });
+  // roof furniture
+  for (i = 0; i < 5; i++) {
+    var rx = zone.x + rand(-w * 0.3, w * 0.3), rz = zone.z + rand(-d * 0.3, d * 0.3);
+    if (Math.random() < 0.5) addProp(rx, y, rz, rand(3, 6), rand(2, 3.4), rand(3, 6), 0x2a2e3a, { force: true });
+    else {
+      addDecor(rx, y + 1.4, rz, cylGeo(1.5, 1.5, 2.8, 10), 0x3a3e4a, 0x000000, { castShadow: true });
+      addDecor(rx, y + 3.0, rz, cylGeo(1.7, 1.7, 0.3, 10), 0x22262e);
+    }
+  }
+  addDecor(zone.x + w * 0.3, y + 4, zone.z - d * 0.3, boxGeo(0.4, 8, 0.4), 0x1c1c24);   // aerial
+  addDecor(zone.x + w * 0.3, y + 8, zone.z - d * 0.3, sphGeo(0.4, 8), 0xff4040, 0xff2020);
+  addLightPoint(zone.x, y + 6, zone.z, loc.accent, 0.9, 34);
 }
 
 /* Roofs the map and drops in structural columns and dividing walls, so some
@@ -5353,20 +5792,43 @@ function buildZoneLandmark(zone, loc, beat, idx) {
   addLightPoint(zone.x, 6, zone.z, loc.accent, 1.0, 26);
 }
 
+/* Linear Acts get side walls, so the route reads as a single path forward
+   instead of an open field you can wander off. */
+function buildCorridorWalls(zones, loc, half) {
+  var i, wallX = Math.min(half - 4, 30);
+  for (i = -half; i < half; i += 16) {
+    addProp(-wallX, 0, i, 3, 15, 16.5, loc.ground2, { force: true, castShadow: false });
+    addProp(wallX, 0, i, 3, 15, 16.5, loc.ground2, { force: true, castShadow: false });
+    if (i % 32 === 0) {
+      addDecor(-wallX + 1.6, 6, i, boxGeo(0.4, 3, 3), loc.accent, loc.accent);
+      addDecor(wallX - 1.6, 6, i, boxGeo(0.4, 3, 3), loc.accent2 || loc.accent, loc.accent2 || loc.accent);
+    }
+  }
+  // seal the ends
+  addProp(0, 0, half - 2, wallX * 2, 15, 3, loc.ground2, { force: true, castShadow: false });
+  addProp(0, 0, -half + 2, wallX * 2, 15, 3, loc.ground2, { force: true, castShadow: false });
+}
+
 /* Platform run linking two zones. Gaps capped so a sprint + double jump clears. */
 function buildTraverseRoute(from, to, loc, half, seed) {
   var dx = to.x - from.x, dz = to.z - from.z;
   var span = Math.sqrt(dx * dx + dz * dz);
   var n = Math.max(6, Math.min(14, Math.floor(span / 8)));
   var ux = dx / span, uz = dz / span;
-  var px = from.x, pz = from.z, y = 1.4, i;
+  var px = from.x, pz = from.z, i;
+  var y = (from.y || 0) > 0 ? from.y : 1.4;
+  var yEnd = (to.y || 0) > 0 ? to.y : y;
   for (i = 1; i <= n; i++) {
     var t = i / (n + 1);
     var lateral = Math.sin(i * 1.1 + seed) * Math.min(11, span * 0.16);
     var x = from.x + dx * t - uz * lateral;
     var z = from.z + dz * t + ux * lateral;
-    y += (i % 6 === 5) ? -1.2 : rand(0.9, 1.8);
-    y = clamp(y, 1.2, 19);
+    if (yEnd !== y && (from.y || to.y)) {
+      y = lerp((from.y || 1.4), yEnd, t) + Math.sin(t * Math.PI) * 2.5;   // arc between roofs
+    } else {
+      y += (i % 6 === 5) ? -1.2 : rand(0.9, 1.8);
+      y = clamp(y, 1.2, 19);
+    }
     var gap = Math.sqrt(dist2(x, z, px, pz));
     if (gap > 9.5) { x = px + (x - px) * (9.5 / gap); z = pz + (z - pz) * (9.5 / gap); }
     x = clamp(x, -half + 8, half - 8); z = clamp(z, -half + 8, half - 8);
@@ -5431,16 +5893,18 @@ function startAct(index, isVs) {
 
   var stage = buildActWorld(act);
   var z0 = G.zones[0];
-  G.safeX = z0.x; G.safeY = 0.5; G.safeZ = z0.z + 8;
+  G.safeX = z0.x; G.safeY = (z0.y || 0) + 0.5; G.safeZ = z0.z + 8;
 
   blade = makeHero('blade', G.safeX, G.safeZ, true);
+  blade.pos.y = G.safeY;
   cacheMaterials(blade);
   var partnerId = P.partner && P.heroes[P.partner] ? P.partner : 'whistler';
   ally = makeHero(partnerId, G.safeX + 2.6, G.safeZ, false);
+  ally.pos.y = G.safeY;
   cacheMaterials(ally);
   player = blade;
   camYaw = 0; camPitch = 0.3;
-  camera.position.set(z0.x, 7, G.safeZ + 12);
+  camera.position.set(z0.x, G.safeY + 7, G.safeZ + 12);
 
   clearTransientHUD();
   refreshHUDNames();
@@ -5482,7 +5946,7 @@ function beatEnter(i) {
   };
   G.beatKills = 0;
   // checkpoint — dying resumes here, not at the top of the Act
-  G.safeX = zone.x; G.safeY = 0.6; G.safeZ = zone.z;
+  G.safeX = zone.x; G.safeY = (zone.y || 0) + 0.6; G.safeZ = zone.z;
   G.checkpointBeat = i;
 
   if (zone.beacon) zone.beacon.material.opacity = 0.3;
@@ -5496,24 +5960,27 @@ function beatEnter(i) {
       ang = (t / def.n) * Math.PI * 2 + rand(-0.3, 0.3);
       rad = rand(6, 10);
       sp = findClearSpot(zone.x + Math.sin(ang) * rad, zone.z + Math.cos(ang) * rad, 3, G.stage.size / 2);
-      G.beat.targets.push(addObjectiveTarget(sp.x, sp.z, LOCATIONS[act.loc], t));
+      G.beat.targets.push(addObjectiveTarget(sp.x, sp.z, LOCATIONS[act.loc], t, groundHeightAt(sp.x, sp.z, (zone.y || 0) + 6, 2)));
     }
   } else if (k === 'explore') {
     var r2, a2, rr2, sp3;
     for (r2 = 0; r2 < def.n; r2++) {
-      a2 = (r2 / def.n) * Math.PI * 2 + rand(-0.5, 0.5);
-      rr2 = rand(10, 20);
+      a2 = (r2 / def.n) * Math.PI * 2 + rand(-0.4, 0.4);
+      rr2 = rand(5, 11);                    // inside the zone's cleared radius
       sp3 = findClearSpot(zone.x + Math.sin(a2) * rr2, zone.z + Math.cos(a2) * rr2, 1.5, G.stage.size / 2);
-      G.beat.relics.push(spawnRelic(sp3.x, groundHeightAt(sp3.x, sp3.z, 40, 1) + 1.4, sp3.z));
+      G.beat.relics.push(spawnRelic(sp3.x, groundHeightAt(sp3.x, sp3.z, (zone.y || 0) + 6, 1) + 1.4, sp3.z));
     }
   } else if (k === 'traverse') {
-    addGoalZone(zone.x, zone.z, LOCATIONS[act.loc]);
+    addGoalZone(zone.x, zone.z, LOCATIONS[act.loc], (zone.y || 0) + 6);
   } else if (k === 'hunt') {
-    var h, ah, rh;
+    var h, ah, rh, ex, ez, ee;
     for (h = 0; h < def.n; h++) {
       ah = (h / def.n) * Math.PI * 2;
-      rh = rand(9, 15);
-      G.beat.elites.push(makeEnemy(pick(act.pool), zone.x + Math.sin(ah) * rh, zone.z + Math.cos(ah) * rh, true));
+      rh = rand(7, 11);
+      ex = zone.x + Math.sin(ah) * rh; ez = zone.z + Math.cos(ah) * rh;
+      ee = makeEnemy(pick(act.pool), ex, ez, true);
+      ee.pos.y = groundHeightAt(ex, ez, (zone.y || 0) + 6, 0.8) + 0.2;
+      G.beat.elites.push(ee);
     }
   } else if (k === 'boss' || k === 'elite') {
     spawnActBoss(def.b, zone, k === 'boss');
@@ -5573,6 +6040,7 @@ function spawnActBoss(bossId, zone, major) {
     kind: major ? 'boss' : 'enemy', team: 'enemy', def: d, model: model,
     x: zone.x, z: zone.z - 6, maxHp: d.hp
   });
+  e.pos.y = groundHeightAt(zone.x, zone.z - 6, (zone.y || 0) + 6, 1.2) + 0.3;
   e.name = d.name;
   e.dropTokens = major ? 0 : 14;
   e.isElite = !major;
@@ -5597,11 +6065,16 @@ function spawnAtZone(zone, n, elite) {
   var i, a, r, x, z, half = G.stage.size / 2;
   for (i = 0; i < n; i++) {
     a = rand(0, Math.PI * 2);
-    r = rand(9, 17);
+    r = ((zone.y || 0) > 4) ? rand(4, 11) : rand(9, 17);   // rooftop: stay on the pad
     x = clamp(zone.x + Math.sin(a) * r, -half + 5, half - 5);
     z = clamp(zone.z + Math.cos(a) * r, -half + 5, half - 5);
     if (player && dist2(x, z, player.pos.x, player.pos.z) < 49) { x += 8; z += 8; }
-    var y = groundHeightAt(x, z, 40, 0.6);
+    // never drop one inside a wall or prop, and sample ground at the ZONE's
+    // height so rooftop Acts don't spawn enemies into the void below
+    var spot = findClearSpot(x, z, 1.1, half);
+    x = spot.x; z = spot.z;
+    var y = groundHeightAt(x, z, (zone.y || 0) + 6, 0.6);
+    if ((zone.y || 0) > 4 && y < zone.y - 6) { x = zone.x + rand(-7, 7); z = zone.z + rand(-7, 7); y = groundHeightAt(x, z, zone.y + 6, 0.6); }
     var e = makeEnemy(pick(G.act.pool), x, z, elite);
     e.pos.y = y;
     spawnRing(x, y + 0.1, z, 0x8a1020, 2.4, 0.5);
@@ -5819,8 +6292,8 @@ function resumeFromCheckpoint() {
     if (h.dayMode) endDaywalker(h);
   });
   player = blade; ally = (ally === blade) ? null : ally;
-  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, 1.0, zone.z + 6); }
-  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, 1.0, zone.z + 6); }
+  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, (zone.y || 0) + 1.0, zone.z + 6); }
+  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, (zone.y || 0) + 1.0, zone.z + 6); }
   G.ended = false; G.clearT = 0; G.bossDeathT = 0;
   G.slowmo = 1; G.slowmoT = 0;
   el('dwVig').style.opacity = 0;
@@ -5879,6 +6352,49 @@ function tutorialAdvance(action) {
   } else {
     setTimeout(function () { toast(HUB_TUTORIAL[P.tutorialStep].tip); }, 500);
   }
+}
+
+/* Blade's charger: low body, raked cabin, chrome, exhausts and light bars.
+   Also used to dress the city streets. */
+function buildMuscleCar(x, z, rotY, bodyCol) {
+  var g = new THREE.Group();
+  var col = bodyCol === undefined ? 0x14141a : bodyCol;
+  var body = new THREE.Mesh(boxGeo(3.0, 0.85, 6.4), matU(col)); body.position.y = 0.86; g.add(body);
+  var skirt = new THREE.Mesh(boxGeo(3.16, 0.34, 6.0), matU(0x0a0a0e)); skirt.position.y = 0.5; g.add(skirt);
+  var hood = new THREE.Mesh(boxGeo(2.86, 0.22, 2.1), matU(col)); hood.position.set(0, 1.33, 1.95); g.add(hood);
+  var scoop = new THREE.Mesh(boxGeo(1.05, 0.3, 1.0), matU(0x08080c)); scoop.position.set(0, 1.52, 1.75); g.add(scoop);
+  var cabin = new THREE.Mesh(boxGeo(2.6, 0.92, 2.5), matU(0x0b0b11)); cabin.position.set(0, 1.72, -0.35); g.add(cabin);
+  var glassF = new THREE.Mesh(boxGeo(2.42, 0.72, 0.12), matU(0x22303e, 0x0d141c));
+  glassF.position.set(0, 1.74, 0.9); glassF.rotation.x = 0.42; g.add(glassF);
+  var glassB = new THREE.Mesh(boxGeo(2.42, 0.62, 0.12), matU(0x22303e, 0x0d141c));
+  glassB.position.set(0, 1.74, -1.6); glassB.rotation.x = -0.5; g.add(glassB);
+  var trunk = new THREE.Mesh(boxGeo(2.86, 0.2, 1.5), matU(col)); trunk.position.set(0, 1.33, -2.4); g.add(trunk);
+  var spoiler = new THREE.Mesh(boxGeo(2.7, 0.12, 0.5), matU(0x0a0a0e)); spoiler.position.set(0, 1.72, -3.0); g.add(spoiler);
+  var spL = new THREE.Mesh(boxGeo(0.16, 0.42, 0.3), matU(0x0a0a0e)); spL.position.set(-1.15, 1.5, -2.95); g.add(spL);
+  var spR = spL.clone(); spR.position.x = 1.15; g.add(spR);
+  // lights
+  var hlL = new THREE.Mesh(boxGeo(0.72, 0.26, 0.14), matU(0xfff4d0, 0xffe6a0)); hlL.position.set(-0.94, 1.06, 3.22); g.add(hlL);
+  var hlR = hlL.clone(); hlR.position.x = 0.94; g.add(hlR);
+  var tl = new THREE.Mesh(boxGeo(2.5, 0.22, 0.12), matU(0xd03040, 0x901020)); tl.position.set(0, 1.06, -3.22); g.add(tl);
+  // chrome and exhaust
+  var grille = new THREE.Mesh(boxGeo(1.7, 0.3, 0.12), matU(0x2c2c34)); grille.position.set(0, 1.0, 3.24); g.add(grille);
+  var exL = new THREE.Mesh(cylGeo(0.14, 0.14, 0.5, 8), matU(0x9aa2b0)); exL.position.set(-0.7, 0.46, -3.3); exL.rotation.x = Math.PI / 2; g.add(exL);
+  var exR = exL.clone(); exR.position.x = 0.7; g.add(exR);
+  var stripe = new THREE.Mesh(boxGeo(0.34, 0.02, 6.3), matU(0x9a1420)); stripe.position.set(0, 1.29, 0); g.add(stripe);
+  // wheels with hubs
+  var wi, wx, wz;
+  for (wi = 0; wi < 4; wi++) {
+    wx = (wi % 2 ? 1.52 : -1.52); wz = (wi < 2 ? 2.15 : -2.15);
+    var tyre = new THREE.Mesh(cylGeo(0.62, 0.62, 0.42, 12), matU(0x0a0a0c));
+    tyre.position.set(wx, 0.62, wz); tyre.rotation.z = Math.PI / 2; g.add(tyre);
+    var hub = new THREE.Mesh(cylGeo(0.3, 0.3, 0.46, 8), matU(0xa8b0bc));
+    hub.position.set(wx, 0.62, wz); hub.rotation.z = Math.PI / 2; g.add(hub);
+  }
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY || 0;
+  worldGroup.add(g);
+  addCollider(x, 0, z, Math.abs(Math.cos(rotY || 0)) > 0.5 ? 3.2 : 6.6, 1.9, Math.abs(Math.cos(rotY || 0)) > 0.5 ? 6.6 : 3.2, { walkable: true });
+  return g;
 }
 
 function buildHubWorld() {
@@ -5957,28 +6473,30 @@ function buildHubWorld() {
   }
   addLightPoint(0, 11, 0, 0xff4050, 0.55, 46);
 
+  /* ---- terminals go in first so the dressing can avoid them ---- */
+  addTerminal(0, -18, 'MISSIONS', 'missions', 0xff4a5a);
+  addTerminal(-19, -5, 'UPGRADES', 'upgrades', 0xffb04a);
+  addTerminal(19, -5, 'PARTNERS', 'partners', 0x40b0ff);
+  addTerminal(-19, 15, 'INTEL', 'intel', 0x8de0a0);
+  addTerminal(19, 15, 'VERSUS ARENA', 'versus', 0xb060ff);
+
   /* ---- Blade's car ---- */
   var carX = -8, carZ = 22;
-  addProp(carX, 0, carZ, 3.1, 1.15, 6.6, 0x121218, { force: true });
-  addDecor(carX, 1.75, carZ - 0.3, boxGeo(2.75, 1.0, 3.1), 0x0c0c12);
-  addDecor(carX, 1.78, carZ - 1.72, boxGeo(2.5, 0.72, 0.14), 0x223040, 0x101820);
-  addDecor(carX, 0.42, carZ - 3.35, boxGeo(2.9, 0.34, 0.2), 0xd03040, 0x801020);
-  addDecor(carX, 0.42, carZ + 3.35, boxGeo(2.9, 0.34, 0.2), 0xd03040, 0x801020);
-  for (i = 0; i < 4; i++) {
-    addDecor(carX + (i % 2 ? 1.6 : -1.6), 0.55, carZ + (i < 2 ? 2.3 : -2.3), cylGeo(0.55, 0.55, 0.42, 10), 0x0a0a0c)
-      .rotation.z = Math.PI / 2;
-  }
+  buildMuscleCar(carX, carZ, 0);
 
   /* ---- weapon bench + rack ---- */
   var bx = 15, bz = -14;
   addProp(bx, 0, bz, 8.5, 1.15, 2.6, 0x3a2d22, { force: true });
   addDecor(bx, 1.24, bz, boxGeo(8.6, 0.16, 2.7), 0x4a3a2a);
-  for (i = 0; i < 5; i++) {                                  // swords racked on the wall
+  // pegboard behind the rack so the swords hang on something instead of air
+  addDecor(bx, 3.6, bz - 1.55, boxGeo(9.4, 5.4, 0.22), 0x2b2b33);
+  addDecor(bx, 6.25, bz - 1.5, boxGeo(9.8, 0.3, 0.4), 0x3a3a44);
+  for (i = 0; i < 5; i++) {
     var sx2 = bx - 3.2 + i * 1.6;
-    addDecor(sx2, 3.5, bz - 1.2, boxGeo(0.12, 2.1, 0.05), 0xd8dce8, 0x343c4c);
-    addDecor(sx2, 2.35, bz - 1.2, boxGeo(0.42, 0.1, 0.12), 0xb8202c);
+    addDecor(sx2, 3.5, bz - 1.36, boxGeo(0.12, 2.1, 0.05), 0xd8dce8, 0x343c4c);
+    addDecor(sx2, 2.35, bz - 1.36, boxGeo(0.42, 0.1, 0.12), 0xb8202c);
+    addDecor(sx2, 4.72, bz - 1.4, boxGeo(0.5, 0.12, 0.14), 0x50505c);   // wall hook
   }
-  addDecor(bx, 5.1, bz - 1.25, boxGeo(9.0, 0.22, 0.3), 0x2a2a32);
   for (i = 0; i < 6; i++) addDecor(bx - 3.5 + i * 1.4, 1.6, bz + 0.5, boxGeo(0.5, 0.55, 0.5), 0x6a5a30);  // ammo boxes
   addLightPoint(bx, 4, bz, 0xffd0a0, 0.8, 18);
 
@@ -5987,15 +6505,20 @@ function buildHubWorld() {
   for (i = 0; i < 9; i++) {
     var cx2 = rand(-HALF + 6, HALF - 6), cz2 = rand(-HALF + 6, HALF - 6);
     if (Math.abs(cx2) < 12 && Math.abs(cz2) < 12) continue;
+    if (nearTerminal(cx2, cz2, 7)) continue;      // crates were spawning through screens
     var hgt = randi(1, 2);
     for (j = 0; j < hgt; j++) addProp(cx2, j * 1.7, cz2, 1.7, 1.7, 1.7, j % 2 ? 0x4a3c26 : 0x3c3020, { force: true });
   }
-  addProp(HALF - 6, 0, 14, 4.5, 1.0, 2.4, 0xd8d8dc, { force: true });     // med table
-  addDecor(HALF - 6, 1.35, 14, boxGeo(4.6, 0.2, 2.5), 0xe8e8ec);
-  addDecor(HALF - 6, 3.4, 14, boxGeo(1.2, 1.2, 0.14), 0xc02028, 0x600810);
-  addDecor(HALF - 6, 3.4, 14.08, boxGeo(0.9, 0.26, 0.16), 0xffffff, 0x888888);
-  addDecor(HALF - 6, 3.4, 14.08, boxGeo(0.26, 0.9, 0.16), 0xffffff, 0x888888);
-  addLightPoint(HALF - 6, 4.4, 14, 0xff6070, 0.7, 16);
+  // med bay pushed against the east wall; the cross is mounted ON a backboard
+  var mbX = HALF - 3.4, mbZ = 14;
+  addProp(mbX, 0, mbZ, 2.6, 1.0, 4.6, 0xd8d8dc, { force: true });        // gurney
+  addDecor(mbX, 1.35, mbZ, boxGeo(2.7, 0.2, 4.7), 0xe8e8ec);
+  addDecor(mbX, 1.9, mbZ - 1.9, boxGeo(2.4, 0.9, 0.16), 0xc8c8d0);       // headboard
+  addDecor(HALF - 0.4, 3.6, mbZ, boxGeo(0.22, 2.6, 2.6), 0x2b2b33);      // wall panel
+  addDecor(HALF - 0.55, 3.6, mbZ, boxGeo(0.14, 1.3, 0.34), 0xc02028, 0x600810);
+  addDecor(HALF - 0.62, 3.6, mbZ, boxGeo(0.12, 0.34, 1.3), 0xc02028, 0x600810);
+  addDecor(HALF - 1.1, 2.2, mbZ + 1.8, boxGeo(0.5, 1.6, 0.5), 0x30343c); // IV stand
+  addLightPoint(HALF - 2.5, 4.4, mbZ, 0xff6070, 0.7, 16);
   addProp(-6, 0, -24, 1.2, 0.5, 1.2, 0x2a2a30, { force: true });          // training dummy
   addDecor(-6, 2.1, -24, cylGeo(0.36, 0.42, 3.4, 8), 0x5a4a3a);
   addDecor(-6, 4.05, -24, sphGeo(0.52, 8), 0x6a5a48);
@@ -6006,13 +6529,6 @@ function buildHubWorld() {
   addDecor(0, 10.9, -HALF + 1.1, boxGeo(9, 0.3, 0.18), 0x40b0ff, 0x40b0ff);
   addLightPoint(0, 11.6, -HALF + 4, 0xff3040, 1.3, 26);
 
-  /* ---- terminals ---- */
-  addTerminal(0, -18, 'MISSIONS', 'missions', 0xff4a5a);
-  addTerminal(-19, -5, 'UPGRADES', 'upgrades', 0xffb04a);
-  addTerminal(19, -5, 'PARTNERS', 'partners', 0x40b0ff);
-  addTerminal(-19, 15, 'INTEL', 'intel', 0x8de0a0);
-  addTerminal(19, 15, 'VERSUS ARENA', 'versus', 0xb060ff);
-
   blade = makeHero('blade', 0, 8, true);
   cacheMaterials(blade);
   ally = null;
@@ -6021,6 +6537,14 @@ function buildHubWorld() {
   camera.position.set(0, 7, 18);
 }
 
+/* Keeps set dressing off the terminals. */
+function nearTerminal(x, z, r) {
+  var i;
+  for (i = 0; i < terminals.length; i++) {
+    if (dist2(x, z, terminals[i].x, terminals[i].z) < r * r) return true;
+  }
+  return false;
+}
 function addTerminal(x, z, label, action, color) {
   var g = new THREE.Group();
   var base = new THREE.Mesh(boxGeo(3.0, 1.0, 1.8), matU(0x24242e)); base.position.y = 0.5; g.add(base);
@@ -6708,6 +7232,27 @@ function openHub() {
   }
 }
 
+/* Little CSS portrait so the roster shows WHO each partner is instead of a
+   flat colour swatch. */
+function hx(c) { var s = c.toString(16); while (s.length < 6) s = '0' + s; return '#' + s; }
+function heroFigure(h, owned) {
+  var body = owned ? hx(h.body) : '#2a2a30';
+  var skin = owned ? hx(h.skin) : '#3a3a42';
+  var acc = owned ? hx(h.accent) : '#44444c';
+  var trim = owned ? hx(h.trim || 0xffffff) : '#55555c';
+  var s = '<div class="figure" style="background:linear-gradient(180deg,' + hx(h.body) + '22,#0a0a0e)">';
+  s += '<i class="f-head" style="background:' + skin + '"></i>';
+  s += '<i class="f-eyes" style="background:' + trim + '"></i>';
+  s += '<i class="f-body" style="background:' + body + '"></i>';
+  s += '<i class="f-shoulder l" style="background:' + acc + '"></i>';
+  s += '<i class="f-shoulder r" style="background:' + acc + '"></i>';
+  s += '<i class="f-belt" style="background:' + acc + '"></i>';
+  s += '<i class="f-legL" style="background:' + body + '"></i>';
+  s += '<i class="f-legR" style="background:' + body + '"></i>';
+  if (!owned) s += '<i class="f-lock">?</i>';
+  s += '</div>';
+  return s;
+}
 function renderHub() {
   var body = el('hubBody');
   el('hubTok').textContent = P.tokens;
@@ -6744,9 +7289,9 @@ function renderHub() {
       var hid = HERO_ORDER[i], h = HEROES[hid];
       var own = !!P.heroes[hid];
       html += '<div class="card' + (own ? '' : ' lock') + (P.partner === hid ? ' sel' : '') + '" data-partner="' + hid + '">';
-      html += '<div class="swatch" style="background:linear-gradient(135deg,#' + h.body.toString(16) + ',#' + h.accent.toString(16) + ')"></div>';
+      html += heroFigure(h, own);
       html += '<h4>' + (own ? h.name : '???') + '</h4>';
-      html += '<p>' + (own ? h.title + ' — ' + h.specialDesc : 'Locked. Defeat an act boss to recruit.') + '</p>';
+      html += '<p>' + (own ? h.title + ' — ' + h.specialDesc : (h.fromBoss ? 'Locked. Defeat ' + h.name + ' to recruit.' : 'Locked. Defeat an act boss to recruit.')) + '</p>';
       if (own) html += '<div class="chip' + (P.partner === hid ? ' good' : '') + '">' + (P.partner === hid ? 'Active' : 'Select') + '</div>';
       html += '</div>';
     }
@@ -7029,6 +7574,7 @@ function loop(now) {
 
   updateWeather(raw);
   fxUpdateParticles(raw);
+  updateGibs(raw);
   fxUpdateMeshes(raw);
   updateDamageNumbers(raw);
   updateBanner(raw);
