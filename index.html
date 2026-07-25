@@ -334,20 +334,28 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 .chip.good{border-color:#2e7a45;color:#7fd39a;}
 .swatch{width:100%;height:52px;margin-bottom:9px;border:1px solid rgba(255,255,255,.1);}
 /* roster portrait, assembled from blocks to echo the in-game models */
-.figure{position:relative;width:100%;height:96px;margin-bottom:9px;border:1px solid rgba(255,255,255,.1);overflow:hidden;}
+.figure{position:relative;width:100%;height:124px;margin-bottom:9px;border:1px solid rgba(255,255,255,.1);overflow:hidden;}
 .figure i{position:absolute;display:block;}
-.f-head{left:50%;top:12px;width:22px;height:22px;margin-left:-11px;border-radius:2px;}
-.f-eyes{left:50%;top:20px;width:16px;height:4px;margin-left:-8px;}
-.f-body{left:50%;top:33px;width:34px;height:34px;margin-left:-17px;border-radius:2px;}
-.f-shoulder{top:32px;width:9px;height:11px;border-radius:2px;}
-.f-shoulder.l{left:50%;margin-left:-26px;}
-.f-shoulder.r{left:50%;margin-left:17px;}
-.f-belt{left:50%;top:63px;width:34px;height:5px;margin-left:-17px;}
-.f-legL,.f-legR{top:68px;width:12px;height:22px;border-radius:2px;}
-.f-legL{left:50%;margin-left:-14px;}
+.f-glow{left:50%;top:8px;width:96px;height:96px;margin-left:-48px;border-radius:50%;opacity:.55;}
+.f-head{left:50%;top:14px;width:24px;height:24px;margin-left:-12px;border-radius:3px;}
+.f-eyes{left:50%;top:23px;width:18px;height:4px;margin-left:-9px;border-radius:1px;}
+.f-neck{left:50%;top:36px;width:11px;height:6px;margin-left:-5.5px;}
+.f-body{left:50%;top:41px;width:36px;height:36px;margin-left:-18px;border-radius:3px;}
+.f-emblem{left:50%;top:49px;width:10px;height:10px;margin-left:-5px;transform:rotate(45deg);}
+.f-shoulder{top:40px;width:11px;height:13px;border-radius:3px;}
+.f-shoulder.l{left:50%;margin-left:-29px;}
+.f-shoulder.r{left:50%;margin-left:18px;}
+.f-armL,.f-armR{top:52px;width:9px;height:24px;border-radius:3px;}
+.f-armL{left:50%;margin-left:-28px;}
+.f-armR{left:50%;margin-left:19px;}
+.f-belt{left:50%;top:75px;width:36px;height:6px;margin-left:-18px;}
+.f-legL,.f-legR{top:81px;width:14px;height:28px;border-radius:3px;}
+.f-legL{left:50%;margin-left:-16px;}
 .f-legR{left:50%;margin-left:2px;}
-.f-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:30px;font-style:normal;color:#6a6a74;background:rgba(6,6,10,.55);}
+.f-coat{left:50%;top:44px;width:52px;height:60px;margin-left:-26px;border-radius:4px 4px 8px 8px;opacity:.85;}
+.f-weap{right:8px;bottom:6px;font-size:19px;font-style:normal;opacity:.9;}
+.f-lockbar{position:absolute;left:0;right:0;bottom:0;text-align:center;font-style:normal;font-size:9px;
+  letter-spacing:.24em;color:#8a8a94;background:rgba(6,6,10,.82);padding:4px 0;}
 .stg{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #341418;background:rgba(14,9,11,.8);
   margin:5px 0;cursor:pointer;transition:border-color .12s,transform .1s;}
 .stg:hover{border-color:#c4303c;transform:translateX(3px);}
@@ -872,19 +880,58 @@ function defaultProfile() {
     playtime: 0,
     settings: null,
     introSeen: false,
-    tutorialStep: 0
+    tutorialStep: 0,
+    version: 3
   };
+}
+/* Save compatibility.
+   Profiles are migrated forward, never discarded: unknown fields are filled
+   from defaults and anything the player earned (tokens, roster, upgrades,
+   progress) is carried across. A rolling backup covers a corrupt write. */
+var SAVE_VERSION = 3;
+function migrateProfile(obj) {
+  if (!obj || typeof obj !== 'object') return defaultProfile();
+  var d = defaultProfile(), k;
+  for (k in d) { if (!obj.hasOwnProperty(k) || obj[k] === null || obj[k] === undefined) obj[k] = d[k]; }
+  var v = obj.version || 1;
+  if (v < 2) {
+    // v1 kept per-stage clear flags (L0_0 …). Convert the count into Act
+    // progress rather than throwing the playthrough away.
+    var oldCleared = 0, key;
+    for (key in obj.cleared) { if (obj.cleared.hasOwnProperty(key) && key.indexOf('L') === 0) oldCleared++; }
+    if (oldCleared > 0) {
+      obj.story = Math.max(obj.story || 0, Math.floor(oldCleared / 4));
+      obj.cleared = {};
+    }
+  }
+  if (v < 3) {
+    if (obj.introSeen === undefined) obj.introSeen = (obj.story || 0) > 0;
+    if (obj.tutorialStep === undefined) obj.tutorialStep = (obj.story || 0) > 0 ? 9 : 0;
+  }
+  // clamp anything that could have drifted out of range between versions
+  obj.story = clamp(obj.story || 0, 0, ACTS.length - 1);
+  obj.tokens = Math.max(0, obj.tokens || 0);
+  obj.version = SAVE_VERSION;
+  return obj;
 }
 function loadProfile() {
   var raw = storeGet(SAVE_KEY), obj = null;
   if (raw) { try { obj = JSON.parse(raw); } catch (e) { obj = null; } }
-  P = obj && obj.cleared ? obj : defaultProfile();
-  // migrate / fill gaps
-  var d = defaultProfile(), k;
-  for (k in d) { if (!P.hasOwnProperty(k)) P[k] = d[k]; }
+  if (!obj) {                                   // fall back to the backup slot
+    var bak = storeGet(SAVE_KEY + '_bak');
+    if (bak) { try { obj = JSON.parse(bak); } catch (e2) { obj = null; } }
+  }
+  P = migrateProfile(obj);
   return P;
 }
-function saveProfile() { try { storeSet(SAVE_KEY, JSON.stringify(P)); } catch (e) {} }
+function saveProfile() {
+  try {
+    var json = JSON.stringify(P);
+    var prev = storeGet(SAVE_KEY);
+    if (prev && prev.length > 20) storeSet(SAVE_KEY + '_bak', prev);
+    storeSet(SAVE_KEY, json);
+  } catch (e) {}
+}
 
 /* Options live in G at runtime and are mirrored into the profile so they
    survive a reload. */
@@ -929,7 +976,7 @@ var AC = null, masterGain = null, musicGain = null, sfxGain = null;
    URIs injected at build time. Only one plays at a time. */
 var TRACKS = {
   menu: { src: window.__MENU_TRACK || '', vol: 1.0, audio: null },
-  hub:  { src: window.__HUB_TRACK  || '', vol: 0.85, audio: null }
+  hub:  { src: window.__HUB_TRACK  || '', vol: 0.3, audio: null }   // background, not foreground
 };
 var curTrack = null, wantTrack = null;
 function playTrack(name) {
@@ -1437,8 +1484,8 @@ var HEROES = {
   },
   whistler: {
     id: 'whistler', name: 'Abigail Whistler', title: 'Nightstalker', style: 'ranged',
-    body: 0x22262e, skin: 0xd6a882, accent: 0x38b0c8, trim: 0xe8e2d0,
-    coat: false, glasses: false, weapon: 'crossbow',
+    body: 0x1b2028, skin: 0xd6a882, accent: 0x2fbfd8, trim: 0xf0ece0,
+    coat: true, glasses: false, weapon: 'crossbow',
     hp: 150, speed: 7.8, dmg: 11, reach: 2.4, combo: 3, rangedRate: 0.34,
     special: 'Bolt Storm', specialDesc: 'Fires a fan of UV bolts that stagger a whole crowd.',
     quip: 'You brood, I shoot. Teamwork.',
@@ -1642,11 +1689,17 @@ var LOCATIONS = [
 /* ==========================================================================
    [DATA] Upgrade tree — same four lines per hero, escalating costs
    ========================================================================== */
+/* Balance pass.
+   Earnings run roughly 90-160 bloodstones per Act, so a full 24-Act run yields
+   ~2600. One hero maxed on all four lines costs 1140 — enough to fully build
+   Blade plus most of a partner, which keeps choices meaningful without
+   locking anyone out. Early ranks are cheap so the first upgrade lands in
+   Act 1-2; later ranks scale hard enough to stay a decision. */
 var UPGRADES = [
-  { id: 'dmg', name: 'Edge', desc: '+12% damage per rank.', costs: [20, 40, 70, 110, 160] },
-  { id: 'hp', name: 'Vitality', desc: '+15% max health per rank.', costs: [20, 40, 70, 110, 160] },
-  { id: 'cd', name: 'Focus', desc: 'Faster special &amp; assist recharge.', costs: [25, 50, 85, 130, 190] },
-  { id: 'move', name: 'Technique', desc: 'Longer combos, wider reach, faster dodge.', costs: [30, 60, 100, 150, 220] }
+  { id: 'dmg', name: 'Edge', desc: '+11% damage per rank.', costs: [15, 35, 65, 110, 170] },
+  { id: 'hp', name: 'Vitality', desc: '+14% max health per rank.', costs: [15, 35, 65, 110, 170] },
+  { id: 'cd', name: 'Focus', desc: 'Faster special &amp; assist recharge.', costs: [20, 45, 80, 130, 195] },
+  { id: 'move', name: 'Technique', desc: 'Longer combos, wider reach, faster dodge.', costs: [25, 55, 95, 150, 220] }
 ];
 function upgVal(heroId, line) { return upgOf(heroId)[line] || 0; }
 function upgCost(line, rank) {
@@ -1656,8 +1709,8 @@ function upgCost(line, rank) {
   return u.costs[rank];
 }
 // Derived stat helpers used all over combat
-function heroDmg(h) { return h.def.dmg * (1 + 0.12 * upgVal(h.heroId, 'dmg')) * (h.dayMode ? 1.5 : 1); }
-function heroMaxHp(h) { return Math.round(h.def.hp * (1 + 0.15 * upgVal(h.heroId, 'hp'))); }
+function heroDmg(h) { return h.def.dmg * (1 + 0.11 * upgVal(h.heroId, 'dmg')) * (h.dayMode ? 1.5 : 1); }
+function heroMaxHp(h) { return Math.round(h.def.hp * (1 + 0.14 * upgVal(h.heroId, 'hp'))); }
 function heroCdMul(h) { return 1 - 0.09 * upgVal(h.heroId, 'cd'); }
 function heroComboMax(h) { return h.def.combo + (upgVal(h.heroId, 'move') >= 3 ? 1 : 0); }
 function heroReach(h) { return h.def.reach * (1 + 0.05 * upgVal(h.heroId, 'move')); }
@@ -1953,7 +2006,15 @@ var ACT_SCRIPT = {
         post: [['SPIDER-MAN', 'Is it over? Please say it\'s over.'],
                ['BLADE', 'It\'s never over. It\'s just quiet for a while.'],
                ['ABIGAIL', 'I\'ll take quiet.'],
-               ['BLADE', 'Get some sleep. Sun\'s up in an hour. For the rest of you.']] }
+               ['BLADE', 'Get some sleep. Sun\'s up in an hour. For the rest of you.'],
+               ['', '— — —'],
+               ['ABIGAIL', 'Blade. One more thing. Vhalimar\'s vault — the ledger was still burning when I got there.'],
+               ['ABIGAIL', 'He wasn\'t the first. He was the first one WE found.'],
+               ['ABIGAIL', 'There are six more names on that page. Older names.'],
+               ['BLADE', 'Any of them awake?'],
+               ['ABIGAIL', 'One. It signed the ledger yesterday.'],
+               ['BLADE', 'Then I\'m not done.'],
+               ['', 'BLADE WILL RETURN']] }
 };
 
 /* ==========================================================================
@@ -2293,6 +2354,44 @@ function makeHumanoid(cfg) {
     }
   }
 
+  if (cfg.vest) {                                   // layered tactical vest
+    var vest = new THREE.Mesh(boxGeo(0.84 * bulk, 0.66, 0.5 * bulk), matU(cfg.vest));
+    vest.position.y = 1.3; torso.add(vest);
+    var vi;
+    for (vi = 0; vi < 3; vi++) {
+      var mag = new THREE.Mesh(boxGeo(0.14, 0.2, 0.1), matU(0x121620));
+      mag.position.set(-0.24 + vi * 0.24, 1.16, 0.27); torso.add(mag);
+    }
+    var clasp = new THREE.Mesh(boxGeo(0.1, 0.42, 0.06), accM);
+    clasp.position.set(0, 1.34, 0.27); torso.add(clasp);
+  }
+  if (cfg.quiver) {                                 // bolt quiver across the back
+    var qv = new THREE.Mesh(cylGeo(0.15, 0.17, 0.8, 8), matU(0x2a2018));
+    qv.position.set(-0.28, 1.35, -0.3); qv.rotation.z = -0.38; torso.add(qv);
+    var qi;
+    for (qi = 0; qi < 5; qi++) {
+      var bolt = new THREE.Mesh(boxGeo(0.035, 0.42, 0.035), matU(0xb8c4d4));
+      bolt.position.set(-0.34 + qi * 0.035, 1.82, -0.34); bolt.rotation.z = -0.38; torso.add(bolt);
+      var fl3 = new THREE.Mesh(boxGeo(0.07, 0.1, 0.02), accM);
+      fl3.position.set(-0.34 + qi * 0.035, 2.0, -0.34); torso.add(fl3);
+    }
+  }
+  if (cfg.headset) {                                // comms — she is the voice on the radio
+    var band2 = new THREE.Mesh(boxGeo(0.44, 0.05, 0.06), matU(0x1a1e26));
+    band2.position.set(0, 0.2, 0.04); headG.add(band2);
+    var ear = new THREE.Mesh(boxGeo(0.07, 0.12, 0.1), matU(0x1a1e26));
+    ear.position.set(-0.23, 0.05, 0.02); headG.add(ear);
+    var mic = new THREE.Mesh(boxGeo(0.03, 0.03, 0.22), matU(0x1a1e26));
+    mic.position.set(-0.2, -0.02, 0.15); mic.rotation.y = 0.4; headG.add(mic);
+    var micTip = new THREE.Mesh(sphGeo(0.035, 6), matU(cfg.accent, cfg.accent));
+    micTip.position.set(-0.14, -0.05, 0.25); headG.add(micTip);
+  }
+  if (cfg.armGuard) {                               // bracer on the bow arm
+    var guard2 = new THREE.Mesh(boxGeo(0.24, 0.3, 0.26), matU(0x2b323c));
+    guard2.position.y = -0.3; armL.userData.fore.add(guard2);
+    var strap2 = new THREE.Mesh(boxGeo(0.26, 0.05, 0.28), accM);
+    strap2.position.y = -0.2; armL.userData.fore.add(strap2);
+  }
   if (cfg.pendant) {                                // Elsa's bloodstone
     var chain2 = new THREE.Mesh(boxGeo(0.03, 0.28, 0.03), matU(0xd8c070));
     chain2.position.set(0, 1.55, 0.235); torso.add(chain2);
@@ -2353,9 +2452,15 @@ function makeHumanoid(cfg) {
     var guard = new THREE.Mesh(boxGeo(0.42, 0.08, 0.12), matU(accC, accC)); guard.position.y = 0.06; weapon.add(guard);
     var grip = new THREE.Mesh(boxGeo(0.09, 0.34, 0.09), matU(0x14100e)); grip.position.y = -0.16; weapon.add(grip);
   } else if (wtype === 'crossbow') {
-    var stock = new THREE.Mesh(boxGeo(0.12, 0.16, 0.9), matU(0x2a2018)); weapon.add(stock);
-    var limb = new THREE.Mesh(boxGeo(0.9, 0.06, 0.1), matU(0x3a4650)); limb.position.z = 0.3; weapon.add(limb);
-    var sight = new THREE.Mesh(boxGeo(0.06, 0.1, 0.16), matU(accC, accC)); sight.position.set(0, 0.14, 0.1); weapon.add(sight);
+    var stock = new THREE.Mesh(boxGeo(0.13, 0.18, 1.0), matU(0x241c16)); stock.position.y = 0.4; weapon.add(stock);
+    var rail = new THREE.Mesh(boxGeo(0.07, 0.06, 1.1), matU(0x39434f)); rail.position.set(0, 0.52, 0); weapon.add(rail);
+    var limbL = new THREE.Mesh(boxGeo(0.5, 0.06, 0.09), matU(0x39434f));
+    limbL.position.set(-0.26, 0.4, 0.42); limbL.rotation.z = 0.22; weapon.add(limbL);
+    var limbR = limbL.clone(); limbR.position.x = 0.26; limbR.rotation.z = -0.22; weapon.add(limbR);
+    var strg = new THREE.Mesh(boxGeo(0.96, 0.02, 0.02), matU(0xc8cedb)); strg.position.set(0, 0.4, 0.3); weapon.add(strg);
+    var sight = new THREE.Mesh(boxGeo(0.06, 0.12, 0.18), matU(accC, accC)); sight.position.set(0, 0.62, 0.16); weapon.add(sight);
+    var loaded = new THREE.Mesh(boxGeo(0.035, 0.035, 0.6), matU(0xb8c4d4)); loaded.position.set(0, 0.57, 0.2); weapon.add(loaded);
+    var gripC = new THREE.Mesh(boxGeo(0.1, 0.3, 0.12), matU(0x241c16)); gripC.position.set(0, 0.16, -0.24); gripC.rotation.x = 0.3; weapon.add(gripC);
   } else if (wtype === 'shotgun') {
     var barrel = new THREE.Mesh(boxGeo(0.14, 0.14, 1.1), matU(0x2c3038)); weapon.add(barrel);
     var wood = new THREE.Mesh(boxGeo(0.14, 0.16, 0.42), matU(0x5a3418)); wood.position.z = -0.5; weapon.add(wood);
@@ -2472,8 +2577,12 @@ function buildHeroModel(heroId, skinIdx) {
     cfg.gloves = 0x14120f; cfg.bulk = 1.06; cfg.longCoat = true;
   }
   if (heroId === 'whistler') {
-    cfg.hair = 0xe8d8a0; cfg.pony = true; cfg.emblem = 0x38b0c8;
-    cfg.pouches = true; cfg.gloves = 0x22262e; cfg.thin = 0.94;
+    /* Tactical rig: cropped jacket, harness, quiver, arm guard, headset. */
+    cfg.hair = 0xf0dfa8; cfg.pony = true; cfg.emblem = 0x2fbfd8;
+    cfg.pouches = true; cfg.gloves = 0x191d24; cfg.thin = 0.93;
+    cfg.coatColor = 0x1b2028; cfg.collar = true;
+    cfg.quiver = true; cfg.headset = true; cfg.armGuard = true;
+    cfg.vest = 0x2b323c;
   }
   if (heroId === 'spider') {
     cfg.mask = true; cfg.maskColor = 0xc02030; cfg.emblem = 0x111114;
@@ -2698,6 +2807,7 @@ function updateWeather(dt) {
    ========================================================================== */
 function clearWorld() {
   var i;
+  if (typeof clearCutActors === 'function') clearCutActors();   // stray cutscene cast
   if (worldGroup) { scene.remove(worldGroup); disposeGroup(worldGroup); }
   if (fxGroup) { scene.remove(fxGroup); disposeGroup(fxGroup); }
   if (weather) { scene.remove(weather.points); weather.points.geometry.dispose(); weather.points.material.dispose(); weather = null; }
@@ -3492,26 +3602,61 @@ function spawnStageTokens(stage, half, loc) {
     spawnHealth(x, y, z);
   }
 }
+/* Hidden areas.
+   The old version was three walls in the open — visible from anywhere and not
+   remotely hidden. These are now proper vaults: a sealed chamber tucked behind
+   the perimeter, entered through a narrow gap screened by a false wall, with a
+   lit interior, an altar, a guardian and a real haul. */
 function buildSecretRoom(stage, loc, half) {
-  // A walled alcove tucked against the perimeter with a token cache inside.
   var side = randi(0, 3);
-  var cx = 0, cz = 0;
-  if (side === 0) { cx = rand(-half * 0.6, half * 0.6); cz = -half + 7; }
-  else if (side === 1) { cx = rand(-half * 0.6, half * 0.6); cz = half - 7; }
-  else if (side === 2) { cx = -half + 7; cz = rand(-half * 0.6, half * 0.6); }
-  else { cx = half - 7; cz = rand(-half * 0.6, half * 0.6); }
-  var wallC = loc.ground2;
-  addProp(cx - 5, 0, cz, 1.2, 6, 10, wallC, { castShadow: false, force: true });
-  addProp(cx + 5, 0, cz, 1.2, 6, 10, wallC, { castShadow: false, force: true });
-  addProp(cx, 0, cz - 5, 10, 6, 1.2, wallC, { castShadow: false, force: true });
-  addProp(cx, 6, cz, 11.2, 0.8, 11.2, wallC, { castShadow: false, walkable: true, force: true });
-  addLightPoint(cx, 4, cz, loc.accent, 1.6, 18);
-  var runes = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.12, 8, 22), matU(loc.accent, loc.accent));
-  runes.position.set(cx, 2.6, cz - 4.2); worldGroup.add(runes);
+  var cx = 0, cz = 0, faceX = 0, faceZ = 0;
+  if (side === 0) { cx = rand(-half * 0.55, half * 0.55); cz = -half + 11; faceZ = 1; }
+  else if (side === 1) { cx = rand(-half * 0.55, half * 0.55); cz = half - 11; faceZ = -1; }
+  else if (side === 2) { cx = -half + 11; cz = rand(-half * 0.55, half * 0.55); faceX = 1; }
+  else { cx = half - 11; cz = rand(-half * 0.55, half * 0.55); faceX = -1; }
+
+  var wallC = loc.ground2, W = 15, D = 13, H = 7, T = 1.4;
+  // shell
+  addProp(cx - (faceX ? 0 : W / 2), 0, cz - (faceZ ? 0 : D / 2), faceX ? W : T, H, faceX ? T : D, wallC, { castShadow: false, force: true });
+  addProp(cx + (faceX ? 0 : W / 2), 0, cz + (faceZ ? 0 : D / 2), faceX ? W : T, H, faceX ? T : D, wallC, { castShadow: false, force: true });
+  // back wall
+  addProp(cx - faceX * (W / 2), 0, cz - faceZ * (D / 2), faceX ? T : W, H, faceX ? D : T, wallC, { castShadow: false, force: true });
+  // front face with a narrow doorway, screened by an offset false wall
+  var gap = 3.4;
+  var fx = cx + faceX * (W / 2), fz = cz + faceZ * (D / 2);
+  if (faceX) {
+    addProp(fx, 0, fz + (D / 4 + gap / 4), T, H, D / 2 - gap / 2, wallC, { castShadow: false, force: true });
+    addProp(fx, 0, fz - (D / 4 + gap / 4), T, H, D / 2 - gap / 2, wallC, { castShadow: false, force: true });
+    addProp(fx + faceX * 3.4, 0, fz, T, H, gap + 3.5, wallC, { castShadow: false, force: true });  // screen
+  } else {
+    addProp(fx + (W / 4 + gap / 4), 0, fz, W / 2 - gap / 2, H, T, wallC, { castShadow: false, force: true });
+    addProp(fx - (W / 4 + gap / 4), 0, fz, W / 2 - gap / 2, H, T, wallC, { castShadow: false, force: true });
+    addProp(fx, 0, fz + faceZ * 3.4, gap + 3.5, H, T, wallC, { castShadow: false, force: true });
+  }
+  addProp(cx, H, cz, W + 1, 0.9, D + 1, wallC, { castShadow: false, walkable: true, force: true });
+  clearZones.push({ x: cx, z: cz, r: 9 });
+
+  // interior: altar, braziers, banners, a haul and something guarding it
+  addProp(cx, 0, cz, 3.4, 1.1, 3.4, loc.ground, { walkable: true, force: true });
+  addDecor(cx, 1.35, cz, boxGeo(3.8, 0.3, 3.8), loc.ground2);
+  var runes = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.12, 8, 22), matU(loc.accent, loc.accent));
+  runes.position.set(cx, 2.6, cz); runes.rotation.x = Math.PI / 2;
+  worldGroup.add(runes);
+  var chest = new THREE.Mesh(boxGeo(1.8, 1.1, 1.2), matU(0x3a2a18));
+  chest.position.set(cx, 2.05, cz); worldGroup.add(chest);
+  addDecor(cx, 2.66, cz, boxGeo(1.9, 0.22, 1.3), loc.accent, loc.accent);
+  var bi2;
+  for (bi2 = 0; bi2 < 4; bi2++) {
+    var bx2 = cx + (bi2 % 2 ? 5.2 : -5.2), bz2 = cz + (bi2 < 2 ? 4.2 : -4.2);
+    addDecor(bx2, 0.7, bz2, cylGeo(0.45, 0.3, 1.4, 8), 0x2a2620);
+    addDecor(bx2, 1.7, bz2, sphGeo(0.4, 8), loc.accent, loc.accent);
+    addLightPoint(bx2, 2.3, bz2, loc.accent, 1.2, 14);
+  }
   var i;
-  for (i = 0; i < 5; i++) spawnToken(cx + rand(-2.6, 2.6), 1.1, cz + rand(-2.6, 2.6), 2);
-  spawnHealth(cx, 0.8, cz + 2);
-  interactables.push({ kind: 'secret', x: cx, z: cz, y: 0, radius: 4.5, dead: false, group: runes });
+  for (i = 0; i < 9; i++) spawnToken(cx + rand(-4.4, 4.4), 1.2, cz + rand(-4.4, 4.4), 3);
+  spawnHealth(cx + 2.4, 0.8, cz + 2.4);
+  spawnHealth(cx - 2.4, 0.8, cz - 2.4);
+  interactables.push({ kind: 'secret', x: cx, z: cz, y: 0, radius: 6.5, dead: false, group: runes });
 }
 
 /* ==========================================================================
@@ -3726,7 +3871,7 @@ function spawnGibs(e, dirX, dirZ) {
       vy: rand(5, 9),
       vz: dirZ * rand(3, 7) + rand(-3, 3),
       rx: rand(-9, 9), ry: rand(-9, 9), rz: rand(-9, 9),
-      floor: e.pos.y
+      floor: e.pos.y, floorT: 0
     });
     emit(wp.x, wp.y, wp.z, 8, { color: 0xc41028, speed: 5, life: 0.5, gravity: -14 });
   }
@@ -3736,6 +3881,12 @@ var bloodPools = [];
    what happened in it. */
 function spawnBloodPool(x, y, z, scale) {
   if (G.quality === 'low' && Math.random() < 0.5) return;
+  /* Settle onto whatever surface is actually under the point. Using the
+     victim's own Y left pools hanging in mid-air above crates and platforms
+     when they died on top of something, or airborne. */
+  var gy = groundHeightAt(x, z, y + 2.5, 0.6);
+  if (gy > y + 2.5 || gy < y - 12) gy = y;
+  y = gy;
   var m = new THREE.Mesh(circGeo(14), matU(0x6e0912, 0x2a0308, { transparent: true, opacity: 0.85, depthWrite: false }));
   m.rotation.x = -Math.PI / 2;
   m.rotation.z = rand(0, 3.14);
@@ -3776,6 +3927,13 @@ function updateGibs(dt) {
     g2.obj.rotation.x += g2.rx * dt;
     g2.obj.rotation.y += g2.ry * dt;
     g2.obj.rotation.z += g2.rz * dt;
+    // re-sample the surface as it travels so it lands on crates, not through them
+    g2.floorT -= dt;
+    if (g2.floorT <= 0) {
+      g2.floorT = 0.2;
+      var fy = groundHeightAt(g2.obj.position.x, g2.obj.position.z, g2.obj.position.y + 1, 0.5);
+      if (fy <= g2.obj.position.y + 0.5) g2.floor = fy;
+    }
     if (g2.obj.position.y < g2.floor + 0.12) {
       g2.obj.position.y = g2.floor + 0.12;
       g2.vy *= -0.32; g2.vx *= 0.6; g2.vz *= 0.6;
@@ -3789,7 +3947,7 @@ function updateGibs(dt) {
     }
     if (!g2.bled && g2.vy === 0) {           // pooled where it came to rest
       g2.bled = true;
-      spawnBloodPool(g2.obj.position.x, g2.floor, g2.obj.position.z, 0.55);
+      spawnBloodPool(g2.obj.position.x, g2.obj.position.y - 0.1, g2.obj.position.z, 0.55);
     }
     if (g2.life <= 0) { fxGroup.remove(g2.obj); gibs.splice(i, 1); }
   }
@@ -6406,8 +6564,9 @@ function finishActClear() {
   cineBars(false);
   var act = G.act, bonus = 0, recruited = null;
   if (!G.vs) {
-    if (!P.cleared[act.id]) { bonus += 20 + act.loc * 8; P.cleared[act.id] = true; }
-    if (G.secretFound) bonus += 15;
+    if (!P.cleared[act.id]) { bonus += 28 + act.loc * 10; P.cleared[act.id] = true; }
+    else bonus += 8 + act.loc * 3;                     // replays still pay a little
+    if (G.secretFound) bonus += 22;
     P.tokens += bonus; P.totalTokens += bonus;
     if (act.index + 1 > P.story) P.story = act.index + 1;
     G.selectedAct = Math.min(act.index + 1, ACTS.length - 1);
@@ -6515,34 +6674,82 @@ function buildCutStage(actorDefs) {
   cutActors.length = 0;
   scene.background = new THREE.Color(0x05050a);
   scene.fog = new THREE.Fog(0x05050a, 14, 62);
-  worldGroup.add(new THREE.HemisphereLight(0x2a2836, 0x08080c, 0.5));
-  var key = new THREE.DirectionalLight(0xc0ccf0, 0.55);
-  key.position.set(8, 18, 10);
+  worldGroup.add(new THREE.HemisphereLight(0x1e2430, 0x06070a, 0.45));
+  var key = new THREE.DirectionalLight(0xbcd0f8, 0.5);
+  key.position.set(10, 22, 12);
+  key.castShadow = (G.quality === 'high');
+  if (key.castShadow) {
+    key.shadow.mapSize.width = 1024; key.shadow.mapSize.height = 1024;
+    key.shadow.camera.left = -22; key.shadow.camera.right = 22;
+    key.shadow.camera.top = 22; key.shadow.camera.bottom = -22;
+    key.shadow.camera.far = 80; key.shadow.bias = -0.0012;
+  }
   worldGroup.add(key); worldGroup.add(key.target);
-  var rim = new THREE.PointLight(0xff3040, 1.4, 40);
-  rim.position.set(-8, 6, -10);
+  var rim = new THREE.PointLight(0x4a86ff, 1.1, 38);
+  rim.position.set(-9, 7, -12);
   worldGroup.add(rim);
 
-  // ground: wet asphalt disc catching the light
-  var disc = new THREE.Mesh(new THREE.CircleGeometry(26, 40), matU(0x14161e));
-  disc.rotation.x = -Math.PI / 2;
-  worldGroup.add(disc);
-  var i;
-  for (i = 0; i < 12; i++) {
-    var pd = new THREE.Mesh(new THREE.CircleGeometry(rand(1.5, 4), 14),
-      matU(0x1c2028, 0x0c0e14, { transparent: true, opacity: 0.8 }));
+  /* Set: a wet back-alley under a streetlight. Kerbs, road markings, steam,
+     dumpsters, fire escape and neon give the shot something to read against
+     instead of an empty disc. */
+  var i, a, r;
+  var road = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), matU(0x101219));
+  road.rotation.x = -Math.PI / 2; road.receiveShadow = true;
+  worldGroup.add(road);
+  for (i = -40; i < 40; i += 9) floorQuad(0, i, 0.4, 4.4, 0x9a9070, 0.03);        // centre line
+  floorQuad(-11, 0, 1.6, 80, 0x2c313c, 0.028);                                     // kerbs
+  floorQuad(11, 0, 1.6, 80, 0x2c313c, 0.028);
+  floorQuad(-16, 0, 9, 80, 0x191d25, 0.026);                                       // pavements
+  floorQuad(16, 0, 9, 80, 0x191d25, 0.026);
+  for (i = 0; i < 16; i++) {                                                       // rain puddles
+    var pd = new THREE.Mesh(new THREE.CircleGeometry(rand(1.2, 3.6), 16),
+      matU(0x1e2733, 0x121a24, { transparent: true, opacity: 0.85 }));
     pd.rotation.x = -Math.PI / 2;
-    pd.position.set(rand(-18, 18), 0.02, rand(-18, 18));
+    pd.position.set(rand(-19, 19), 0.035, rand(-24, 24));
+    pd.scale.set(1, 1, rand(0.5, 1));
     worldGroup.add(pd);
   }
-  // skyline ring for depth
-  for (i = 0; i < 40; i++) {
-    var a = (i / 40) * Math.PI * 2;
-    var r = rand(34, 60);
-    addProp(Math.sin(a) * r, 0, Math.cos(a) * r, rand(7, 14), rand(12, 40), rand(7, 14),
-      i % 2 ? 0x101219 : 0x0d0f16, { solid: false, castShadow: false });
+  // flanking buildings with lit windows
+  for (i = 0; i < 7; i++) {
+    var bz = -26 + i * 9;
+    addProp(-24, 0, bz, 16, rand(20, 34), 8.4, i % 2 ? 0x141821 : 0x11151d, { solid: false, castShadow: false });
+    addProp(24, 0, bz, 16, rand(20, 34), 8.4, i % 2 ? 0x11151d : 0x141821, { solid: false, castShadow: false });
+    var wi2;
+    for (wi2 = 0; wi2 < 4; wi2++) {
+      if (Math.random() < 0.45) continue;
+      addDecor(-19.7, 4 + wi2 * 5.5, bz + rand(-2.5, 2.5), boxGeo(0.3, 1.2, 1.6), 0xffd890, 0xffbe60);
+      if (Math.random() < 0.5) addDecor(19.7, 4 + wi2 * 5.5, bz + rand(-2.5, 2.5), boxGeo(0.3, 1.2, 1.6), 0xffd890, 0xffbe60);
+    }
   }
+  // streetlight pooling light on the marks
+  addDecor(-7.5, 4.4, 4, cylGeo(0.16, 0.2, 8.8, 8), 0x23262e);
+  addDecor(-6.2, 8.7, 4, boxGeo(2.8, 0.25, 0.35), 0x23262e);
+  addDecor(-5.1, 8.4, 4, boxGeo(1.3, 0.5, 0.9), 0xfff2cc, 0xffd898);
+  var lamp = new THREE.PointLight(0xffc88a, 2.1, 40);
+  lamp.position.set(-5.1, 8.0, 4);
+  worldGroup.add(lamp);
+  // neon sign + its spill
+  addDecor(20.6, 6.5, -6, boxGeo(0.4, 3.2, 6.5), 0x1a0a10);
+  addDecor(20.2, 6.5, -6, boxGeo(0.2, 2.4, 5.6), 0xff2436, 0xff2436);
+  var neon = new THREE.PointLight(0xff2436, 1.9, 34);
+  neon.position.set(17.5, 6.5, -6);
+  worldGroup.add(neon);
+  // dumpsters, crates, fire escape
+  addProp(14.5, 0, 9, 5.4, 2.4, 3.0, 0x243028, { castShadow: true });
+  addDecor(14.5, 2.5, 9, boxGeo(5.6, 0.3, 3.2), 0x2c3a30);
+  addProp(-15.5, 0, -9, 2.0, 2.0, 2.0, 0x3c3020, { castShadow: true });
+  addProp(-14.2, 0, -11.4, 1.6, 1.6, 1.6, 0x342a1c, { castShadow: true });
+  for (i = 0; i < 4; i++) {
+    addDecor(-19.4, 5 + i * 4.4, -2, boxGeo(0.25, 0.2, 5.5), 0x23262e);
+    addDecor(-19.4, 6.6 + i * 4.4, -4.6, boxGeo(0.25, 3.2, 0.25), 0x23262e);
+  }
+  // steam from a grate
+  var grate = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), matU(0x1a1e26));
+  grate.rotation.x = -Math.PI / 2; grate.position.set(6, 0.04, -8);
+  worldGroup.add(grate);
+  G.cutSteam = { x: 6, z: -8 };
   addCollider(0, -2, 0, 200, 2, 200, { walkable: true });
+  weather = makeWeather('rain', LOCATIONS[0]);
 
   // actors
   var ai, d2, model, grp;
@@ -6553,7 +6760,7 @@ function buildCutStage(actorDefs) {
     grp = model.group;
     grp.position.set(d2.x, 0, d2.z);
     grp.rotation.y = d2.yaw === undefined ? 0 : d2.yaw;
-    scene.add(grp);
+    worldGroup.add(grp);   // parented so clearWorld() disposes them with the stage
     cutActors.push({ id: d2.id, group: grp, parts: model.parts, t: rand(0, 6), sway: d2.sway === undefined ? 1 : d2.sway });
   }
 }
@@ -6589,6 +6796,10 @@ function updateCutscene(dt) {
   camera.position.set(px, py, pz);
   camera.lookAt(s.to[0], s.to[1] + Math.sin(G.time * 0.4) * 0.05, s.to[2]);
   if (f >= 1 && cutShot < cutShots.length - 1) { cutShot++; cutT = 0; }
+  if (G.cutSteam && Math.random() < 0.5) {
+    emit(G.cutSteam.x + rand(-1.2, 1.2), 0.2, G.cutSteam.z + rand(-1.2, 1.2), 1,
+      { color: 0x9aa6b8, speed: 0.5, life: 2.4, gravity: 0.7, size: 1.5 });
+  }
   // idle-breathe the actors so the stage isn't frozen
   var i, a2;
   for (i = 0; i < cutActors.length; i++) {
@@ -6615,16 +6826,23 @@ function updateCutscene(dt) {
 /* Hard-cancel. Starting an Act (or bailing to the hub) while a cutscene is
    live must not leave cutShots set, or the dialogue handler flips the mode
    back to 'cutscene' and the Act never runs its director. */
+function clearCutActors() {
+  var i;
+  for (i = 0; i < cutActors.length; i++) {
+    if (cutActors[i].group && cutActors[i].group.parent) cutActors[i].group.parent.remove(cutActors[i].group);
+  }
+  cutActors.length = 0;
+}
 function cancelCutscene() {
   cutShots = null;
-  cutActors.length = 0;
+  clearCutActors();
   cutShot = 0; cutT = 0;
   G.cutDone = null;
   cineBars(false);
 }
 function endCutscene() {
   cutShots = null;
-  cutActors.length = 0;
+  clearCutActors();
   cineBars(false);
   var cb2 = G.cutDone;
   G.cutDone = null;
@@ -7571,21 +7789,32 @@ function openHub() {
 /* Little CSS portrait so the roster shows WHO each partner is instead of a
    flat colour swatch. */
 function hx(c) { var s = c.toString(16); while (s.length < 6) s = '0' + s; return '#' + s; }
+var WEAPON_GLYPH = { sword: '⚔', crossbow: '🏹', shotgun: '▬', chain: '⛓', darts: '✦', webs: '❋', claws: '⋔', staff: '⌖' };
 function heroFigure(h, owned) {
-  var body = owned ? hx(h.body) : '#2a2a30';
-  var skin = owned ? hx(h.skin) : '#3a3a42';
-  var acc = owned ? hx(h.accent) : '#44444c';
-  var trim = owned ? hx(h.trim || 0xffffff) : '#55555c';
-  var s = '<div class="figure" style="background:linear-gradient(180deg,' + hx(h.body) + '22,#0a0a0e)">';
-  s += '<i class="f-head" style="background:' + skin + '"></i>';
-  s += '<i class="f-eyes" style="background:' + trim + '"></i>';
-  s += '<i class="f-body" style="background:' + body + '"></i>';
-  s += '<i class="f-shoulder l" style="background:' + acc + '"></i>';
-  s += '<i class="f-shoulder r" style="background:' + acc + '"></i>';
-  s += '<i class="f-belt" style="background:' + acc + '"></i>';
+  var body = owned ? hx(h.body) : '#26262c';
+  var skin = owned ? hx(h.skin) : '#34343c';
+  var acc = owned ? hx(h.accent) : '#3e3e46';
+  var trim = owned ? hx(h.trim || 0xffffff) : '#4c4c54';
+  var glow = owned ? hx(h.accent) + '33' : '#12121a';
+  var s = '<div class="figure" style="background:radial-gradient(ellipse at 50% 34%,' + glow + ',#08080d 72%)">';
+  s += '<i class="f-glow" style="background:radial-gradient(circle,' + acc + '55,transparent 70%)"></i>';
+  if (h.coat) s += '<i class="f-coat" style="background:' + body + '"></i>';
   s += '<i class="f-legL" style="background:' + body + '"></i>';
   s += '<i class="f-legR" style="background:' + body + '"></i>';
-  if (!owned) s += '<i class="f-lock">?</i>';
+  s += '<i class="f-body" style="background:' + body + '"></i>';
+  s += '<i class="f-emblem" style="background:' + acc + '"></i>';
+  s += '<i class="f-belt" style="background:' + acc + '"></i>';
+  s += '<i class="f-shoulder l" style="background:' + acc + '"></i>';
+  s += '<i class="f-shoulder r" style="background:' + acc + '"></i>';
+  s += '<i class="f-armL" style="background:' + body + '"></i>';
+  s += '<i class="f-armR" style="background:' + body + '"></i>';
+  s += '<i class="f-neck" style="background:' + skin + '"></i>';
+  s += '<i class="f-head" style="background:' + skin + '"></i>';
+  s += '<i class="f-eyes" style="background:' + (owned ? trim : '#3a3a42') + '"></i>';
+  if (h.weapon && WEAPON_GLYPH[h.weapon]) {
+    s += '<i class="f-weap" style="color:' + (owned ? trim : '#4a4a52') + '">' + WEAPON_GLYPH[h.weapon] + '</i>';
+  }
+  if (!owned) s += '<i class="f-lockbar">LOCKED</i>';
   s += '</div>';
   return s;
 }
@@ -7619,15 +7848,17 @@ function renderHub() {
       html += '<div style="margin-top:14px"><div class="hdr">' + loc.name + '</div>';
       html += '<div class="sub" style="margin:4px 0 8px">' + loc.blurb + '</div>' + block + '</div>';
     }
-  } else if (hubTab === 'partners') {  } else if (hubTab === 'partners') {
+  } else if (hubTab === 'partners') {
     html += '<div class="sub">Pick who rides with you. Partners are recruited by beating act bosses.</div><div class="grid">';
     for (i = 1; i < HERO_ORDER.length; i++) {
       var hid = HERO_ORDER[i], h = HEROES[hid];
       var own = !!P.heroes[hid];
       html += '<div class="card' + (own ? '' : ' lock') + (P.partner === hid ? ' sel' : '') + '" data-partner="' + hid + '">';
       html += heroFigure(h, own);
-      html += '<h4>' + (own ? h.name : '???') + '</h4>';
-      html += '<p>' + (own ? h.title + ' — ' + h.specialDesc : (h.fromBoss ? 'Locked. Defeat ' + h.name + ' to recruit.' : 'Locked. Defeat an act boss to recruit.')) + '</p>';
+      html += '<h4' + (own ? '' : ' style="color:#7d7d86"') + '>' + h.name + '</h4>';
+      html += '<p>' + (own ? h.title + ' — ' + h.specialDesc
+        : (h.fromBoss ? h.title + ' · Defeat them in battle to recruit' : h.title + ' · Recruited during the story')) + '</p>';
+      if (own) html += '<p style="color:#8d8078;margin-top:4px">HP ' + h.hp + ' · DMG ' + h.dmg + ' · ' + h.style + '</p>';
       if (own) html += '<div class="chip' + (P.partner === hid ? ' good' : '') + '">' + (P.partner === hid ? 'Active' : 'Select') + '</div>';
       html += '</div>';
     }
