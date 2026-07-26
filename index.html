@@ -608,7 +608,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
           <div class="mi" id="miControls">Controls</div>
           <div class="mi" id="miOptions">Options</div>
         </div>
-        <div id="titleFoot">Three.js · single file · keyboard · gamepad · touch</div>
+        <div id="titleFoot"><span id="verTag">v1.0.0</span> · keyboard · gamepad · touch</div>
       </div>
     </div>
   </div>
@@ -773,6 +773,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
+var GAME_VERSION = 'v1.4.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1067,11 +1068,29 @@ function trackVolumeChanged() {
 function menuMusicStart() { playTrack('menu'); }
 function menuMusicStop() { if (curTrack === 'menu') playTrack(null); }
 function hubMusicStart() { playTrack('hub'); }
+/* Retry hook for autoplay policies. A data-URI track may not be buffered when
+   the gesture arrives, so if play() rejects we wait for canplay and try once
+   more rather than silently giving up. */
 function menuMusicPoke() {
   if (!wantTrack || !G.sound) return;
   var t = TRACKS[wantTrack];
-  if (t && t.audio && t.audio.paused) { var p = t.audio.play(); if (p && p.catch) p.catch(function () {}); }
-  else if (t && !t.audio) playTrack(wantTrack);
+  if (!t || !t.src) return;
+  if (!t.audio) { playTrack(wantTrack); return; }
+  if (!t.audio.paused) return;
+  var p = t.audio.play();
+  if (p && p.catch) {
+    p.catch(function () {
+      try {
+        if (t.audio.readyState === 0) t.audio.load();
+        var once = function () {
+          t.audio.removeEventListener('canplaythrough', once);
+          var p2 = t.audio.play();
+          if (p2 && p2.catch) p2.catch(function () {});
+        };
+        t.audio.addEventListener('canplaythrough', once);
+      } catch (e) {}
+    });
+  }
 }
 var menuAudio = null;   // retained for the sound toggle
 var musicNodes = [], musicTimer = 0, musicStep = 0, musicScale = null, musicRoot = 110;
@@ -1387,9 +1406,14 @@ function initTouch() {
   bindTouchBtn('tbSpec', 'special'); bindTouchBtn('tbDay', 'day');
   bindTouchBtn('tbCall', 'call'); bindTouchBtn('tbTag', 'tag');
   bindTouchBtn('tbTeam', 'team');
-  el('tbPause').addEventListener('touchstart', function (e) {
-    e.preventDefault(); if (G.mode === 'play') doPause(); else if (G.mode === 'pause') doResume();
-  }, { passive: false });
+  function menuBtn(e) {
+    if (e) e.preventDefault();
+    if (G.mode === 'play' || G.mode === 'hub') doPause();
+    else if (G.mode === 'pause') doResume();
+    else if (G.mode === 'dialogue' || G.mode === 'cutscene') dlgAdvance();
+  }
+  el('tbPause').addEventListener('touchstart', menuBtn, { passive: false });
+  el('tbPause').addEventListener('click', menuBtn);
 }
 function bindTouchBtn(id, act) {
   var n = el(id);
@@ -3020,6 +3044,50 @@ function buildPerimeter(loc, size) {
   }
 }
 
+/* Night sky dome: graded from horizon haze to deep zenith, with a moon,
+   drifting cloud slabs and a light-pollution glow near the ground. Replaces a
+   flat background colour on every outdoor Act. */
+function buildNightSky(loc, size) {
+  var R = Math.max(260, size * 2.2);
+  var geo = new THREE.SphereGeometry(R, 24, 16);
+  var top = new THREE.Color(0x05070f), bot = new THREE.Color(loc.sky).lerp(new THREE.Color(0x2a3350), 0.55);
+  var pos = geo.attributes.position, colors = new Float32Array(pos.count * 3), i, c = new THREE.Color();
+  for (i = 0; i < pos.count; i++) {
+    var t = clamp((pos.getY(i) / R) * 0.5 + 0.5, 0, 1);
+    c.copy(bot).lerp(top, Math.pow(t, 0.6));
+    colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  var dome = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+  dome.renderOrder = -1;
+  worldGroup.add(dome);
+  scene.background = null;
+
+  // moon with a soft halo
+  var moonG = new THREE.Group();
+  var disc = new THREE.Mesh(sphGeo(11, 16), new THREE.MeshBasicMaterial({ color: 0xf2f0e2, fog: false }));
+  moonG.add(disc);
+  var halo = new THREE.Mesh(sphGeo(19, 14), new THREE.MeshBasicMaterial({ color: 0xbcc8e8, transparent: true, opacity: 0.14, fog: false, depthWrite: false }));
+  moonG.add(halo);
+  moonG.position.set(-R * 0.42, R * 0.4, -R * 0.62);
+  worldGroup.add(moonG);
+
+  // cloud slabs catching the city glow
+  var ci, cl;
+  for (ci = 0; ci < 16; ci++) {
+    var a = rand(0, Math.PI * 2), rr = rand(R * 0.4, R * 0.85);
+    cl = new THREE.Mesh(new THREE.PlaneGeometry(rand(70, 160), rand(22, 46)),
+      new THREE.MeshBasicMaterial({ color: ci % 3 ? 0x161b2a : 0x1e1622, transparent: true, opacity: rand(0.3, 0.6), fog: false, depthWrite: false }));
+    cl.position.set(Math.sin(a) * rr, rand(R * 0.16, R * 0.42), Math.cos(a) * rr);
+    cl.lookAt(0, cl.position.y, 0);
+    worldGroup.add(cl);
+  }
+  // light pollution band on the horizon
+  var glowB = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.96, R * 0.96, 46, 24, 1, true),
+    new THREE.MeshBasicMaterial({ color: loc.accent, transparent: true, opacity: 0.07, side: THREE.BackSide, fog: false, depthWrite: false }));
+  glowB.position.y = 12;
+  worldGroup.add(glowB);
+}
 function addStars(loc) {
   var count = 400, pos = new Float32Array(count * 3), i, r, th, ph;
   for (i = 0; i < count; i++) {
@@ -3240,14 +3308,23 @@ function buildCity(stage, loc, half) {
     facade(pos2, -(frontage + 7), bw3, 14, rand(10, 26), 'z', 1);
     facade(pos2 + rand(-4, 4), frontage + 7, bw3, 14, rand(10, 26), 'z', -1);
   }
-  // taller towers behind the frontage so the street matches the backdrop
-  for (i = 0; i < 14; i++) {
+  /* Nothing may stand in a carriageway. A point is in the road if it is inside
+     EITHER band, so both axes have to clear the frontage line. */
+  function inRoad(px, pz, pad) {
+    var m = frontage + (pad || 0);
+    return (Math.abs(px) < m) || (Math.abs(pz) < m);
+  }
+  for (i = 0; i < 16; i++) {
     x = rand(-half, half); z = rand(-half, half);
-    if (Math.abs(x) < frontage + 16 && Math.abs(z) < frontage + 16) continue;
+    if (inRoad(x, z, 10)) continue;
     if (inClearZone(x, z, 16, 16)) continue;
     addProp(x, 0, z, rand(12, 20), rand(30, 58), rand(12, 20), 0x171a24, { castShadow: false });
   }
-  for (lc = 0; lc < 3; lc++) addLedgeCluster(rand(-half + 12, half - 12), rand(-half + 12, half - 12), loc);
+  for (lc = 0; lc < 3; lc++) {
+    var lx = rand(-half + 12, half - 12), lz = rand(-half + 12, half - 12);
+    if (inRoad(lx, lz, 6)) continue;
+    addLedgeCluster(lx, lz, loc);
+  }
   // parked traffic, sitting in the street lanes where cars belong
   for (i = 0; i < 9; i++) {
     var onZ2 = Math.random() < 0.5;
@@ -3255,14 +3332,29 @@ function buildCity(stage, loc, half) {
     z = onZ2 ? rand(-half + 10, half - 10) : rand(-5, 5);
     if (dist2(x, z, 0, 0) < 90) continue;
     if (inClearZone(x, z, 7, 7)) continue;
-    buildMuscleCar(x, z, onZ2 ? 0 : Math.PI / 2, pick([0x8a2028, 0x203a6a, 0x2a2a2e, 0x6a5a20, 0x1a3a2a]));
+    buildVehicle(pick(['muscle', 'sedan', 'sedan', 'van', 'truck', 'bike']), x, z,
+      onZ2 ? (Math.random() < 0.5 ? 0 : Math.PI) : Math.PI / 2,
+      pick([0x8a2028, 0x203a6a, 0x2a2a2e, 0x6a5a20, 0x1a3a2a, 0x4a4a54, 0x6a2a3a]));
   }
-  // street lamps
-  for (i = 0; i < 12; i++) {
-    x = rand(-half + 6, half - 6); z = rand(-half + 6, half - 6);
-    addDecor(x, 3.4, z, cylGeo(0.14, 0.14, 6.8, 6), 0x2c2e38, 0x000000, { castShadow: false });
-    addDecor(x, 6.9, z, sphGeo(0.4, 8), 0xfff0c0, 0xffd890);
-    if (i < 6) addLightPoint(x, 6.6, z, 0xffc880, 0.9, 22);
+  /* Lamps stand ON the pavement, just outside the kerb, spaced down each side
+     of both streets with the arm reaching over the road — not scattered in the
+     middle of the carriageway. */
+  var lampPairs = [], lp, lampN = 0;
+  for (lp = -half + 16; lp < half - 12; lp += 22) {
+    lampPairs.push({ x: -(roadHalf + 3.4), z: lp, face: 1 });
+    lampPairs.push({ x: (roadHalf + 3.4), z: lp + 11, face: -1 });
+    lampPairs.push({ x: lp + 6, z: -(roadHalf + 3.4), face: 0 });
+    lampPairs.push({ x: lp - 5, z: (roadHalf + 3.4), face: 0 });
+  }
+  for (i = 0; i < lampPairs.length; i++) {
+    var L = lampPairs[i];
+    if (Math.abs(L.x) > half - 4 || Math.abs(L.z) > half - 4) continue;
+    addDecor(L.x, 0.3, L.z, cylGeo(0.42, 0.5, 0.6, 8), 0x24262e);
+    addDecor(L.x, 4.2, L.z, cylGeo(0.15, 0.18, 8, 6), 0x2c2e38, 0x000000, { castShadow: false });
+    var armX = L.face ? L.face * -1.5 : 0, armZ = L.face ? 0 : (L.z > 0 ? -1.5 : 1.5);
+    addDecor(L.x + armX, 8.1, L.z + armZ, boxGeo(L.face ? 3.2 : 0.22, 0.22, L.face ? 0.22 : 3.2), 0x2c2e38);
+    addDecor(L.x + armX * 2, 7.85, L.z + armZ * 2, boxGeo(1.1, 0.34, 0.7), 0xfff0c0, 0xffd890);
+    if (lampN++ < 8) addLightPoint(L.x + armX * 2, 7.5, L.z + armZ * 2, 0xffc880, 1.0, 26);
   }
   // Neon signs are MOUNTED on the street blocks (with a bracket arm) instead of
   // floating in mid-air — that was the blue/red rectangles hanging in the sky.
@@ -4081,12 +4173,21 @@ function spawnProjectile(owner, x, y, z, dx, dy, dz, cfg) {
   } else if (c.type === 'bullet') {
     body = new THREE.Mesh(sphGeo(0.16, 8), matU(0xfff0c0, 0xffd070));
   } else if (c.type === 'web') {
-    body = new THREE.Mesh(sphGeo(0.26, 8), matU(0xf0f0f8, 0x707080));
-    var strand = new THREE.Mesh(boxGeo(0.05, 0.05, 1.5), matU(0xdcdce8, 0x505058, { transparent: true, opacity: 0.75 }));
-    strand.position.z = -0.8; g.add(strand);
-    var cross1 = new THREE.Mesh(boxGeo(0.34, 0.03, 0.03), matU(0xdcdce8, 0x505058, { transparent: true, opacity: 0.6 }));
-    cross1.position.z = -0.4; g.add(cross1);
-    var cross2 = cross1.clone(); cross2.position.z = -1.1; cross2.rotation.z = 0.9; g.add(cross2);
+    /* A spinning net rather than a pellet: radial spokes, two rings and a
+       trailing tether. */
+    body = new THREE.Mesh(sphGeo(0.13, 6), matU(0xf4f4fa, 0x8a8a96));
+    var wi3, spoke;
+    for (wi3 = 0; wi3 < 6; wi3++) {
+      spoke = new THREE.Mesh(boxGeo(0.5, 0.035, 0.035), matU(0xe8e8f2, 0x6a6a76, { transparent: true, opacity: 0.9 }));
+      spoke.rotation.z = (wi3 / 6) * Math.PI;
+      g.add(spoke);
+    }
+    var ring1 = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.022, 5, 10), matU(0xe8e8f2, 0x6a6a76));
+    g.add(ring1);
+    var ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.02, 5, 12), matU(0xdcdce8, 0x5a5a66, { transparent: true, opacity: 0.85 }));
+    g.add(ring2);
+    var tether = new THREE.Mesh(boxGeo(0.035, 0.035, 2.2), matU(0xdcdce8, 0x50505c, { transparent: true, opacity: 0.5 }));
+    tether.position.z = -1.2; g.add(tether);
   } else if (c.type === 'dart') {
     body = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.06, 6, 12, Math.PI * 1.3), matU(0xf8f8ff, 0xa8a8c0));
   } else {
@@ -4335,6 +4436,7 @@ function makeBoss(bossId, x, z) {
   e.name = d.name;
   e.dropTokens = 0;
   e.moveCd = 2.0;
+  e.sigT = 6;
   e.phaseCount = d.phases;
   e.root.scale.multiplyScalar(1.0);
   enemies.push(e);
@@ -4382,8 +4484,46 @@ function animateEntity(e, dt) {
   p.torso.rotation.z = damp(p.torso.rotation.z, a.lean, 8, dt);
   p.head.rotation.x = damp(p.head.rotation.x, -leanFwd, 8, dt);   // counter-rotate: eyes on the horizon
 
+  /* Attack footwork. A heavy is thrown from the hips: plant the back foot,
+     step through with the front, drop the stance. Without this the upper body
+     swings while the legs stay in a walk cycle. */
+  var atkLegL = null, atkLegR = null, atkShinL = null, atkShinR = null, hipDrop = 0, hipTwist = 0;
+  if (e.atk) {
+    var ak = e.atk.kind, at = e.atk.t / e.atk.total;
+    if (ak === 'heavy') {
+      var wind = clamp(at / 0.42, 0, 1), strike = clamp((at - 0.42) / 0.58, 0, 1);
+      if (at < 0.42) {                          // coil onto the back leg
+        atkLegR = lerp(0, 0.55, wind); atkLegL = lerp(0, -0.3, wind);
+        atkShinR = lerp(0, 0.5, wind); atkShinL = 0;
+        hipDrop = lerp(0, -0.16, wind); hipTwist = lerp(0, 0.4, wind);
+      } else {                                   // drive through and land it
+        atkLegR = lerp(0.55, -0.45, strike); atkLegL = lerp(-0.3, 0.6, strike);
+        atkShinR = lerp(0.5, 0.1, strike); atkShinL = lerp(0, 0.45, strike);
+        hipDrop = lerp(-0.16, -0.3, Math.sin(strike * Math.PI));
+        hipTwist = lerp(0.4, -0.45, strike);
+      }
+    } else if (ak === 'light') {
+      var lt = at, ldir = (e.comboIdx % 2 === 0) ? 1 : -1;
+      atkLegL = Math.sin(lt * Math.PI) * 0.34 * ldir;
+      atkLegR = -atkLegL * 0.6;
+      hipTwist = Math.sin(lt * Math.PI) * 0.3 * ldir;
+      hipDrop = -Math.sin(lt * Math.PI) * 0.07;
+    } else if (ak === 'special' || ak === 'team') {
+      atkLegL = Math.sin(at * Math.PI * 2) * 0.5;
+      atkLegR = -atkLegL;
+      hipDrop = -0.12;
+    }
+  }
+  p.hip.position.y = damp(p.hip.position.y, 0.23 + hipDrop, 16, dt);
+  p.hip.rotation.y = damp(p.hip.rotation.y, hipTwist, 16, dt);
+
   // legs
-  if (!e.grounded && !e.flying) {
+  if (atkLegL !== null) {
+    p.legL.rotation.x = damp(p.legL.rotation.x, atkLegL, 20, dt);
+    p.legR.rotation.x = damp(p.legR.rotation.x, atkLegR, 20, dt);
+    p.legL.userData.shin.rotation.x = damp(p.legL.userData.shin.rotation.x, atkShinL === null ? 0 : atkShinL, 20, dt);
+    p.legR.userData.shin.rotation.x = damp(p.legR.userData.shin.rotation.x, atkShinR === null ? 0 : atkShinR, 20, dt);
+  } else if (!e.grounded && !e.flying) {
     p.legL.rotation.x = damp(p.legL.rotation.x, -0.5, 10, dt);
     p.legR.rotation.x = damp(p.legR.rotation.x, 0.35, 10, dt);
     p.legL.userData.shin.rotation.x = damp(p.legL.userData.shin.rotation.x, 0.7, 10, dt);
@@ -4430,12 +4570,17 @@ function animateEntity(e, dt) {
       if (e.def && e.def.weapon === 'webs') {
         /* Web-shooter: arm punched forward, wrist cocked back, off-hand tucked.
            The old pose left the elbow hyper-extended and read as broken. */
+        /* Arm punches out nearly straight — a bent elbow at this shoulder
+           angle reads as hyperextended. The flick lives in the wrist instead. */
         var wt2 = e.atk.t / e.atk.total;
-        poseArmR = wt2 < 0.35 ? lerp(-0.4, -1.55, wt2 / 0.35) : -1.42;
-        foreR = wt2 < 0.35 ? lerp(0.2, 0.62, wt2 / 0.35) : 0.34;
-        poseArmL = -0.55; foreL = 1.0;
-        p.torso.rotation.x = 0.08;
-        p.torso.rotation.y = damp(p.torso.rotation.y, -0.2, 12, dt);
+        poseArmR = wt2 < 0.3 ? lerp(-0.35, -1.28, wt2 / 0.3) : -1.24;
+        foreR = wt2 < 0.3 ? lerp(0.2, 0.1, wt2 / 0.3) : 0.08;
+        poseArmL = -0.35; foreL = 0.85;
+        p.torso.rotation.x = 0.05;
+        p.torso.rotation.y = damp(p.torso.rotation.y, -0.14, 12, dt);
+        if (p.armR.userData.hand) {
+          p.armR.userData.hand.rotation.x = damp(p.armR.userData.hand.rotation.x, wt2 < 0.3 ? 0 : -0.55, 20, dt);
+        }
       } else {
         poseArmR = -1.35; poseArmL = -0.9; foreR = 0.3; foreL = 0.7;
         p.torso.rotation.x = 0.05;
@@ -4982,6 +5127,28 @@ function maybeQuip(hero, victim) {
   else line = pick(BLADE_QUIPS);
   toast(hero.def.name + ': ' + line);
 }
+/* Finisher. A killing blow from a heavy or special on a staggered target
+   triggers a short execution: hit-stop, a slow-motion beat, a vertical slash
+   and an extra ash burst. Blade II leaned on these to punctuate a fight. */
+function triggerFinisher(victim, killer) {
+  if (!killer || killer.kind !== 'hero') return false;
+  if (G.finisherT > 0 || G.time < (G.finisherCd || 0)) return false;
+  G.finisherCd = G.time + 7;
+  G.finisherT = 0.85;
+  hitStop(0.16);
+  G.slowmo = 0.28; G.slowmoT = 0.75;
+  addShake(0.9);
+  var fy = victim.pos.y + victim.height * 0.5;
+  spawnSlash(victim.pos.x, fy, victim.pos.z, killer.yaw,
+    { radius: 3.4, arc: 3.0, color: 0xfff0d0, vertical: true, life: 0.45, grow: 2.2 });
+  spawnSlash(victim.pos.x, fy, victim.pos.z, killer.yaw + Math.PI / 2,
+    { radius: 3.0, arc: 2.6, color: 0xffd0a0, vertical: true, life: 0.5, grow: 2.4 });
+  spawnRing(victim.pos.x, victim.pos.y, victim.pos.z, 0xffffff, 5, 0.5);
+  emit(victim.pos.x, fy, victim.pos.z, 46, { color: 0xc41028, speed: 13, life: 0.9, gravity: -10 });
+  SFX.heavy(); SFX.hit(true);
+  camKick = -1.1;
+  return true;
+}
 function killEntity(e, by) {
   if (e.dead) return;
   e.dead = true; e.deadT = 0; e.atk = null; e.hp = 0;
@@ -5001,6 +5168,8 @@ function killEntity(e, by) {
       var gl = Math.sqrt(gdx * gdx + gdz * gdz) || 1;
       spawnGibs(e, gdx / gl, gdz / gl);
     }
+    var fkind = e.lastHitKind || '';
+    if ((fkind === 'heavy' || fkind === 'special' || fkind === 'team') && !e.boss) triggerFinisher(e, by);
     spawnBloodPool(e.pos.x, e.pos.y, e.pos.z, e.isElite ? 1.8 : (e.boss ? 2.6 : 1));
     G.killCount++;
     G.beatKills = (G.beatKills || 0) + 1;   // gauntlet beats read this
@@ -5558,6 +5727,7 @@ function updateEnemy(e, dt) {
   }
   e.stagger = Math.max(0, e.stagger - dt);
   e.invuln = Math.max(0, e.invuln - dt);
+  if (e.boss && !e.warded && e.invuln > 3) e.invuln = 0;   // never permanently immune
   if (e.stagger > 0) { e.atk = null; physicsStep(e, dt); animateEntity(e, dt); return; }
 
   if (e.boss) { updateBoss(e, dt); return; }
@@ -5706,6 +5876,63 @@ function updateBoss(e, dt) {
     return;
   }
 
+  /* Signature mechanics. Each boss reads differently instead of drawing from
+     one shared pool: shields, rage, retreats and add-cycling per identity. */
+  var sig = e.def.id;
+  e.sigT = (e.sigT || 0) - dt;
+  if (sig === 'sable' && e.sigT <= 0 && e.phase >= 1) {
+    e.sigT = 9;                                  // mist step: vanish, reappear behind
+    bossBlink(e, tgt);
+    e.invuln = Math.max(e.invuln, 0.6);
+    toast(e.name + ' slips into mist');
+  } else if (sig === 'harvester' && e.sigT <= 0) {
+    e.sigT = 11;                                 // hook drag: yanks you into reach
+    if (d > 7 && d < 24 && tgt) {
+      var hx = e.pos.x - tgt.pos.x, hz = e.pos.z - tgt.pos.z, hl = Math.sqrt(hx * hx + hz * hz) || 1;
+      tgt.vel.x += hx / hl * 22; tgt.vel.z += hz / hl * 22; tgt.vel.y += 4;
+      spawnSlash(tgt.pos.x, tgt.pos.y + 1, tgt.pos.z, angleTo(tgt.pos.x, tgt.pos.z, e.pos.x, e.pos.z),
+        { radius: 4, arc: 1.2, color: 0xe04028, life: 0.4, grow: 2 });
+      SFX.big(); toast('The Harvester hooks you in');
+    }
+  } else if (sig === 'vrasta' && e.sigT <= 0 && e.phase >= 1) {
+    e.sigT = 13;                                 // blood ward: immune until adds die
+    e.warded = true; e.invuln = 999;
+    e.wardAdds = bossSummon(e, 3);
+    e.wardT = 14;                                // hard cap: the trickle of
+    spawnRing(e.pos.x, e.pos.y, e.pos.z, 0x9a30d8, 7, 0.9);   // ambient adds must
+    toast('Vrasta raises a ward — kill her handmaids');       // never lock the fight
+  } else if (sig === 'bonecaller' && e.sigT <= 0) {
+    e.sigT = 10;                                 // choir: heals from living adds
+    var healed = 0, bi3;
+    for (bi3 = 0; bi3 < enemies.length; bi3++) {
+      if (enemies[bi3] !== e && !enemies[bi3].dead) healed++;
+    }
+    if (healed > 0) {
+      e.hp = Math.min(e.maxHp, e.hp + healed * 22);
+      emit(e.pos.x, e.pos.y + 1.6, e.pos.z, 24, { color: 0x50e0b0, speed: 5, life: 0.7, gravity: 2 });
+      toast('The choir sings — Bonecaller mends');
+    }
+  } else if (sig === 'vhalimar' && e.sigT <= 0 && e.phase >= 2) {
+    e.sigT = 12;                                 // thirst: drains you to heal
+    if (tgt && d < 18) {
+      damageEntity(tgt, e.def.dmg * 0.7, e.pos.x, e.pos.z, { knock: 0, source: 'drain' });
+      e.hp = Math.min(e.maxHp, e.hp + 120);
+      spawnSlash(tgt.pos.x, tgt.pos.y + 1.2, tgt.pos.z, angleTo(tgt.pos.x, tgt.pos.z, e.pos.x, e.pos.z),
+        { radius: 5, arc: 0.8, color: 0xff2436, life: 0.5, grow: 2.5 });
+      toast('Vhalimar drinks');
+    }
+  }
+  // ward drops once the summons are dead
+  if (e.warded) {
+    e.wardT = (e.wardT || 0) - dt;
+    var alive2 = 0, ai3, wa = e.wardAdds || [];
+    for (ai3 = 0; ai3 < wa.length; ai3++) if (wa[ai3] && !wa[ai3].dead) alive2++;
+    if (alive2 === 0 || e.wardT <= 0) {
+      e.warded = false; e.invuln = 0; e.wardAdds = null;
+      spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xffffff, 9, 0.8);
+      toast('The ward shatters');
+    }
+  }
   e.moveCd -= dt * (1 + e.phase * 0.22);
   e.yaw = approachAngle(e.yaw, want, 3.2 * dt);
 
@@ -5763,17 +5990,18 @@ function bossBlink(e, tgt) {
   SFX.spawn();
 }
 function bossSummon(e, n) {
-  var i, a, r;
+  var i, a, r, spawned = [];
   SFX.spawn();
   for (i = 0; i < n; i++) {
     a = rand(0, Math.PI * 2); r = rand(6, 12);
     var x = clamp(e.pos.x + Math.sin(a) * r, -G.stage.size / 2 + 4, G.stage.size / 2 - 4);
     var z = clamp(e.pos.z + Math.cos(a) * r, -G.stage.size / 2 + 4, G.stage.size / 2 - 4);
-    makeEnemy(e.def.adds, x, z, false);
+    spawned.push(makeEnemy(e.def.adds, x, z, false));
     spawnRing(x, 0.1, z, 0xff3040, 3, 0.5);
     emit(x, 0.6, z, 16, { color: 0x802030, speed: 6, life: 0.6, gravity: -6 });
   }
   toast(e.name + ' calls the horde');
+  return spawned;
 }
 function bossRing(e) {
   // 0.65s warning telegraph, THEN the expanding shockwave. Jump or dash it.
@@ -6000,7 +6228,10 @@ function buildActWorld(act) {
     else if (loc.snow) weather = makeWeather('snow', loc);
     else if (loc.embers) weather = makeWeather('embers', loc);
   }
-  if (!act.indoor && (loc.props === 'city' || loc.props === 'castle')) addStars(loc);
+  if (!act.indoor) {
+    buildNightSky(loc, size);
+    addStars(loc);
+  }
   if (act.indoor) buildInterior(loc, size, half);
 
   return stage;
@@ -6036,6 +6267,7 @@ function buildRooftopBase(loc, size, half) {
   var glow = new THREE.Mesh(new THREE.PlaneGeometry(size * 3, size * 3), matU(0x0c0d16, 0x0a0b12));
   glow.rotation.x = -Math.PI / 2; glow.position.y = -34;
   worldGroup.add(glow);
+  buildNightSky(loc, size);
   addStars(loc);
 }
 
@@ -6276,6 +6508,7 @@ function startAct(index, isVs) {
   G.slowmo = 1; G.slowmoT = 0; G.bossDeathT = 0; G.clearT = 0;
   G.reviveT = 0; G.vsWave = 0;
   G.beatIndex = -1; G.beat = null; G.beatKills = 0;
+  G.finisherT = 0; G.finisherCd = 0;
   G.bossesBeaten = [];
 
   var stage = buildActWorld(act);
@@ -6436,6 +6669,7 @@ function spawnActBoss(bossId, zone, major) {
   e.isElite = !major;
   e.phaseCount = d.phases || 1;
   e.moveCd = 2.0;
+  e.sigT = 6;
   e.spawnT = 0.4;
   e.baseScale = e.root.scale.x;
   enemies.push(e);
@@ -6952,6 +7186,100 @@ function tutorialAdvance(action) {
 
 /* Blade's charger: low body, raked cabin, chrome, exhausts and light bars.
    Also used to dress the city streets. */
+/* One builder, five silhouettes. Blade's charger, a beat-up sedan, a panel
+   van, a box truck and a street bike — enough variety that a street doesn't
+   look like a showroom for one model. */
+function buildVehicle(kind, x, z, rotY, col) {
+  if (kind === 'muscle') return buildMuscleCar(x, z, rotY, col);
+  var g = new THREE.Group(), i;
+  var c = col === undefined ? 0x2a2a32 : col;
+  var glassM = matU(0x22303e, 0x0d141c);
+  var tyreM = matU(0x0a0a0c), hubM = matU(0x9aa2b0);
+  function wheel(wx, wy, wz, r) {
+    var t2 = new THREE.Mesh(cylGeo(r, r, 0.42, 12), tyreM);
+    t2.position.set(wx, wy, wz); t2.rotation.z = Math.PI / 2; g.add(t2);
+    var h2 = new THREE.Mesh(cylGeo(r * 0.48, r * 0.48, 0.46, 8), hubM);
+    h2.position.set(wx, wy, wz); h2.rotation.z = Math.PI / 2; g.add(h2);
+  }
+  var W = 3.0, L = 6.4, H = 1.9;
+
+  if (kind === 'sedan') {
+    W = 2.7; L = 5.6;
+    var b = new THREE.Mesh(boxGeo(W, 0.8, L), matU(c)); b.position.y = 0.85; g.add(b);
+    var cab = new THREE.Mesh(boxGeo(W - 0.3, 0.85, 2.9), matU(c)); cab.position.set(0, 1.62, -0.2); g.add(cab);
+    var wsF = new THREE.Mesh(boxGeo(W - 0.45, 0.7, 0.1), glassM); wsF.position.set(0, 1.66, 1.28); wsF.rotation.x = 0.5; g.add(wsF);
+    var wsB = new THREE.Mesh(boxGeo(W - 0.45, 0.62, 0.1), glassM); wsB.position.set(0, 1.66, -1.68); wsB.rotation.x = -0.55; g.add(wsB);
+    for (i = 0; i < 2; i++) {
+      var sw = new THREE.Mesh(boxGeo(0.1, 0.55, 2.4), glassM);
+      sw.position.set((i ? 1 : -1) * (W / 2 - 0.2), 1.62, -0.2); g.add(sw);
+    }
+    g.add(mkLight(-0.85, 1.02, L / 2 - 0.05, 0xfff4d0, 0.6, 0.24));
+    g.add(mkLight(0.85, 1.02, L / 2 - 0.05, 0xfff4d0, 0.6, 0.24));
+    g.add(mkLight(0, 1.02, -L / 2 + 0.05, 0xd03040, 2.1, 0.2));
+    wheel(-W / 2 + 0.15, 0.55, 1.85, 0.55); wheel(W / 2 - 0.15, 0.55, 1.85, 0.55);
+    wheel(-W / 2 + 0.15, 0.55, -1.85, 0.55); wheel(W / 2 - 0.15, 0.55, -1.85, 0.55);
+    H = 2.3;
+  } else if (kind === 'van') {
+    W = 2.9; L = 6.2;
+    var vb = new THREE.Mesh(boxGeo(W, 2.3, L * 0.68), matU(c)); vb.position.set(0, 1.75, -0.9); g.add(vb);
+    var vn = new THREE.Mesh(boxGeo(W - 0.15, 1.5, L * 0.34), matU(c)); vn.position.set(0, 1.3, 2.1); g.add(vn);
+    var vws = new THREE.Mesh(boxGeo(W - 0.4, 0.95, 0.12), glassM); vws.position.set(0, 1.85, 2.68); vws.rotation.x = 0.28; g.add(vws);
+    for (i = 0; i < 2; i++) {
+      var vsw = new THREE.Mesh(boxGeo(0.1, 0.7, 1.1), glassM);
+      vsw.position.set((i ? 1 : -1) * (W / 2 - 0.06), 1.75, 1.5); g.add(vsw);
+    }
+    var stripe = new THREE.Mesh(boxGeo(W + 0.04, 0.28, L * 0.68), matU(0xb0b6c2)); stripe.position.set(0, 1.5, -0.9); g.add(stripe);
+    g.add(mkLight(-1.0, 1.0, L / 2 - 0.1, 0xfff4d0, 0.55, 0.26));
+    g.add(mkLight(1.0, 1.0, L / 2 - 0.1, 0xfff4d0, 0.55, 0.26));
+    g.add(mkLight(0, 1.6, -L * 0.68 / 2 - 0.9, 0xd03040, 2.3, 0.22));
+    wheel(-W / 2 + 0.1, 0.6, 1.9, 0.6); wheel(W / 2 - 0.1, 0.6, 1.9, 0.6);
+    wheel(-W / 2 + 0.1, 0.6, -2.4, 0.6); wheel(W / 2 - 0.1, 0.6, -2.4, 0.6);
+    H = 3.4;
+  } else if (kind === 'truck') {
+    W = 3.2; L = 9.6;
+    var box = new THREE.Mesh(boxGeo(W + 0.3, 3.2, 6.2), matU(0xb8bcc6)); box.position.set(0, 2.9, -1.6); g.add(box);
+    var ribs;
+    for (ribs = 0; ribs < 5; ribs++) {
+      var rb = new THREE.Mesh(boxGeo(W + 0.36, 0.16, 0.16), matU(0x8e939e));
+      rb.position.set(0, 1.6 + ribs * 0.65, -1.6); g.add(rb);
+    }
+    var cabT = new THREE.Mesh(boxGeo(W, 2.2, 2.6), matU(c)); cabT.position.set(0, 2.0, 3.2); g.add(cabT);
+    var twin = new THREE.Mesh(boxGeo(W - 0.45, 1.0, 0.12), glassM); twin.position.set(0, 2.5, 4.44); twin.rotation.x = 0.18; g.add(twin);
+    var grill = new THREE.Mesh(boxGeo(W - 0.5, 0.7, 0.14), matU(0x2c2c34)); grill.position.set(0, 1.35, 4.5); g.add(grill);
+    g.add(mkLight(-1.15, 1.2, 4.5, 0xfff4d0, 0.6, 0.3));
+    g.add(mkLight(1.15, 1.2, 4.5, 0xfff4d0, 0.6, 0.3));
+    g.add(mkLight(0, 1.4, -4.75, 0xd03040, 2.6, 0.24));
+    wheel(-W / 2, 0.78, 3.1, 0.78); wheel(W / 2, 0.78, 3.1, 0.78);
+    wheel(-W / 2, 0.78, -1.2, 0.78); wheel(W / 2, 0.78, -1.2, 0.78);
+    wheel(-W / 2, 0.78, -3.2, 0.78); wheel(W / 2, 0.78, -3.2, 0.78);
+    H = 4.6;
+  } else {  // bike
+    W = 1.0; L = 2.9;
+    var frame = new THREE.Mesh(boxGeo(0.38, 0.44, 1.9), matU(c)); frame.position.y = 0.86; g.add(frame);
+    var tank = new THREE.Mesh(boxGeo(0.5, 0.42, 0.9), matU(c)); tank.position.set(0, 1.12, 0.1); g.add(tank);
+    var seat = new THREE.Mesh(boxGeo(0.42, 0.2, 1.0), matU(0x121216)); seat.position.set(0, 1.14, -0.75); g.add(seat);
+    var fairing = new THREE.Mesh(boxGeo(0.56, 0.7, 0.5), matU(c)); fairing.position.set(0, 1.0, 1.05); g.add(fairing);
+    var scr = new THREE.Mesh(boxGeo(0.4, 0.3, 0.1), glassM); scr.position.set(0, 1.42, 1.15); scr.rotation.x = 0.5; g.add(scr);
+    var bar = new THREE.Mesh(boxGeo(0.95, 0.09, 0.09), matU(0x2c2c34)); bar.position.set(0, 1.36, 0.9); g.add(bar);
+    var pipe = new THREE.Mesh(cylGeo(0.1, 0.1, 1.5, 8), matU(0x9aa2b0));
+    pipe.position.set(0.24, 0.6, -0.5); pipe.rotation.x = Math.PI / 2; g.add(pipe);
+    g.add(mkLight(0, 1.12, 1.32, 0xfff4d0, 0.34, 0.24));
+    g.add(mkLight(0, 1.02, -1.5, 0xd03040, 0.3, 0.16));
+    wheel(0, 0.62, 1.15, 0.62); wheel(0, 0.66, -1.2, 0.66);
+    H = 1.9;
+  }
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY || 0;
+  worldGroup.add(g);
+  var alongZ = Math.abs(Math.cos(rotY || 0)) > 0.5;
+  addCollider(x, 0, z, alongZ ? W : L, H, alongZ ? L : W, { walkable: true });
+  return g;
+}
+function mkLight(x, y, z, col, w, h) {
+  var m = new THREE.Mesh(boxGeo(w, h, 0.14), matU(col, col));
+  m.position.set(x, y, z);
+  return m;
+}
 function buildMuscleCar(x, z, rotY, bodyCol) {
   var g = new THREE.Group();
   var col = bodyCol === undefined ? 0x14141a : bodyCol;
@@ -7079,6 +7407,7 @@ function buildHubWorld() {
   /* ---- Blade's car ---- */
   var carX = -8, carZ = 22;
   buildMuscleCar(carX, carZ, 0);
+  buildVehicle('bike', carX + 5.2, carZ - 1.5, 0.35, 0x1c1c24);
 
   /* ---- weapon bench + rack ---- */
   var bx = 15, bz = -14;
@@ -7209,6 +7538,18 @@ function openHubPanel(action) {
   G.mode = 'hubmenu';
 }
 function closeHubPanel() {
+  if (G.hubSkinDirty) {
+    G.hubSkinDirty = false;
+    if (blade) {
+      var px2 = blade.pos.x, pz2 = blade.pos.z, py2 = blade.pos.y, yw2 = blade.yaw;
+      disposeEntity(blade);
+      blade = makeHero('blade', px2, pz2, true);
+      blade.pos.y = py2; blade.yaw = yw2;
+      cacheMaterials(blade);
+      player = blade;
+      refreshHUDNames();
+    }
+  }
   showScreen(null);
   el('hud').classList.add('on');
   G.mode = 'hub';
@@ -7598,6 +7939,11 @@ function updateHUD() {
   setBar('pDay', player.heroId === 'blade' ? (player.dayMode ? player.dayT / 10 : player.dayMeter / 100) : 0);
   if (ally) { setBar('aHp', ally.hp / ally.maxHp); setBar('aMeter', ally.meter / 100); }
   el('tokNum').textContent = P.tokens;
+  // drive the boss bar from the HUD tick, not from the boss AI
+  if (boss && !boss.dead) {
+    setBar('bossHp', boss.hp / boss.maxHp);
+    if (!el('bossBar').classList.contains('on')) el('bossBar').classList.add('on');
+  }
 
   // skill readiness
   setSkill('skSpecial', 'cdSpecial', player.meter >= 100 ? 0 : 1 - player.meter / 100);
@@ -8022,6 +8368,8 @@ function wireHub() {
       }
       P.skins.blade = si;
       saveProfile(); SFX.ui(); renderHub();
+      // rebuild the standing model so the change is visible immediately
+      if (G.mode === 'hubmenu' || G.mode === 'hub') G.hubSkinDirty = true;
     });
   }
   var buys = body.querySelectorAll('[data-buy]');
@@ -8178,6 +8526,7 @@ function loop(now) {
     reviveCheck(raw);
     updateBossDeath(raw);
     updateStageClear(raw);
+    if (G.finisherT > 0) G.finisherT -= raw;
     updateActIntro(raw);
     updateBeatAdvance(raw);
     actDirector(raw);
@@ -8577,7 +8926,19 @@ function wireMenus() {
     if (tap.classList.contains('gone')) return;
     tap.classList.add('gone');
     audioInit(); audioResume();
-    playTrack('menu'); menuMusicPoke(); SFX.ui();
+    /* Kick the element directly inside the gesture — creating it here rather
+       than reusing the one made before any interaction is what actually
+       satisfies mobile autoplay. */
+    var t = TRACKS.menu;
+    if (t && t.src) {
+      if (!t.audio) { t.audio = new Audio(t.src); t.audio.loop = true; }
+      t.audio.volume = clamp(G.musicVol * t.vol, 0, 1);
+      t.audio.currentTime = 0;
+      wantTrack = 'menu'; curTrack = 'menu';
+      var pr = t.audio.play();
+      if (pr && pr.catch) pr.catch(function () { setTimeout(menuMusicPoke, 120); });
+    }
+    SFX.ui();
     setTimeout(function () { tap.style.display = 'none'; }, 600);
   }
   tap.addEventListener('click', beginFromTap);
@@ -8599,6 +8960,7 @@ function init() {
   inputInit();
   wireMenus();
   renderControlsList();
+  el('verTag').textContent = GAME_VERSION;
   applyQuality();
   applySettings();
   setLoading(60, 'Sharpening…');
