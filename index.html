@@ -204,6 +204,9 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 .optVal{padding:7px 14px;border:1px solid #6b232b;background:rgba(50,14,18,.8);font-size:11px;
   letter-spacing:.12em;text-transform:uppercase;color:#ffd7a0;cursor:pointer;font-weight:bold;white-space:nowrap;}
 .optVal:hover{border-color:#ffb04a;}
+#saveModalText{width:100%;height:140px;margin-top:12px;background:rgba(6,6,10,.9);color:#cfe0c8;
+  border:1px solid #40191e;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;
+  line-height:1.5;resize:vertical;word-break:break-all;}
 #banner{position:absolute;left:0;right:0;top:22%;text-align:center;z-index:30;pointer-events:none;opacity:0;
   transition:opacity .3s;padding:0 16px;}
 #bannerT{font-size:clamp(24px,6vw,54px);font-weight:bold;letter-spacing:.1em;text-transform:uppercase;
@@ -711,8 +714,27 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
         <div class="optVal" id="optPad">Friend or Foe</div></div>
       <div class="optRow"><div><b>Stick Layout</b><p>Southpaw swaps move and look sticks.</p></div>
         <div class="optVal" id="optStick">Standard</div></div>
+      <div class="hdr" style="margin-top:16px">Save Data</div>
+      <div class="optRow"><div><b>Export Save</b><p>Copy your profile as text. Keep it somewhere safe.</p></div>
+        <div class="optVal" id="optExport">Export</div></div>
+      <div class="optRow"><div><b>Import Save</b><p>Paste an exported profile to restore it.</p></div>
+        <div class="optVal" id="optImport">Import</div></div>
+      <div class="optRow"><div><b>Restore Lost Progress</b><p>Rebuild a wiped profile from the Act you reached.</p></div>
+        <div class="optVal" id="optRestore">Rebuild</div></div>
       <div class="hr"></div>
       <div class="btn" id="btnOptBack">◂ Back</div>
+    </div></div>
+  </div>
+
+  <div class="screen" id="scSaveModal" style="z-index:70">
+    <div class="center"><div class="panel" style="width:min(620px,94vw);padding:22px">
+      <div class="hdr">Save Data</div>
+      <div class="ttl" id="saveModalTitle">Export Save</div>
+      <div class="sub" style="margin-top:8px" id="saveModalBody"></div>
+      <textarea id="saveModalText" spellcheck="false"></textarea>
+      <div class="hr"></div>
+      <div class="btn" id="saveModalOk">Confirm</div>
+      <div class="btn" id="saveModalClose">◂ Close</div>
     </div></div>
   </div>
 
@@ -914,12 +936,47 @@ function migrateProfile(obj) {
   obj.version = SAVE_VERSION;
   return obj;
 }
+/* --------------------------------------------------------------------------
+   Recovery.
+   Saves are per-origin browser storage with no server copy, so an overwritten
+   slot cannot be un-written. What we CAN do is make sure nothing salvageable
+   is missed: scan every key in storage, score anything that parses as a
+   profile, and load the furthest-progressed one rather than blindly trusting
+   the primary slot.
+   -------------------------------------------------------------------------- */
+function profileScore(o) {
+  if (!o || typeof o !== 'object') return -1;
+  if (o.story === undefined && o.tokens === undefined && !o.cleared) return -1;
+  var cleared = 0, k;
+  if (o.cleared) { for (k in o.cleared) if (o.cleared[k]) cleared++; }
+  var heroes = 0;
+  if (o.heroes) { for (k in o.heroes) if (o.heroes[k]) heroes++; }
+  return (o.story || 0) * 1000 + cleared * 500 + heroes * 200 + (o.totalTokens || 0);
+}
+function scanForSaves() {
+  var found = [], i, key, raw, obj;
+  var keys = [SAVE_KEY, SAVE_KEY + '_bak', 'blade_daywalker', 'blade_daywalker_v0'];
+  try {
+    for (i = 0; i < window.localStorage.length; i++) {
+      key = window.localStorage.key(i);
+      if (key && key.indexOf('blade') === 0 && keys.indexOf(key) < 0) keys.push(key);
+    }
+  } catch (e) {}
+  for (i = 0; i < keys.length; i++) {
+    raw = storeGet(keys[i]);
+    if (!raw) continue;
+    try { obj = JSON.parse(raw); } catch (e2) { continue; }
+    var sc = profileScore(obj);
+    if (sc >= 0) found.push({ key: keys[i], obj: obj, score: sc });
+  }
+  found.sort(function (a, b) { return b.score - a.score; });
+  return found;
+}
 function loadProfile() {
-  var raw = storeGet(SAVE_KEY), obj = null;
-  if (raw) { try { obj = JSON.parse(raw); } catch (e) { obj = null; } }
-  if (!obj) {                                   // fall back to the backup slot
-    var bak = storeGet(SAVE_KEY + '_bak');
-    if (bak) { try { obj = JSON.parse(bak); } catch (e2) { obj = null; } }
+  var candidates = scanForSaves();
+  var obj = candidates.length ? candidates[0].obj : null;
+  if (candidates.length && candidates[0].key !== SAVE_KEY) {
+    G.recoveredFrom = candidates[0].key;        // surfaced to the player on the title
   }
   P = migrateProfile(obj);
   return P;
@@ -6236,6 +6293,7 @@ function startAct(index, isVs) {
   camYaw = 0; camPitch = 0.3;
   camera.position.set(z0.x, G.safeY + 7, G.safeZ + 12);
 
+  saveProfile();            // checkpoint the profile whenever an Act begins
   clearTransientHUD();
   refreshHUDNames();
   updateHUD();
@@ -6279,6 +6337,7 @@ function beatEnter(i) {
   // checkpoint — dying resumes here, not at the top of the Act
   G.safeX = zone.x; G.safeY = (zone.y || 0) + 0.6; G.safeZ = zone.z;
   G.checkpointBeat = i;
+  saveProfile();            // bloodstones picked up so far are banked
 
   if (zone.beacon) zone.beacon.material.opacity = 0.3;
   var prev = i > 0 ? G.zones[i - 1] : null;
@@ -7683,6 +7742,13 @@ function goTitle() {
   playTrack('menu');
   showScreen('scTitle');
   seedAsh();
+  if (G.recoveredFrom) {
+    var src = G.recoveredFrom;
+    G.recoveredFrom = null;
+    setTimeout(function () {
+      toast('Recovered a save from backup — Act ' + (P.story + 1) + ', ' + P.tokens + ' bloodstones');
+    }, 900);
+  }
   var fresh = (P.story === 0 && P.totalTokens === 0);
   el('miContinue').classList.toggle('off', fresh);
   el('miContinue').textContent = fresh ? 'Continue Hunt' : ('Continue — Act ' + Math.min(P.story + 1, ACTS.length));
@@ -8187,6 +8253,78 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(W, H);
 }
+/* --------------------------------------------------------------------------
+   Save data tools. Export produces a portable string the player can keep;
+   import restores it. Manual restore exists for anyone whose storage was
+   wiped before backups existed — there is nothing to recover from disk in
+   that case, so the honest fix is to let them set where they were.
+   -------------------------------------------------------------------------- */
+function openSaveModal(title, body, value, onConfirm, confirmLabel) {
+  el('saveModalTitle').textContent = title;
+  el('saveModalBody').textContent = body;
+  var ta = el('saveModalText');
+  ta.value = value || '';
+  ta.style.display = onConfirm ? 'block' : 'block';
+  el('saveModalOk').textContent = confirmLabel || 'Confirm';
+  el('saveModalOk').style.display = onConfirm ? 'block' : 'none';
+  G.saveModalAction = onConfirm || null;
+  el('scSaveModal').classList.add('on');
+  if (!onConfirm) { try { ta.focus(); ta.select(); } catch (e) {} }
+}
+function closeSaveModal() {
+  el('scSaveModal').classList.remove('on');
+  G.saveModalAction = null;
+}
+function exportSave() {
+  var payload = JSON.stringify(P);
+  openSaveModal('Export Save',
+    'Copy this text somewhere safe. Paste it into Import Save to restore this profile on any device.',
+    payload, null);
+}
+function importSave() {
+  openSaveModal('Import Save',
+    'Paste a previously exported save below, then choose Restore. This replaces your current profile.',
+    '', function () {
+      var txt = el('saveModalText').value;
+      var obj = null;
+      try { obj = JSON.parse(txt); } catch (e) { toast('That is not a valid save'); return; }
+      if (profileScore(obj) < 0) { toast('That does not look like a Blade save'); return; }
+      P = migrateProfile(obj);
+      saveProfile();
+      closeSaveModal();
+      toast('Save restored — Act ' + (P.story + 1) + ', ' + P.tokens + ' bloodstones');
+      goTitle();
+    }, 'Restore');
+}
+function manualRestore() {
+  openSaveModal('Restore Lost Progress',
+    'Storage that was already overwritten cannot be read back — there is no server copy. ' +
+    'If your save was wiped, set how far you had got and it will be rebuilt: ' +
+    'enter the Act number you had reached (1-' + ACTS.length + ') and your bloodstones, as "act,stones".',
+    (P.story + 1) + ',' + P.tokens, function () {
+      var parts = el('saveModalText').value.split(',');
+      var act = parseInt(parts[0], 10), stones = parseInt(parts[1], 10);
+      if (!isFinite(act) || act < 1) { toast('Enter something like  8,400'); return; }
+      if (!isFinite(stones) || stones < 0) stones = 0;
+      P.story = clamp(act - 1, 0, ACTS.length - 1);
+      P.tokens = stones;
+      P.totalTokens = Math.max(P.totalTokens || 0, stones);
+      P.introSeen = true;
+      P.tutorialStep = 9;
+      // re-grant the allies the story would have given by that point
+      var ai, a2;
+      for (ai = 0; ai < P.story; ai++) {
+        a2 = ACTS[ai];
+        if (a2 && a2.recruit) P.heroes[a2.recruit] = true;
+        if (a2) P.cleared[a2.id] = true;
+      }
+      saveProfile();
+      closeSaveModal();
+      toast('Progress rebuilt — Act ' + (P.story + 1) + ' unlocked');
+      goTitle();
+    }, 'Rebuild');
+}
+
 /* ---------------- fullscreen ---------------- */
 function isFullscreen() {
   return !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -8274,6 +8412,11 @@ function wireOptions() {
     padPrev = {};
   });
   bind('optStick', function () { G.southpaw = !G.southpaw; });
+  el('optExport').addEventListener('click', function () { SFX.ui(); exportSave(); });
+  el('optImport').addEventListener('click', function () { SFX.ui(); importSave(); });
+  el('optRestore').addEventListener('click', function () { SFX.ui(); manualRestore(); });
+  el('saveModalOk').addEventListener('click', function () { if (G.saveModalAction) G.saveModalAction(); });
+  el('saveModalClose').addEventListener('click', function () { SFX.ui(); closeSaveModal(); });
   el('btnOptBack').addEventListener('click', function () {
     SFX.ui();
     if (G.optReturn === 'pause') { G.optReturn = null; showScreen('scPause'); G.mode = 'pause'; }
