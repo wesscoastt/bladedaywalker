@@ -3376,6 +3376,7 @@ function floorQuad(x, z, w, d, colorHex, y, rot) {
   worldGroup.add(m);
   return m;
 }
+var CITY_ROAD_HALF = 8;   // shared by road markings, facades, zone placement, landmarks
 function paveFloor(loc, size, half, indoor) {
   var base = new THREE.Mesh(new THREE.PlaneGeometry(size + 60, size + 60), matU(loc.ground));
   base.rotation.x = -Math.PI / 2;
@@ -3418,7 +3419,7 @@ function paveFloor(loc, size, half, indoor) {
   if (loc.props === 'city') {
     /* Two crossing streets, and markings ONLY on them. Painting lane lines
        across the whole map made every surface look like a road. */
-    var roadW = 16;
+    var roadW = CITY_ROAD_HALF * 2;
     G.cityRoads = [{ axis: 'z', at: 0 }, { axis: 'x', at: 0 }];
     // north-south street
     floorQuad(0, 0, roadW, size + 60, 0x16161a, 0.026);
@@ -3512,7 +3513,7 @@ function buildCity(stage, loc, half) {
   /* Buildings LINE the streets instead of standing in them. Two rows face each
      road, backed by taller towers so the playable street matches the skyline. */
   var cityBlocks = [];
-  var lc, roadHalf = 8, frontage = roadHalf + 4;
+  var lc, roadHalf = CITY_ROAD_HALF, frontage = roadHalf + 4;
 
   /* A building may not touch either carriageway, and may not land on anything
      already placed. Checking only the ROW position let entries near the cross
@@ -3633,6 +3634,11 @@ function buildCity(stage, loc, half) {
   for (i = 0; i < lampPairs.length; i++) {
     var L = lampPairs[i];
     if (Math.abs(L.x) > half - 4 || Math.abs(L.z) > half - 4) continue;
+    // A lamp meant for one street can still land inside the OTHER street's
+    // carriageway near the intersection — that's the pole-in-the-road bug.
+    // Uses roadHalf (not the wider frontage margin) since a lamp legitimately
+    // sits just past roadHalf and frontage would reject valid positions too.
+    if (Math.abs(L.x) < roadHalf + 0.6 && Math.abs(L.z) < roadHalf + 0.6) continue;
     addDecor(L.x, 0.3, L.z, cylGeo(0.42, 0.5, 0.6, 8), 0x24262e);
     addDecor(L.x, 4.2, L.z, cylGeo(0.15, 0.18, 8, 6), 0x2c2e38, 0x000000, { castShadow: false });
     var armX = L.face ? L.face * -1.5 : 0, armZ = L.face ? 0 : (L.z > 0 ? -1.5 : 1.5);
@@ -6449,6 +6455,21 @@ function buildActWorld(act) {
   // ---- zones ----
   var style = act.layout || 'grid';
   var zones = zoneLayout(nBeats, half, style);
+  /* A zone centred on the road (grid's middle column/row lands at x=0 or z=0)
+     put the landmark's pillars and floor directly in the carriageway — this
+     was the actual source of "buildings in the street", not the facades
+     (which are placed with a proven-safe margin). Push any such zone off the
+     road by enough that its 22x22 landmark and pillar ring clear it. */
+  if (loc.props === 'city' && !act.indoor && style !== 'rooftop') {
+    var zi0, clearR = CITY_ROAD_HALF + 14;
+    for (zi0 = 0; zi0 < zones.length; zi0++) {
+      var z0 = zones[zi0];
+      if (Math.abs(z0.x) < clearR) z0.x += (z0.x >= 0 ? 1 : -1) * (clearR - Math.abs(z0.x) + 1) || clearR;
+      if (Math.abs(z0.z) < clearR) z0.z += (z0.z >= 0 ? 1 : -1) * (clearR - Math.abs(z0.z) + 1) || clearR;
+      z0.x = clamp(z0.x, -half + 14, half - 14);
+      z0.z = clamp(z0.z, -half + 14, half - 14);
+    }
+  }
   G.zones = zones;
   clearZones.length = 0;
   var zi;
@@ -6747,12 +6768,21 @@ function buildInterior(loc, size, half) {
 
 /* A visual anchor per zone so the player can read the map at a glance. */
 function buildZoneLandmark(zone, loc, beat, idx) {
-  var i, a, r;
+  var i, a, r, px, pz;
+  var roadHalf2 = (loc.props === 'city') ? CITY_ROAD_HALF : -1;   // -1 = no road to avoid
+  function onRoad(x, z, pad) {
+    if (roadHalf2 < 0) return false;
+    var m = roadHalf2 + (pad || 0);
+    return Math.abs(x) < m || Math.abs(z) < m;
+  }
   addProp(zone.x, 0, zone.z, 22, 0.5, 22, loc.ground2, { walkable: true, force: true, castShadow: false });
   for (i = 0; i < 6; i++) {
     a = (i / 6) * Math.PI * 2;
     r = 10.5;
-    addProp(zone.x + Math.sin(a) * r, 0.5, zone.z + Math.cos(a) * r, 1.6, rand(3.5, 6.5), 1.6, loc.ground2, { force: true });
+    px = zone.x + Math.sin(a) * r;
+    pz = zone.z + Math.cos(a) * r;
+    if (onRoad(px, pz, 0.8)) continue;   // never plant a solid pillar in the street
+    addProp(px, 0.5, pz, 1.6, rand(3.5, 6.5), 1.6, loc.ground2, { force: true });
   }
   var beacon = new THREE.Mesh(cylGeo(0.5, 0.5, 26, 8),
     matU(loc.accent, loc.accent, { transparent: true, opacity: 0.14, depthWrite: false }));
@@ -6872,6 +6902,12 @@ function buildTraverseRoute(from, to, loc, half, seed) {
     var gap = Math.sqrt(dist2(x, z, px, pz));
     if (gap > 9.5) { x = px + (x - px) * (9.5 / gap); z = pz + (z - pz) * (9.5 / gap); }
     x = clamp(x, -half + 8, half - 8); z = clamp(z, -half + 8, half - 8);
+    // A low stepping-stone that happens to cross the carriageway reads as
+    // debris sitting in the street (and can clip parked traffic) — lift it
+    // clear of car roofline so it reads as an overpass instead.
+    if (loc.props === 'city' && (Math.abs(x) < CITY_ROAD_HALF + 1 || Math.abs(z) < CITY_ROAD_HALF + 1)) {
+      y = Math.max(y, 4.4);
+    }
     var w = rand(4.8, 6.6), d = rand(4.8, 6.6);
     var m = addProp(x, y, z, w, 1.2, d, i % 3 === 0 ? loc.ground2 : loc.ground, { walkable: true, force: true });
     platforms.push(m);
