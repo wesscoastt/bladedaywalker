@@ -3636,9 +3636,12 @@ function buildCity(stage, loc, half) {
     if (Math.abs(L.x) > half - 4 || Math.abs(L.z) > half - 4) continue;
     // A lamp meant for one street can still land inside the OTHER street's
     // carriageway near the intersection — that's the pole-in-the-road bug.
-    // Uses roadHalf (not the wider frontage margin) since a lamp legitimately
-    // sits just past roadHalf and frontage would reject valid positions too.
-    if (Math.abs(L.x) < roadHalf + 0.6 && Math.abs(L.z) < roadHalf + 0.6) continue;
+    // A point is inside SOME carriageway if EITHER axis is within the road
+    // band (the road is a full-width cross, not a small square at origin) —
+    // this must be OR, not AND. The previous AND version only ever fired when
+    // both axes were simultaneously small, which never happens for a lamp
+    // meant to line one street, so it effectively never skipped anything.
+    if (Math.abs(L.x) < roadHalf + 0.6 || Math.abs(L.z) < roadHalf + 0.6) continue;
     addDecor(L.x, 0.3, L.z, cylGeo(0.42, 0.5, 0.6, 8), 0x24262e);
     addDecor(L.x, 4.2, L.z, cylGeo(0.15, 0.18, 8, 6), 0x2c2e38, 0x000000, { castShadow: false });
     var armX = L.face ? L.face * -1.5 : 0, armZ = L.face ? 0 : (L.z > 0 ? -1.5 : 1.5);
