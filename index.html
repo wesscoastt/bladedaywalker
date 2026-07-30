@@ -773,7 +773,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.4.0';
+var GAME_VERSION = 'v1.5.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1199,7 +1199,7 @@ function musicTick(dt) {
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + beat * 0.9);
   o.connect(g); g.connect(musicGain);
   o.start(t0); o.stop(t0 + beat);
-  if (musicStep % 4 === 0) noise(0.10, 0.10, 'lowpass', 180); // kick
+  if (musicStep % 4 === 0) noise(0.09, 0.045, 'lowpass', 140); // kick, well under the pad
 }
 
 /* ==========================================================================
@@ -1751,7 +1751,7 @@ var LOCATIONS = [
   },
   {
     id: 'catacombs', name: 'The Bone Choir', short: 'Catacombs',
-    fog: 0x08120e, sky: 0x081210, ground: 0x2a2a24, ground2: 0x343028,
+    fog: 0x070f0c, sky: 0x081210, ground: 0x393528, ground2: 0x4a4433,
     accent: 0x50e0a0, accent2: 0xd8d0b0, ambient: 0x2a3a32, sun: 0x60a888,
     props: 'catacombs', fogNear: 12, fogFar: 68, rain: false, snow: false, embers: false,
     boss: 'bonecaller',
@@ -2099,6 +2099,211 @@ var ACT_SCRIPT = {
 };
 
 /* ==========================================================================
+   [DLC] Two post-campaign chapters.
+
+     DLC 1 — "The Merc With Half a Plan"  (unlocks after Act 24)
+     DLC 2 — "King Vamp"                  (unlocks after DLC 1)
+
+   Deadpool's goons are a deliberately silly enemy family: shirtless guys in
+   cheap Wolverine masks. King Vamp is a horde level — hundreds of one-hit
+   vampires so the player carves through a crowd rather than duelling.
+   ========================================================================== */
+
+/* ---------------- DLC enemy family ---------------- */
+ENEMIES.dpgoon = {
+  id: 'dpgoon', name: 'Goon', hp: 34, speed: 4.4, dmg: 7, reach: 2.2, tokens: 1,
+  body: 0xc8a882, skin: 0xd8b48c, accent: 0xf0d020, scale: 0.98,
+  windup: 0.5, recover: 0.5, staggerRes: 0, ranged: false, xp: 1
+};
+ENEMIES.dpkatana = {
+  id: 'dpkatana', name: 'Dual Katana Goon', hp: 58, speed: 5.6, dmg: 11, reach: 2.7, tokens: 2,
+  body: 0xb89870, skin: 0xd8b48c, accent: 0xd8dce8, scale: 1.0,
+  windup: 0.32, recover: 0.38, staggerRes: 0.2, ranged: false, dashAttack: true, combo2: true, xp: 2
+};
+ENEMIES.dprocket = {
+  id: 'dprocket', name: 'Rocket Goon', hp: 46, speed: 3.0, dmg: 13, reach: 17, tokens: 2,
+  body: 0x9a7a58, skin: 0xd8b48c, accent: 0xff6a12, scale: 1.02,
+  windup: 0.95, recover: 0.9, staggerRes: 0, ranged: true, projectile: 'bullet', xp: 2
+};
+ENEMIES.dpheavy = {
+  id: 'dpheavy', name: 'Heavy Goon', hp: 150, speed: 3.0, dmg: 19, reach: 3.2, tokens: 4,
+  body: 0xa88860, skin: 0xd8b48c, accent: 0xc8302c, scale: 1.4,
+  windup: 0.95, recover: 0.9, staggerRes: 0.65, ranged: false, slam: true, xp: 4
+};
+ENEMIES.dpmedic = {
+  id: 'dpmedic', name: 'Medic Goon', hp: 54, speed: 4.2, dmg: 9, reach: 15, tokens: 2,
+  body: 0xc0a078, skin: 0xd8b48c, accent: 0xf0a030, scale: 0.98,
+  windup: 0.75, recover: 0.7, staggerRes: 0, ranged: true, projectile: 'bile', xp: 2
+};
+/* Concert crowd: dies in one or two hits, arrives in enormous numbers. */
+ENEMIES.fan = {
+  id: 'fan', name: 'Turned Fan', hp: 20, speed: 5.2, dmg: 6, reach: 2.1, tokens: 1,
+  body: 0x2a1c2c, skin: 0xcfc0b4, accent: 0xff2436, scale: 0.95,
+  windup: 0.42, recover: 0.4, staggerRes: 0, ranged: false, xp: 1
+};
+ENEMIES.fanfast = {
+  id: 'fanfast', name: 'Rusher', hp: 24, speed: 7.4, dmg: 7, reach: 2.2, tokens: 1,
+  body: 0x341a30, skin: 0xd8c8bc, accent: 0xff5a6a, scale: 0.92,
+  windup: 0.26, recover: 0.34, staggerRes: 0, ranged: false, dashAttack: true, xp: 1
+};
+ENEMIES.fanjump = {
+  id: 'fanjump', name: 'Leaper', hp: 26, speed: 6.2, dmg: 8, reach: 2.2, tokens: 1,
+  body: 0x241830, skin: 0xd0c0b8, accent: 0xc060ff, scale: 0.94,
+  windup: 0.3, recover: 0.4, staggerRes: 0, ranged: false, flying: true, xp: 1
+};
+ENEMIES.fanscream = {
+  id: 'fanscream', name: 'Screamer', hp: 40, speed: 3.8, dmg: 8, reach: 13, tokens: 2,
+  body: 0x3a1424, skin: 0xe0cfc4, accent: 0xffd23a, scale: 1.0,
+  windup: 0.8, recover: 0.75, staggerRes: 0, ranged: true, projectile: 'hex', xp: 2
+};
+
+/* ---------------- DLC bosses ---------------- */
+BOSSES.deadpool = {
+  id: 'deadpool', name: 'Deadpool', sub: 'The Merc With Half a Plan', hp: 1500, speed: 6.6, dmg: 18,
+  body: 0xa8101c, skin: 0xa8101c, accent: 0x14141a, scale: 1.12, reach: 3.0,
+  moves: ['dash', 'triple', 'summon', 'volley', 'blink'], adds: 'dpgoon', phases: 3, recruit: null,
+  staggerRes: 0.45, windup: 0.3, recover: 0.4,
+  intro: 'Timeout! ...Nobody respects timeouts anymore.'
+};
+BOSSES.carti = {
+  id: 'carti', name: 'Playboi Carti', sub: 'King Vamp', hp: 2600, speed: 7.2, dmg: 22,
+  body: 0x1c2b6e, skin: 0x6b4a34, accent: 0xd81020, scale: 1.18, reach: 3.0,
+  moves: ['blink', 'summon', 'ring', 'volley', 'triple'], adds: 'fan', phases: 3, recruit: null,
+  staggerRes: 0.5, windup: 0.28, recover: 0.36,
+  intro: 'You made it.'
+};
+
+/* ---------------- playable unlocks ---------------- */
+HEROES.deadpool = {
+  id: 'deadpool', name: 'Deadpool', title: 'The Merc With a Mouth', style: 'hybrid',
+  body: 0xa8101c, skin: 0xa8101c, accent: 0x14141a, trim: 0xf2f2f6,
+  coat: false, glasses: false, weapon: 'sword', fromBoss: true,
+  hp: 210, speed: 8.0, dmg: 15, reach: 3.0, combo: 4, rangedRate: 0.3,
+  special: 'Maximum Effort', specialDesc: 'Empties both pistols, then both katanas, then apologises to nobody.',
+  quip: 'Do vampires use sunscreen?',
+  bio: 'Regenerates, never shuts up, technically on your side now.'
+};
+HEROES.carti = {
+  id: 'carti', name: 'Playboi Carti', title: 'King Vamp', style: 'melee',
+  body: 0x1c2b6e, skin: 0x6b4a34, accent: 0xd81020, trim: 0xf0f0f4,
+  coat: false, glasses: false, weapon: 'claws', fromBoss: true,
+  hp: 200, speed: 8.4, dmg: 19, reach: 2.9, combo: 4, rangedRate: 0,
+  special: 'Opium Bass', specialDesc: 'Drops a bass hit that ragdolls everything in the room.',
+  quip: 'King Vamp.',
+  bio: 'The crowd knelt for a reason. Now the reason fights for you.'
+};
+HERO_ORDER.push('deadpool');
+HERO_ORDER.push('carti');
+
+/* Deadpool quips fire from the shared partner table. */
+PARTNER_QUIPS.deadpool = [
+  'MAXIMUM EFFORT!',
+  'Did anyone else see that? No? Cool.',
+  'That one is going in the highlight reel.',
+  'I am helping!',
+  'You brood, I banter. Balanced team.'
+];
+PARTNER_QUIPS.carti = ['King Vamp.', 'Sold out.', 'Too fast.', 'Whole crowd knelt.'];
+
+/* ---------------- the two DLC Acts ---------------- */
+ACTS.push({
+  n: 'The Merc With Half a Plan', loc: 0, layout: 'linear', recruit: null, indoor: true, dlc: 1,
+  blurb: 'A hideout full of shirtless men in cheap Wolverine masks. Not vampires. Still a problem.',
+  pool: ['dpgoon', 'dpgoon', 'dpkatana', 'dprocket', 'dpmedic'],
+  beats: [F(2), Gt(18), F(3), Hn(2), O(2), B('deadpool')]
+});
+ACTS.push({
+  n: 'King Vamp', loc: 4, layout: 'linear', recruit: null, indoor: true, dlc: 2,
+  blurb: 'A sold-out arena. Everyone inside changed at once.',
+  pool: ['fan', 'fan', 'fanfast', 'fanjump', 'fanscream'],
+  beats: [Gt(40), F(3), Gt(55), Hn(3), Gt(70), B('carti')]
+});
+
+(function initDlcActs() {
+  var i, a, j, b;
+  for (i = 0; i < ACTS.length; i++) {
+    a = ACTS[i];
+    if (a.index !== undefined) continue;          // already initialised above
+    a.index = i;
+    a.id = 'act' + (i + 1);
+    a.pool = a.pool || POOLS[a.loc];
+    a.loctitle = LOCATIONS[a.loc].name;
+    for (j = 0; j < a.beats.length; j++) {
+      b = a.beats[j];
+      if (b.k === 'fight') b.w = b.w + 2;
+      else if (b.k === 'gauntlet') b.n = Math.round(b.n * 1.4);
+      else if (b.k === 'hunt') b.n = b.n + 1;
+      else if (b.k === 'objective') b.n = b.n + 1;
+    }
+  }
+})();
+
+/* ---------------- DLC scripts ---------------- */
+ACT_SCRIPT[24] = {
+  pre: [['GOON', 'Dude… I think that\'s Batman.'],
+        ['GOON', 'No, that\'s Wesley Snipes.'],
+        ['GOON', 'I don\'t know who either of those people are.'],
+        ['DEADPOOL', 'FOUND YA!'],
+        ['BLADE', '…'],
+        ['DEADPOOL', 'You somehow look even angrier in person.'],
+        ['BLADE', 'Move.'],
+        ['DEADPOOL', 'Can\'t. You\'re worth… hold on…'],
+        ['DEADPOOL', '…Oh. Still can\'t.']],
+  mid: {
+    1: [['DEADPOOL', 'Hey Blade. Serious question. Do vampires use sunscreen?']],
+    2: [['DEADPOOL', 'You ever smile?'], ['BLADE', 'No.'], ['DEADPOOL', 'Knew it.']],
+    3: [['DEADPOOL', 'I told my goons not to underestimate you.'],
+        ['GOON', 'We absolutely underestimated him.'],
+        ['DEADPOOL', 'Nobody listens to me.']],
+    5: [['DEADPOOL', 'Timeout!'], ['BLADE', '(keeps swinging)'],
+        ['DEADPOOL', 'HEY! Nobody respects timeouts anymore.']]
+  },
+  post: [['DEADPOOL', 'Before you stab me… …Oops.'],
+         ['BLADE', 'Wrong target.'],
+         ['DEADPOOL', 'So THAT was the mission. In my defence, I only read the first sentence.'],
+         ['BLADE', 'I noticed.'],
+         ['DEADPOOL', 'We\'re hunting the same guy? Well why didn\'t you say so?'],
+         ['BLADE', '…'],
+         ['DEADPOOL', 'Right. Come on, boys. We\'ve got vampires to hunt.'],
+         ['DEADPOOL', 'Bladepool? Poolblade? Stake Bros?'],
+         ['BLADE', 'Just keep up.'],
+         ['GOON', 'I KNEW WE WERE THE GOOD GUYS!'],
+         ['', '— — —'],
+         ['', 'A concert stage is being prepared. Thousands are queuing.'],
+         ['', 'Hooded figures unload black crates backstage.'],
+         ['?', 'Your concert is sold out, my King.'],
+         ['', 'Two red eyes open in the dark.']]
+};
+ACT_SCRIPT[25] = {
+  pre: [['SURVIVOR', 'Don\'t go in there… everyone started changing.'],
+        ['DEADPOOL', 'Well. I\'ve definitely been to worse concerts.'],
+        ['BLADE', 'Doors are shut behind us.'],
+        ['DEADPOOL', 'Okay… NOW this looks like a boss level.']],
+  mid: {
+    1: [['DEADPOOL', 'How many vampires does one guy NEED?'],
+        ['DEADPOOL', 'I stopped counting after… like… twelve.']],
+    2: [['DEADPOOL', 'This is either a vampire apocalypse… or the world\'s worst mosh pit.']],
+    4: [['DEADPOOL', 'The music stopped.'],
+        ['BLADE', 'They all turned at once.'],
+        ['DEADPOOL', '…Well. That\'s creepy.']],
+    5: [['CARTI', 'You made it.'],
+        ['BLADE', 'You\'re the Vampire King.'],
+        ['CARTI', 'King Vamp.'],
+        ['DEADPOOL', 'I\'ll admit… I did NOT see that coming.']]
+  },
+  post: [['DEADPOOL', 'So… concert\'s cancelled?'],
+         ['BLADE', 'It\'s over.'],
+         ['DEADPOOL', 'Good. I wasn\'t paying those ticket prices anyway.'],
+         ['DEADPOOL', 'So who\'s the next DLC boss?'],
+         ['BLADE', 'You\'ll find out.'],
+         ['DEADPOOL', 'That\'s sequel bait.'],
+         ['', '— — —'],
+         ['', 'Beneath the ruined arena, one drop of blood lands on an altar.'],
+         ['', 'It begins to move on its own.'],
+         ['?', 'Interesting…']]
+};
+
+/* ==========================================================================
    [BUILD] Shared geometry / material caches (keeps draw setup cheap)
    ========================================================================== */
 var GEO = {};
@@ -2435,6 +2640,33 @@ function makeHumanoid(cfg) {
     }
   }
 
+  if (cfg.jersey) {                                 // basketball jersey over bare arms
+    var jer = new THREE.Mesh(boxGeo(0.86, 0.86, 0.5), matU(cfg.body === undefined ? 0x1c2b6e : bodyC));
+    jer.position.y = 1.24; torso.add(jer);
+    var trimJ = new THREE.Mesh(boxGeo(0.9, 0.1, 0.53), matU(0xf0f0f4));
+    trimJ.position.y = 0.83; torso.add(trimJ);
+    var numA = new THREE.Mesh(boxGeo(0.16, 0.3, 0.05), matU(0xf0f0f4));
+    numA.position.set(-0.13, 1.3, 0.27); torso.add(numA);
+    var numB = numA.clone(); numB.position.x = 0.13; torso.add(numB);
+    var jBand = new THREE.Mesh(boxGeo(0.88, 0.07, 0.52), matU(cfg.accent === undefined ? 0xd81020 : accC));
+    jBand.position.y = 1.62; torso.add(jBand);
+  }
+  if (cfg.cap) {                                    // fitted cap, brim forward
+    var capC = matU(cfg.accent === undefined ? 0xd81020 : accC);
+    var crownC = new THREE.Mesh(boxGeo(0.44, 0.2, 0.44), capC);
+    crownC.position.y = 0.3; headG.add(crownC);
+    var brimC = new THREE.Mesh(boxGeo(0.44, 0.06, 0.26), capC);
+    brimC.position.set(0, 0.22, 0.32); headG.add(brimC);
+  }
+  if (cfg.longHair) {                               // locs falling past the shoulders
+    var lh, hc = matU(cfg.hair || 0x120c10);
+    for (lh = 0; lh < 7; lh++) {
+      var strand2 = new THREE.Mesh(boxGeo(0.07, rand(0.7, 1.15), 0.07), hc);
+      var la = (lh / 7) * Math.PI * 2;
+      strand2.position.set(Math.sin(la) * 0.2, -0.25, Math.cos(la) * 0.2 - 0.05);
+      headG.add(strand2);
+    }
+  }
   if (cfg.vest) {                                   // layered tactical vest
     var vest = new THREE.Mesh(boxGeo(0.84 * bulk, 0.66, 0.5 * bulk), matU(cfg.vest));
     vest.position.y = 1.3; torso.add(vest);
@@ -2636,6 +2868,14 @@ function applyBossLook(id, cfg) {
   else if (id === 'vhalimar') { cfg.crown = true; cfg.crownColor = 0xff2436; cfg.cape = true; cfg.capeColor = 0x50060e; cfg.collar = true; cfg.bulk = 1.15; cfg.gloves = 0x2c0a12; }
   else if (id === 'gorse') { cfg.helm = true; cfg.helmColor = 0x2a2e38; cfg.spikes = true; cfg.collar = true; }
   else if (id === 'maw') { cfg.bigJaw = true; cfg.hunch = 0.42; cfg.bulk = 1.24; cfg.ragged = true; }
+  else if (id === 'deadpool') {
+    cfg.mask = true; cfg.maskColor = 0xa8101c; cfg.pads = false; cfg.pouches = true;
+    cfg.gloves = 0x14141a; cfg.emblem = 0x14141a; cfg.backSheath = true; cfg.collar = false;
+  }
+  else if (id === 'carti') {
+    cfg.jersey = true; cfg.cap = true; cfg.hair = 0x120c10; cfg.longHair = true;
+    cfg.pads = false; cfg.fangs = true; cfg.emblem = 0xd81020;
+  }
   return cfg;
 }
 
@@ -2652,6 +2892,8 @@ function buildHeroModel(heroId, skinIdx) {
   cfg.emblem = d.accent;
   cfg.backSheath = (d.weapon === 'sword');
   applyBossLook(heroId, cfg);
+  if (heroId === 'deadpool') { cfg.thin = 0.97; }
+  if (heroId === 'carti') { cfg.thin = 0.94; }
   if (heroId === 'blade') {
     cfg.hair = 0x140f0c; cfg.flatTop = true; cfg.pony = false;
     cfg.emblem = 0x9aa2b8; cfg.collar = true; cfg.pouches = true;
@@ -2850,7 +3092,7 @@ function cameraClear(target, desired) {
    ========================================================================== */
 var weather = null;
 function makeWeather(kind, loc) {
-  var count = G.quality === 'low' ? 260 : (kind === 'embers' ? 420 : 900);
+  var count = G.quality === 'low' ? 200 : (kind === 'snow' ? 320 : (kind === 'embers' ? 420 : 800));
   var pos = new Float32Array(count * 3), i;
   for (i = 0; i < count; i++) {
     pos[i * 3] = rand(-60, 60); pos[i * 3 + 1] = rand(0, 46); pos[i * 3 + 2] = rand(-60, 60);
@@ -2859,8 +3101,8 @@ function makeWeather(kind, loc) {
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   var color = kind === 'rain' ? 0x9ab0d0 : (kind === 'snow' ? 0xe8f0ff : loc.accent);
   var m = new THREE.PointsMaterial({
-    color: color, size: kind === 'rain' ? 0.16 : (kind === 'snow' ? 0.22 : 0.2),
-    transparent: true, opacity: kind === 'rain' ? 0.5 : 0.75, depthWrite: false
+    color: color, size: kind === 'rain' ? 0.16 : (kind === 'snow' ? 0.42 : 0.2),
+    transparent: true, opacity: kind === 'rain' ? 0.5 : (kind === 'snow' ? 0.55 : 0.75), depthWrite: false
   });
   var p = new THREE.Points(g, m);
   p.frustumCulled = false;
@@ -3064,12 +3306,26 @@ function buildNightSky(loc, size) {
   scene.background = null;
 
   // moon with a soft halo
+  /* Flat billboards, not spheres — a translucent sphere against the dome
+     sorted unpredictably and showed up as a black orb drifting past. */
   var moonG = new THREE.Group();
-  var disc = new THREE.Mesh(sphGeo(11, 16), new THREE.MeshBasicMaterial({ color: 0xf2f0e2, fog: false }));
+  var haloM = new THREE.Mesh(new THREE.CircleGeometry(26, 24),
+    new THREE.MeshBasicMaterial({ color: 0x9fb0d8, transparent: true, opacity: 0.10, fog: false, depthWrite: false }));
+  moonG.add(haloM);
+  var disc = new THREE.Mesh(new THREE.CircleGeometry(11, 28),
+    new THREE.MeshBasicMaterial({ color: 0xf2f0e2, fog: false, depthWrite: false }));
+  disc.position.z = 0.5;
   moonG.add(disc);
-  var halo = new THREE.Mesh(sphGeo(19, 14), new THREE.MeshBasicMaterial({ color: 0xbcc8e8, transparent: true, opacity: 0.14, fog: false, depthWrite: false }));
-  moonG.add(halo);
-  moonG.position.set(-R * 0.42, R * 0.4, -R * 0.62);
+  var crater;
+  for (crater = 0; crater < 4; crater++) {
+    var cm = new THREE.Mesh(new THREE.CircleGeometry(rand(1.2, 2.6), 12),
+      new THREE.MeshBasicMaterial({ color: 0xd8d6c6, fog: false, depthWrite: false }));
+    cm.position.set(rand(-6, 6), rand(-6, 6), 0.6);
+    moonG.add(cm);
+  }
+  moonG.position.set(-R * 0.42, R * 0.38, -R * 0.6);
+  moonG.lookAt(0, R * 0.2, 0);
+  moonG.renderOrder = -1;
   worldGroup.add(moonG);
 
   // cloud slabs catching the city glow
@@ -3101,9 +3357,7 @@ function addStars(loc) {
   var p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xcfd8ff, size: 1.4, sizeAttenuation: false, transparent: true, opacity: 0.7, fog: false }));
   p.frustumCulled = false;
   worldGroup.add(p);
-  var moonDisc = new THREE.Mesh(sphGeo(14, 16), matU(0xf0f0e0, 0xd8d8c8));
-  moonDisc.position.set(-90, 110, -160);
-  worldGroup.add(moonDisc);
+  // moon lives in buildNightSky; a second one here produced a stray dark orb
 }
 
 /* ==========================================================================
@@ -3260,7 +3514,28 @@ function buildCity(stage, loc, half) {
   var cityBlocks = [];
   var lc, roadHalf = 8, frontage = roadHalf + 4;
 
+  /* A building may not touch either carriageway, and may not land on anything
+     already placed. Checking only the ROW position let entries near the cross
+     street sit in the intersection, and nothing stopped one landing on a
+     parked vehicle. */
+  function footprintClear(bx, bz, bw, bd, margin) {
+    var hw = bw / 2, hd = bd / 2, m2 = margin === undefined ? 2.5 : margin;
+    // both road bands run the full length of the map
+    if (Math.abs(bx) - hw < roadHalf + m2) return false;
+    if (Math.abs(bz) - hd < roadHalf + m2) return false;
+    // and nothing may overlap existing geometry
+    var ci3, c3;
+    for (ci3 = 0; ci3 < colliders.length; ci3++) {
+      c3 = colliders[ci3];
+      if (c3.maxY <= 0.6) continue;
+      if (bx + hw + 1 < c3.minX || bx - hw - 1 > c3.maxX) continue;
+      if (bz + hd + 1 < c3.minZ || bz - hd - 1 > c3.maxZ) continue;
+      return false;
+    }
+    return true;
+  }
   function facade(bx, bz, bw, bd, bh, faceAxis, faceSign) {
+    if (!footprintClear(bx, bz, bw, bd)) return;
     var m = addProp(bx, 0, bz, bw, bh, bd, Math.random() < 0.5 ? 0x22242e : 0x1d2029);
     if (!m) return;
     cityBlocks.push({ x: bx, z: bz, w: bw, d: bd, h: bh });
@@ -3296,6 +3571,8 @@ function buildCity(stage, loc, half) {
   // rows facing the north-south street
   var pos2;
   for (pos2 = -half + 12; pos2 < half - 12; pos2 += rand(13, 19)) {
+    // leave the intersection open — this row crosses the east-west street
+    if (Math.abs(pos2) < frontage + 12) continue;
     var bw1 = rand(9, 15), bd1 = rand(10, 16);
     facade(-(frontage + bd1 / 2), pos2, bd1, bw1, rand(12, 30), 'x', 1);
     var bw2 = rand(9, 15), bd2 = rand(10, 16);
@@ -3303,7 +3580,7 @@ function buildCity(stage, loc, half) {
   }
   // rows facing the east-west street
   for (pos2 = -half + 12; pos2 < half - 12; pos2 += rand(14, 20)) {
-    if (Math.abs(pos2) < frontage + 10) continue;
+    if (Math.abs(pos2) < frontage + 12) continue;
     var bw3 = rand(9, 15);
     facade(pos2, -(frontage + 7), bw3, 14, rand(10, 26), 'z', 1);
     facade(pos2 + rand(-4, 4), frontage + 7, bw3, 14, rand(10, 26), 'z', -1);
@@ -3316,9 +3593,10 @@ function buildCity(stage, loc, half) {
   }
   for (i = 0; i < 16; i++) {
     x = rand(-half, half); z = rand(-half, half);
-    if (inRoad(x, z, 10)) continue;
+    var tw = rand(12, 20), td = rand(12, 20);
+    if (!footprintClear(x, z, tw, td, 6)) continue;
     if (inClearZone(x, z, 16, 16)) continue;
-    addProp(x, 0, z, rand(12, 20), rand(30, 58), rand(12, 20), 0x171a24, { castShadow: false });
+    addProp(x, 0, z, tw, rand(30, 58), td, 0x171a24, { castShadow: false });
   }
   for (lc = 0; lc < 3; lc++) {
     var lx = rand(-half + 12, half - 12), lz = rand(-half + 12, half - 12);
@@ -3326,13 +3604,19 @@ function buildCity(stage, loc, half) {
     addLedgeCluster(lx, lz, loc);
   }
   // parked traffic, sitting in the street lanes where cars belong
-  for (i = 0; i < 9; i++) {
+  /* Traffic sits IN the lanes (never straddling a kerb) and only where the
+     ground is genuinely clear — a truck was ending up inside a facade. */
+  for (i = 0; i < 11; i++) {
     var onZ2 = Math.random() < 0.5;
-    x = onZ2 ? rand(-5, 5) : rand(-half + 10, half - 10);
-    z = onZ2 ? rand(-half + 10, half - 10) : rand(-5, 5);
-    if (dist2(x, z, 0, 0) < 90) continue;
-    if (inClearZone(x, z, 7, 7)) continue;
-    buildVehicle(pick(['muscle', 'sedan', 'sedan', 'van', 'truck', 'bike']), x, z,
+    var lane = (Math.random() < 0.5 ? -1 : 1) * rand(2.6, 5.4);
+    x = onZ2 ? lane : rand(-half + 12, half - 12);
+    z = onZ2 ? rand(-half + 12, half - 12) : lane;
+    if (dist2(x, z, 0, 0) < 110) continue;                 // keep the junction clear
+    if (inClearZone(x, z, 8, 8)) continue;
+    var vkind = pick(['muscle', 'sedan', 'sedan', 'van', 'truck', 'bike']);
+    var vlen = vkind === 'truck' ? 10 : (vkind === 'bike' ? 3.4 : 7);
+    if (spotBlocked(x, z, vlen * 0.5 + 1)) continue;       // nothing already there
+    buildVehicle(vkind, x, z,
       onZ2 ? (Math.random() < 0.5 ? 0 : Math.PI) : Math.PI / 2,
       pick([0x8a2028, 0x203a6a, 0x2a2a2e, 0x6a5a20, 0x1a3a2a, 0x4a4a54, 0x6a2a3a]));
   }
@@ -3757,12 +4041,20 @@ function spawnStageTokens(stage, half, loc) {
    the perimeter, entered through a narrow gap screened by a false wall, with a
    lit interior, an altar, a guardian and a real haul. */
 function buildSecretRoom(stage, loc, half) {
-  var side = randi(0, 3);
-  var cx = 0, cz = 0, faceX = 0, faceZ = 0;
-  if (side === 0) { cx = rand(-half * 0.55, half * 0.55); cz = -half + 11; faceZ = 1; }
-  else if (side === 1) { cx = rand(-half * 0.55, half * 0.55); cz = half - 11; faceZ = -1; }
-  else if (side === 2) { cx = -half + 11; cz = rand(-half * 0.55, half * 0.55); faceX = 1; }
-  else { cx = half - 11; cz = rand(-half * 0.55, half * 0.55); faceX = -1; }
+  /* Must not land on a combat zone or a route corridor — enemies were being
+     spawned inside the vault. Try several sites and give up rather than
+     overlap one. */
+  var side, cx = 0, cz = 0, faceX = 0, faceZ = 0, tries, ok = false;
+  for (tries = 0; tries < 24 && !ok; tries++) {
+    side = randi(0, 3);
+    faceX = 0; faceZ = 0;
+    if (side === 0) { cx = rand(-half * 0.55, half * 0.55); cz = -half + 11; faceZ = 1; }
+    else if (side === 1) { cx = rand(-half * 0.55, half * 0.55); cz = half - 11; faceZ = -1; }
+    else if (side === 2) { cx = -half + 11; cz = rand(-half * 0.55, half * 0.55); faceX = 1; }
+    else { cx = half - 11; cz = rand(-half * 0.55, half * 0.55); faceX = -1; }
+    ok = !inClearZone(cx, cz, 20, 20) && !spotBlocked(cx, cz, 11);
+  }
+  if (!ok) return;
 
   var wallC = loc.ground2, W = 15, D = 13, H = 7, T = 1.4;
   // shell
@@ -3788,6 +4080,19 @@ function buildSecretRoom(stage, loc, half) {
   // interior: altar, braziers, banners, a haul and something guarding it
   addProp(cx, 0, cz, 3.4, 1.1, 3.4, loc.ground, { walkable: true, force: true });
   addDecor(cx, 1.35, cz, boxGeo(3.8, 0.3, 3.8), loc.ground2);
+  /* City vaults are an underground car park — bays, a ramp and a parked van,
+     so the "cache in a lot" line matches what you actually walk into. */
+  if (loc.props === 'city') {
+    var bi4;
+    for (bi4 = 0; bi4 < 4; bi4++) {
+      floorQuad(cx - 4.6 + bi4 * 3.1, cz - 4.2, 0.18, 5.4, 0xb8a038, 0.05);
+    }
+    floorQuad(cx, cz - 6.8, 12, 0.2, 0xb8a038, 0.05);
+    addDecor(cx + 5.4, 2.4, cz + 4.6, boxGeo(0.5, 4.8, 0.5), 0x2a2c34);
+    addDecor(cx - 5.4, 2.4, cz + 4.6, boxGeo(0.5, 4.8, 0.5), 0x2a2c34);
+    addDecor(cx, 5.2, cz, boxGeo(13, 0.4, 11), 0x1a1c22);
+    if (typeof buildVehicle === 'function') buildVehicle('van', cx - 3.2, cz - 3.6, 0, 0x2a2a32);
+  }
   var runes = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.12, 8, 22), matU(loc.accent, loc.accent));
   runes.position.set(cx, 2.6, cz); runes.rotation.x = Math.PI / 2;
   worldGroup.add(runes);
@@ -4573,13 +4878,14 @@ function animateEntity(e, dt) {
         /* Arm punches out nearly straight — a bent elbow at this shoulder
            angle reads as hyperextended. The flick lives in the wrist instead. */
         var wt2 = e.atk.t / e.atk.total;
-        poseArmR = wt2 < 0.3 ? lerp(-0.35, -1.28, wt2 / 0.3) : -1.24;
-        foreR = wt2 < 0.3 ? lerp(0.2, 0.1, wt2 / 0.3) : 0.08;
-        poseArmL = -0.35; foreL = 0.85;
-        p.torso.rotation.x = 0.05;
-        p.torso.rotation.y = damp(p.torso.rotation.y, -0.14, 12, dt);
+        poseArmR = wt2 < 0.3 ? lerp(-0.35, -1.18, wt2 / 0.3) : -1.14;
+        foreR = 0;                                   // dead straight: cannot read as bent
+        poseArmRZ = wt2 < 0.3 ? lerp(0, -0.52, wt2 / 0.3) : -0.48;   // out to the side
+        poseArmL = -0.3; foreL = 0.9;
+        p.torso.rotation.x = 0.04;
+        p.torso.rotation.y = damp(p.torso.rotation.y, -0.3, 12, dt);
         if (p.armR.userData.hand) {
-          p.armR.userData.hand.rotation.x = damp(p.armR.userData.hand.rotation.x, wt2 < 0.3 ? 0 : -0.55, 20, dt);
+          p.armR.userData.hand.rotation.x = damp(p.armR.userData.hand.rotation.x, wt2 < 0.3 ? 0 : -0.5, 20, dt);
         }
       } else {
         poseArmR = -1.35; poseArmL = -0.9; foreR = 0.3; foreL = 0.7;
@@ -6385,11 +6691,56 @@ function buildInterior(loc, size, half) {
     var horiz = Math.random() < 0.5;
     addProp(wx, 0, wz, horiz ? rand(12, 22) : 1.6, rand(6, 10), horiz ? 1.6 : rand(12, 22), loc.ground2, { force: true });
   }
-  // strip lighting overhead
+  /* Lighting and fittings match the building you are supposed to be inside,
+     rather than warehouse strip lights in a castle. */
+  var lampCol = 0xffc890, lampEm = 0xffd890;
+  if (loc.props === 'castle') { lampCol = 0xffa348; lampEm = 0xff8a20; }
+  else if (loc.props === 'catacombs') { lampCol = 0x40e0a0; lampEm = 0x30d090; }
+  else if (loc.props === 'temple') { lampCol = 0xff3020; lampEm = 0xff2010; }
   for (i = -half + 10; i < half - 6; i += 18) {
     for (j = -half + 10; j < half - 6; j += 26) {
-      addDecor(i, ceilY - 1.9, j, boxGeo(5.2, 0.25, 0.5), 0xfff0c8, 0xffd890);
-      if (Math.random() < 0.5) addLightPoint(i, ceilY - 3, j, 0xffc890, 0.85, 30);
+      if (loc.props === 'castle') {
+        addDecor(i, ceilY - 2.6, j, boxGeo(0.3, 3.4, 0.3), 0x2c2e36);        // chandelier chain
+        addDecor(i, ceilY - 4.4, j, cylGeo(1.5, 1.2, 0.5, 10), 0x4a3c22);
+        var ch;
+        for (ch = 0; ch < 5; ch++) {
+          var ca2 = (ch / 5) * Math.PI * 2;
+          addDecor(i + Math.sin(ca2) * 1.3, ceilY - 4.0, j + Math.cos(ca2) * 1.3, sphGeo(0.22, 6), lampEm, lampEm);
+        }
+      } else if (loc.props === 'catacombs') {
+        addDecor(i, ceilY - 2.2, j, cylGeo(0.12, 0.12, 2.6, 6), 0x2a2a22);
+        addDecor(i, ceilY - 3.6, j, sphGeo(0.42, 8), lampCol, lampEm);
+      } else if (loc.props === 'temple') {
+        addDecor(i, ceilY - 2.0, j, boxGeo(1.2, 2.2, 1.2), 0x2a1018);
+        addDecor(i, ceilY - 3.3, j, sphGeo(0.5, 8), lampCol, lampEm);
+      } else {
+        addDecor(i, ceilY - 1.9, j, boxGeo(5.2, 0.25, 0.5), 0xfff0c8, lampEm);
+      }
+      if (Math.random() < 0.55) addLightPoint(i, ceilY - 3.6, j, lampCol, 0.9, 30);
+    }
+  }
+  // wall treatment so the shell is not bare slab
+  var wi3;
+  for (wi3 = -half + 8; wi3 < half - 8; wi3 += 12) {
+    if (loc.props === 'castle') {
+      addDecor(-half + 2.2, 5, wi3, boxGeo(0.6, 10, 2.0), 0x4a4c56);
+      addDecor(half - 2.2, 5, wi3, boxGeo(0.6, 10, 2.0), 0x4a4c56);
+      if (wi3 % 24 === 0) {
+        addDecor(-half + 2.6, 6.5, wi3, boxGeo(0.2, 4.6, 2.4), 0x6a1420);
+        addDecor(half - 2.6, 6.5, wi3, boxGeo(0.2, 4.6, 2.4), 0x243a6a);
+      }
+    } else if (loc.props === 'catacombs') {
+      var sh2;
+      for (sh2 = 0; sh2 < 3; sh2++) {
+        addDecor(-half + 2.4, 1.6 + sh2 * 2.2, wi3, boxGeo(0.8, 0.22, 10), 0x6e6650);
+        addDecor(half - 2.4, 1.6 + sh2 * 2.2, wi3, boxGeo(0.8, 0.22, 10), 0x6e6650);
+      }
+    } else if (loc.props === 'temple') {
+      addDecor(-half + 2.4, 5, wi3, cylGeo(1.0, 1.2, 10, 8), 0x341820);
+      addDecor(half - 2.4, 5, wi3, cylGeo(1.0, 1.2, 10, 8), 0x341820);
+    } else {
+      addDecor(-half + 2.2, 4.6, wi3, boxGeo(0.4, 9, 1.2), loc.ground2);
+      addDecor(half - 2.2, 4.6, wi3, boxGeo(0.4, 9, 1.2), loc.ground2);
     }
   }
 }
@@ -6413,19 +6764,89 @@ function buildZoneLandmark(zone, loc, beat, idx) {
 
 /* Linear Acts get side walls, so the route reads as a single path forward
    instead of an open field you can wander off. */
+/* Linear routes were two grey slabs down either side. Each biome now dresses
+   its own corridor so the level reads as a place: a castle gallery, a flooded
+   crypt passage, a market arcade, a cargo deck, a temple approach. */
 function buildCorridorWalls(zones, loc, half) {
-  var i, wallX = Math.min(half - 4, 30);
+  var i, wallX = Math.min(half - 4, 30), style = loc.props;
   for (i = -half; i < half; i += 16) {
     addProp(-wallX, 0, i, 3, 15, 16.5, loc.ground2, { force: true, castShadow: false });
     addProp(wallX, 0, i, 3, 15, 16.5, loc.ground2, { force: true, castShadow: false });
-    if (i % 32 === 0) {
-      addDecor(-wallX + 1.6, 6, i, boxGeo(0.4, 3, 3), loc.accent, loc.accent);
-      addDecor(wallX - 1.6, 6, i, boxGeo(0.4, 3, 3), loc.accent2 || loc.accent, loc.accent2 || loc.accent);
-    }
+    dressCorridorBay(-wallX, i, 1, loc, style);
+    dressCorridorBay(wallX, i, -1, loc, style);
   }
-  // seal the ends
   addProp(0, 0, half - 2, wallX * 2, 15, 3, loc.ground2, { force: true, castShadow: false });
   addProp(0, 0, -half + 2, wallX * 2, 15, 3, loc.ground2, { force: true, castShadow: false });
+}
+
+/* One wall bay of set dressing, facing inward (sign = which way is inward). */
+function dressCorridorBay(wx, wz, sign, loc, style) {
+  var inX = wx + sign * 1.7, i;
+  if (style === 'castle') {
+    // pilasters, arched niches with statues, banners, wall sconces
+    addDecor(inX, 5, wz - 6.5, boxGeo(0.9, 10, 1.6), 0x4a4c56);
+    addDecor(inX, 5, wz + 6.5, boxGeo(0.9, 10, 1.6), 0x4a4c56);
+    addDecor(inX, 9.6, wz, boxGeo(0.8, 1.0, 13), 0x53555f);
+    var niche = new THREE.Mesh(boxGeo(0.7, 5.2, 4.2), matU(0x24262e));
+    niche.position.set(inX + sign * 0.3, 3.2, wz); worldGroup.add(niche);
+    if (Math.random() < 0.55) {
+      var st2 = makeHumanoid({ body: 0x585a64, skin: 0x585a64, accent: 0x585a64, coat: true,
+        coatColor: 0x585a64, scale: 0.95, weapon: 'sword', collar: true });
+      st2.group.position.set(inX + sign * 0.2, 0.9, wz);
+      st2.group.rotation.y = sign > 0 ? Math.PI / 2 : -Math.PI / 2;
+      worldGroup.add(st2.group);
+      addDecor(inX + sign * 0.2, 0.45, wz, cylGeo(1.0, 1.1, 0.9, 10), 0x44464f);
+    } else {
+      var banner = new THREE.Mesh(boxGeo(0.15, 5.4, 2.6), matU(0x6a1420));
+      banner.position.set(inX + sign * 0.35, 5.4, wz); worldGroup.add(banner);
+      addDecor(inX + sign * 0.35, 8.3, wz, boxGeo(0.25, 0.4, 3.0), 0xb8933a);
+    }
+    addDecor(inX + sign * 0.4, 5.6, wz - 4.4, boxGeo(0.3, 0.5, 0.5), 0x3a3c44);
+    addDecor(inX + sign * 0.7, 5.9, wz - 4.4, sphGeo(0.34, 8), 0xffb347, 0xff8a20);
+    addLightPoint(inX + sign * 1.4, 5.9, wz - 4.4, 0xffa348, 1.15, 17);
+  } else if (style === 'catacombs') {
+    // stacked bone shelves, skull rows, dripping alcoves, green tapers
+    for (i = 0; i < 3; i++) {
+      addDecor(inX, 1.5 + i * 2.1, wz, boxGeo(0.9, 0.25, 13), 0x6e6650);
+      var sk;
+      for (sk = 0; sk < 5; sk++) {
+        addDecor(inX + sign * 0.25, 1.95 + i * 2.1, wz - 5 + sk * 2.5, sphGeo(0.32, 7), 0xd8d0b8);
+        addDecor(inX + sign * 0.25, 1.7 + i * 2.1, wz - 4.1 + sk * 2.5, boxGeo(0.5, 0.3, 1.3), 0xc4bca4);
+      }
+    }
+    addDecor(inX, 8.6, wz, boxGeo(0.8, 1.2, 13), 0x5c5544);
+    addDecor(inX + sign * 0.5, 6.4, wz + 4.2, cylGeo(0.1, 0.1, 1.4, 6), 0x2a2a22);
+    addDecor(inX + sign * 0.5, 7.2, wz + 4.2, sphGeo(0.3, 8), 0x60ffb0, 0x30d090);
+    addLightPoint(inX + sign * 1.5, 7.0, wz + 4.2, 0x40e0a0, 1.0, 16);
+  } else if (style === 'city') {
+    // market arcade: shutters, awnings, hanging signage, crates
+    addDecor(inX, 2.4, wz, boxGeo(0.6, 4.8, 12.4), 0x24262e);
+    for (i = 0; i < 6; i++) addDecor(inX + sign * 0.35, 1.2 + i * 0.7, wz, boxGeo(0.2, 0.42, 12.0), i % 2 ? 0x30323c : 0x282a34);
+    addDecor(inX + sign * 1.5, 5.4, wz, boxGeo(3.0, 0.22, 12.0), 0x6a1c26);
+    addDecor(inX + sign * 2.6, 4.2, wz - 3.4, boxGeo(0.2, 1.6, 3.4), pick([0xff4a5a, 0x40b0ff, 0xffd070]), 0xff4a5a);
+    addLightPoint(inX + sign * 2.6, 4.2, wz - 3.4, 0xff4a5a, 0.8, 15);
+    addProp(inX + sign * 2.2, 0, wz + 4.2, 1.7, 1.7, 1.7, 0x4a3c26, { force: true });
+    addProp(inX + sign * 2.0, 1.7, wz + 4.4, 1.4, 1.4, 1.4, 0x3c3020, { force: true });
+  } else if (style === 'docks') {
+    // cargo deck: containers, pipe runs, hazard stripes, work lamps
+    addProp(inX + sign * 1.6, 0, wz, 3.2, 3.0, 8.4, pick([0x2a5a6a, 0x8a4a20, 0x3a6a3a, 0x7a2a2a]), { force: true });
+    addDecor(inX + sign * 0.6, 6.6, wz, cylGeo(0.3, 0.3, 13, 8), 0x3a4650).rotation.x = Math.PI / 2;
+    addDecor(inX + sign * 0.6, 7.4, wz, cylGeo(0.22, 0.22, 13, 8), 0x2e3a40).rotation.x = Math.PI / 2;
+    addDecor(inX, 9.2, wz, boxGeo(0.7, 0.5, 13), 0xb8a038);
+    addDecor(inX + sign * 0.9, 8.4, wz - 4.6, boxGeo(0.7, 0.5, 1.0), 0xfff0c0, 0xffc070);
+    addLightPoint(inX + sign * 1.8, 8.2, wz - 4.6, 0x60e0c0, 0.85, 18);
+  } else {
+    // temple: fluted columns, blood channels, braziers, hanging chains
+    addDecor(inX, 5, wz - 6, cylGeo(1.1, 1.3, 10, 10), 0x341820);
+    addDecor(inX, 5, wz + 6, cylGeo(1.1, 1.3, 10, 10), 0x341820);
+    addDecor(inX, 10.2, wz, boxGeo(1.2, 0.8, 13), 0x2a1018);
+    var chan = new THREE.Mesh(boxGeo(0.3, 0.2, 12.6), matU(0x8a0a16, 0x400008));
+    chan.position.set(inX + sign * 0.9, 0.16, wz); worldGroup.add(chan);
+    addDecor(inX + sign * 1.0, 1.5, wz + 3.6, cylGeo(0.55, 0.35, 1.6, 8), 0x1e0e14);
+    addDecor(inX + sign * 1.0, 2.5, wz + 3.6, sphGeo(0.46, 8), 0xff4028, 0xff2010);
+    addLightPoint(inX + sign * 1.8, 3.0, wz + 3.6, 0xff3020, 1.15, 18);
+    for (i = 0; i < 2; i++) addDecor(inX + sign * 1.3, 7.5, wz - 3 + i * 6, boxGeo(0.14, 5, 0.14), 0x3a3a42);
+  }
 }
 
 /* Platform run linking two zones. Gaps capped so a sprint + double jump clears. */
@@ -6861,8 +7282,11 @@ function finishActClear() {
     else bonus += 8 + act.loc * 3;                     // replays still pay a little
     if (G.secretFound) bonus += 22;
     P.tokens += bonus; P.totalTokens += bonus;
-    if (act.index + 1 > P.story) P.story = act.index + 1;
-    G.selectedAct = Math.min(act.index + 1, ACTS.length - 1);
+    if (!act.dlc && act.index + 1 > P.story) P.story = act.index + 1;
+    G.selectedAct = Math.min(act.index + 1, ACTS.length - 1);   // rolls into the DLC chapters
+    // DLC completions unlock their headliner as a partner
+    if (act.dlc === 1 && !P.heroes.deadpool) { P.heroes.deadpool = true; recruited = 'deadpool'; }
+    if (act.dlc === 2 && !P.heroes.carti) { P.heroes.carti = true; recruited = 'carti'; }
     if (act.recruit && !P.heroes[act.recruit]) {
       P.heroes[act.recruit] = true;
       P.partner = act.recruit;
@@ -7067,6 +7491,8 @@ function playCutscene(cfg) {
   G.cutDone = cfg.then || null;
   showScreen(null);
   el('hud').classList.remove('on');
+  el('touch').classList.remove('on');     // thumb controls have no place in a cutscene
+  el('toast').style.display = 'none';
   cineBars(true);
   applyCutShot(0);
   playDialogue(cfg.lines || [], function () { endCutscene(); });
@@ -7128,6 +7554,8 @@ function clearCutActors() {
 }
 function cancelCutscene() {
   cutShots = null;
+  if (IN.touch) el('touch').classList.add('on');
+  el('toast').style.display = '';
   clearCutActors();
   cutShot = 0; cutT = 0;
   G.cutDone = null;
@@ -7135,6 +7563,8 @@ function cancelCutscene() {
 }
 function endCutscene() {
   cutShots = null;
+  if (IN.touch) el('touch').classList.add('on');
+  el('toast').style.display = '';
   clearCutActors();
   cineBars(false);
   var cb2 = G.cutDone;
@@ -8078,6 +8508,16 @@ function showScreen(id) {
   el('hud').classList.toggle('on', id === null);
   if (id && IN.pointerLocked) { try { document.exitPointerLock(); } catch (e) {} }
 }
+/* Single source of truth for whether an Act can be launched. DLC chapters sit
+   outside story progression, so a `<= P.story` test silently rejected them and
+   Deploy fell back to the previous Act. */
+function actUnlocked(idx) {
+  var a = ACTS[idx];
+  if (!a) return false;
+  if (a.dlc === 1) return (P.story >= 24) || !!P.cleared[a.id];
+  if (a.dlc === 2) return !!P.cleared[ACTS[24] ? ACTS[24].id : ''] || !!P.cleared[a.id];
+  return idx <= P.story;
+}
 function syncHubTabs() {
   var tn = el('hubTabs').children, ti;
   for (ti = 0; ti < tn.length; ti++) tn[ti].classList.toggle('on', tn[ti].getAttribute('data-tab') === hubTab);
@@ -8242,8 +8682,9 @@ function renderHub() {
       var block = '';
       for (i = 0; i < ACTS.length; i++) {
         var s = ACTS[i];
+        if (s.dlc) continue;                       // listed separately below
         if (s.loc !== locI) continue;
-        var unlocked = i <= P.story;
+        var unlocked = actUnlocked(i);
         var done = !!P.cleared[s.id];
         var sec = !!P.secrets[s.id];
         var beatCount = s.beats.length;
@@ -8252,13 +8693,32 @@ function renderHub() {
         block += '<div class="stg' + (unlocked ? '' : ' lock') + (done ? ' done' : '') + '" data-act="' + i + '">';
         block += '<div class="num">' + (done ? '✓' : (unlocked ? (i + 1) : '🔒')) + '</div>';
         block += '<b>' + s.n + '</b>';
-        block += '<i>' + beatCount + ' beats' + (hasBoss ? ' · BOSS' : '') + (s.recruit ? ' · ALLY' : '') + (sec ? ' · ◈' : '') + '</i>';
+        block += '<i>' + (s.dlc ? 'DLC ' + s.dlc + ' · ' : '') + beatCount + ' beats' +
+          (hasBoss ? ' · BOSS' : '') + (s.recruit || s.dlc ? ' · ALLY' : '') + (sec ? ' · ◈' : '') + '</i>';
         block += '</div>';
         shown++;
       }
       if (!shown) continue;
       html += '<div style="margin-top:14px"><div class="hdr">' + loc.name + '</div>';
       html += '<div class="sub" style="margin:4px 0 8px">' + loc.blurb + '</div>' + block + '</div>';
+    }
+    // ---- DLC chapters ----
+    var dblock = '', di4;
+    for (di4 = 0; di4 < ACTS.length; di4++) {
+      var ds = ACTS[di4];
+      if (!ds.dlc) continue;
+      var dOpen = actUnlocked(di4);
+      var dDone = !!P.cleared[ds.id];
+      dblock += '<div class="stg' + (dOpen ? '' : ' lock') + (dDone ? ' done' : '') + '" data-act="' + di4 + '">';
+      dblock += '<div class="num">' + (dDone ? '✓' : (dOpen ? '★' : '🔒')) + '</div>';
+      dblock += '<b>' + ds.n + '</b>';
+      dblock += '<i>DLC ' + ds.dlc + ' · ' + ds.beats.length + ' beats · BOSS · ALLY</i>';
+      dblock += '</div>';
+    }
+    if (dblock) {
+      html += '<div style="margin-top:18px"><div class="hdr">Downloadable Chapters</div>';
+      html += '<div class="sub" style="margin:4px 0 8px">Finish the campaign to open these. Play them in order.</div>';
+      html += dblock + '</div>';
     }
   } else if (hubTab === 'partners') {
     html += '<div class="sub">Pick who rides with you. Partners are recruited by beating act bosses.</div><div class="grid">';
@@ -8336,7 +8796,12 @@ function wireHub() {
   for (i = 0; i < stgs.length; i++) {
     stgs[i].addEventListener('click', function () {
       var idx = parseInt(this.getAttribute('data-act'), 10);
-      if (idx > P.story) { toast('Locked — finish the previous Act'); return; }
+      var sa = ACTS[idx];
+      if (!actUnlocked(idx)) {
+        toast(sa && sa.dlc === 2 ? 'Play the Deadpool chapter first'
+            : (sa && sa.dlc === 1 ? 'Finish the campaign first' : 'Locked — finish the previous Act'));
+        return;
+      }
       SFX.ui();
       G.selectedAct = idx;
       var nodes = body.querySelectorAll('[data-act]'), n;
@@ -8877,7 +9342,8 @@ function wireMenus() {
   }
   el('btnDeploy').addEventListener('click', function () {
     SFX.ui();
-    var idx = (G.selectedAct !== undefined && G.selectedAct <= P.story) ? G.selectedAct : Math.min(P.story, ACTS.length - 1);
+    var idx = (G.selectedAct !== undefined && actUnlocked(G.selectedAct))
+      ? G.selectedAct : Math.min(P.story, ACTS.length - 1);
     startAct(idx, false);
   });
   el('btnHubTitle').addEventListener('click', function () {
