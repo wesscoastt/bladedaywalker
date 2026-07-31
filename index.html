@@ -773,7 +773,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.5.0';
+var GAME_VERSION = 'v1.6.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1121,6 +1121,38 @@ function tone(freq, dur, type, vol, slideTo, delay) {
   o.connect(g); g.connect(sfxGain);
   o.start(t0); o.stop(t0 + dur + 0.03);
 }
+/* Filtered noise with an optional frequency sweep and adjustable resonance —
+   the old fixed-cutoff burst is what made every impact sound identical. */
+function noiseSweep(dur, vol, filtType, f0, f1, q, delay) {
+  if (!AC || !G.sound) return;
+  var t0 = AC.currentTime + (delay || 0);
+  var len = Math.max(1, Math.floor(AC.sampleRate * dur));
+  var buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0), i;
+  for (i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  var src = AC.createBufferSource(); src.buffer = buf;
+  var f = AC.createBiquadFilter();
+  f.type = filtType || 'bandpass';
+  f.frequency.setValueAtTime(f0, t0);
+  f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t0 + dur);
+  f.Q.value = q || 1.1;
+  var g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), t0 + Math.min(0.012, dur * 0.2));
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f); f.connect(g); g.connect(sfxGain);
+  src.start(t0); src.stop(t0 + dur + 0.02);
+}
+/* Struck-metal body: a few detuned partials that ring and decay. */
+function metal(freq, dur, vol, delay, detune) {
+  if (!AC || !G.sound) return;
+  var ratios = [1, 1.51, 2.03, 2.66], i;
+  for (i = 0; i < ratios.length; i++) {
+    tone(freq * ratios[i] * (1 + (detune || 0) * (i - 1.5) * 0.02),
+         dur * (1 - i * 0.16), i === 0 ? 'triangle' : 'sine',
+         (vol || 0.1) * (1 - i * 0.22), 0, (delay || 0) + i * 0.004);
+  }
+}
+function rnd(a, b) { return a + Math.random() * (b - a); }
 function noise(dur, vol, filtType, filtFreq, delay) {
   if (!AC || !G.sound) return;
   var t0 = AC.currentTime + (delay || 0);
@@ -1135,28 +1167,94 @@ function noise(dur, vol, filtType, filtFreq, delay) {
   src.start(t0); src.stop(t0 + dur + 0.02);
 }
 
+/* ==========================================================================
+   [AUDIO] Sound design.
+   Every hit used to be one filtered noise burst at a fixed cutoff, so combat
+   was a single repeated click. Sounds are now layered (air + edge + body),
+   randomised per call, and pitched by combo step so a chain of attacks rises
+   instead of repeating.
+   ========================================================================== */
 var SFX = {
-  swing: function (n) { noise(0.16, 0.20, 'bandpass', 900 + (n || 0) * 260); tone(420 + (n || 0) * 60, 0.10, 'triangle', 0.06, 180); },
-  heavy: function () { noise(0.26, 0.30, 'bandpass', 520); tone(140, 0.24, 'sawtooth', 0.14, 60); },
-  hit: function (crit) { noise(0.10, crit ? 0.42 : 0.28, 'lowpass', crit ? 1800 : 1100); tone(crit ? 260 : 190, 0.09, 'square', 0.10, 70); },
-  block: function () { tone(880, 0.10, 'square', 0.10, 1200); noise(0.07, 0.15, 'highpass', 3000); },
-  dash: function () { noise(0.20, 0.16, 'highpass', 1800); tone(300, 0.16, 'sine', 0.05, 700); },
-  jump: function () { tone(300, 0.12, 'sine', 0.09, 620); },
-  land: function () { noise(0.10, 0.16, 'lowpass', 320); },
-  shoot: function () { tone(1500, 0.07, 'square', 0.09, 400); noise(0.07, 0.14, 'highpass', 2400); },
-  bolt: function () { tone(900, 0.10, 'sawtooth', 0.07, 260); },
-  die: function () { noise(0.42, 0.30, 'lowpass', 700); tone(200, 0.4, 'sawtooth', 0.10, 50); },
-  spawn: function () { tone(90, 0.4, 'sawtooth', 0.10, 240); noise(0.3, 0.12, 'bandpass', 420); },
-  pickup: function () { tone(880, 0.09, 'triangle', 0.12); tone(1320, 0.14, 'triangle', 0.10, 0, 0.06); },
-  ui: function () { tone(520, 0.05, 'square', 0.06); },
-  big: function () { tone(70, 0.7, 'sawtooth', 0.22, 40); noise(0.55, 0.28, 'lowpass', 500); },
-  special: function () { tone(1200, 0.35, 'sawtooth', 0.14, 180); noise(0.35, 0.24, 'bandpass', 2600); },
-  daywalk: function () { tone(120, 0.8, 'sawtooth', 0.16, 420); tone(240, 0.9, 'sine', 0.10, 700); },
-  team: function () { tone(180, 0.8, 'square', 0.16, 900); noise(0.7, 0.24, 'bandpass', 1400); tone(90, 1.0, 'sawtooth', 0.18, 45); },
-  roar: function () { tone(80, 1.1, 'sawtooth', 0.24, 42); noise(0.9, 0.3, 'lowpass', 380); },
-  win: function () { tone(523, 0.16, 'triangle', 0.14); tone(659, 0.16, 'triangle', 0.14, 0, .13); tone(784, 0.4, 'triangle', 0.16, 0, .26); },
-  lose: function () { tone(330, 0.3, 'sawtooth', 0.14, 160); tone(220, 0.6, 'sawtooth', 0.14, 90, .2); }
+  // ---- melee ----
+  swing: function (n) {
+    var step = (n || 0) % 4;
+    var base = 780 + step * 240;
+    // air being displaced: a fast downward sweep, not a static hiss
+    noiseSweep(0.16 + step * 0.01, 0.16, 'bandpass', base * 2.1, base * 0.55, 3.2, 0);
+    // the blade's own ring, rising with the combo
+    tone(430 + step * 85, 0.09, 'triangle', 0.045, 210 + step * 40);
+    if (step === 3) tone(920, 0.13, 'sine', 0.035, 380, 0.02);   // flourish on the finisher step
+  },
+  heavy: function () {
+    noiseSweep(0.3, 0.26, 'bandpass', 1500, 260, 2.4, 0);        // big slow arc
+    tone(150, 0.26, 'sawtooth', 0.13, 58);
+    tone(300, 0.14, 'triangle', 0.05, 120, 0.02);
+  },
+  hit: function (crit) {
+    // meat + edge + a little metal, jittered so repeats never phase together
+    var v = crit ? 1.35 : 1;
+    noiseSweep(0.09, 0.26 * v, 'lowpass', rnd(1500, 2200), 260, 1.0, 0);
+    tone(rnd(170, 215) * (crit ? 1.3 : 1), 0.085, 'square', 0.085 * v, 62);
+    metal(rnd(560, 700), 0.12, 0.05 * v, 0.005, 1);
+    if (crit) { noiseSweep(0.16, 0.2, 'highpass', 3600, 1400, 1.4, 0.01); tone(120, 0.2, 'sawtooth', 0.1, 50, 0.01); }
+  },
+  slash: function () {   // clean cut through a body
+    noiseSweep(0.2, 0.2, 'bandpass', 2600, 500, 2.6, 0);
+    tone(rnd(300, 380), 0.11, 'triangle', 0.06, 130);
+  },
+  gib: function () {     // dismemberment
+    noiseSweep(0.24, 0.24, 'lowpass', 900, 160, 0.9, 0);
+    tone(rnd(90, 130), 0.22, 'sawtooth', 0.1, 45);
+  },
+  block: function () { metal(1100, 0.18, 0.11, 0, 2); noiseSweep(0.07, 0.13, 'highpass', 5200, 2600, 1.6, 0); },
+  parry: function () { metal(1500, 0.24, 0.13, 0, 3); noiseSweep(0.09, 0.14, 'highpass', 7000, 3000, 2, 0); },
+
+  // ---- movement ----
+  dash: function () { noiseSweep(0.2, 0.15, 'highpass', 900, 3000, 1.2, 0); tone(280, 0.16, 'sine', 0.045, 760); },
+  jump: function () { tone(300, 0.12, 'sine', 0.08, 640); noiseSweep(0.08, 0.07, 'highpass', 1200, 2600, 1, 0); },
+  land: function () { noiseSweep(0.12, 0.16, 'lowpass', 700, 180, 0.9, 0); tone(96, 0.1, 'sine', 0.07, 60); },
+  step: function () { noiseSweep(0.06, 0.05, 'bandpass', rnd(700, 1100), 320, 1.6, 0); },
+
+  // ---- ranged ----
+  shoot: function () { noiseSweep(0.07, 0.13, 'highpass', 4200, 1600, 1.3, 0); tone(1500, 0.06, 'square', 0.075, 380); },
+  bolt: function () { tone(940, 0.1, 'sawtooth', 0.06, 250); noiseSweep(0.06, 0.07, 'bandpass', 2600, 1200, 2, 0); },
+  web: function () { noiseSweep(0.14, 0.11, 'bandpass', 2200, 700, 2.4, 0); tone(660, 0.1, 'triangle', 0.05, 300); },
+
+  // ---- reactions ----
+  die: function () { noiseSweep(0.45, 0.26, 'lowpass', 1100, 180, 0.8, 0); tone(205, 0.4, 'sawtooth', 0.09, 48); },
+  spawn: function () { tone(92, 0.4, 'sawtooth', 0.09, 240); noiseSweep(0.3, 0.11, 'bandpass', 300, 900, 1.4, 0); },
+  pickup: function () { tone(880, 0.09, 'triangle', 0.11); tone(1320, 0.14, 'triangle', 0.09, 0, 0.06); metal(1760, 0.14, 0.03, 0.02, 0.5); },
+  ui: function () { tone(520, 0.05, 'square', 0.055); },
+
+  // ---- big moments ----
+  big: function () { tone(66, 0.75, 'sawtooth', 0.2, 38); noiseSweep(0.6, 0.26, 'lowpass', 900, 180, 0.8, 0); },
+  special: function () {
+    noiseSweep(0.4, 0.22, 'bandpass', 900, 4200, 1.8, 0);
+    tone(1200, 0.35, 'sawtooth', 0.12, 180);
+    metal(880, 0.4, 0.07, 0.04, 2);
+  },
+  daywalk: function () {
+    tone(118, 0.9, 'sawtooth', 0.15, 430);
+    tone(236, 0.95, 'sine', 0.09, 720);
+    noiseSweep(0.8, 0.12, 'lowpass', 300, 1400, 0.8, 0);
+  },
+  team: function () {
+    tone(180, 0.8, 'square', 0.15, 900);
+    noiseSweep(0.7, 0.2, 'bandpass', 700, 2600, 1.5, 0);
+    tone(90, 1.0, 'sawtooth', 0.16, 45);
+    metal(660, 0.6, 0.08, 0.05, 2);
+  },
+  finisher: function () {
+    noiseSweep(0.34, 0.26, 'bandpass', 3400, 400, 2.8, 0);   // the cut
+    metal(520, 0.5, 0.11, 0.03, 2.5);                         // steel ringing
+    tone(70, 0.6, 'sawtooth', 0.17, 40, 0.02);                // impact weight
+  },
+  roar: function () { tone(78, 1.15, 'sawtooth', 0.22, 40); noiseSweep(0.95, 0.27, 'lowpass', 700, 220, 0.7, 0); },
+  win: function () { tone(523, 0.16, 'triangle', 0.13); tone(659, 0.16, 'triangle', 0.13, 0, .13); tone(784, 0.42, 'triangle', 0.15, 0, .26); metal(1046, 0.5, 0.05, 0.3, 1); },
+  lose: function () { tone(330, 0.3, 'sawtooth', 0.13, 160); tone(220, 0.65, 'sawtooth', 0.13, 88, .2); }
 };
+
+
 
 // Simple location-flavoured loop: drone + arpeggio, stepped on a timer.
 var SCALES = [[0, 3, 5, 7, 10], [0, 2, 3, 7, 8], [0, 1, 5, 7, 8], [0, 3, 6, 7, 10], [0, 1, 4, 6, 9]];
@@ -3016,7 +3114,12 @@ function addDecor(x, y, z, geo, color, emissive, opts) {
   return m;
 }
 function addLightPoint(x, y, z, color, intensity, dist) {
-  if (G.quality === 'low' && lights.length > 3) return null;
+  /* Mobile forces quality='low', and a cap of 4 left interiors with almost no
+     torchlight — the room fell back to ambient only and read as flat colour.
+     Interiors get a higher budget because they have no sky or moon to fall
+     back on; open Acts stay lean. */
+  var cap = (G.quality === 'low') ? (G.actIndoor ? 10 : 6) : 64;
+  if (lights.length >= cap) return null;
   var l = new THREE.PointLight(color, intensity, dist);
   l.position.set(x, y, z);
   worldGroup.add(l);
@@ -3375,6 +3478,14 @@ function floorQuad(x, z, w, d, colorHex, y, rot) {
   m.receiveShadow = true;
   worldGroup.add(m);
   return m;
+}
+/* Blend two hex colours (0..1 toward b). Used to derive interior fog/ambient
+   from a biome's outdoor palette without inheriting its colour cast. */
+function mixHex(a, b, t) {
+  var ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  var br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  var r = Math.round(ar + (br - ar) * t), g = Math.round(ag + (bg - ag) * t), bl = Math.round(ab + (bb - ab) * t);
+  return (r << 16) | (g << 8) | bl;
 }
 var CITY_ROAD_HALF = 8;   // shared by road markings, facades, zone placement, landmarks
 function paveFloor(loc, size, half, indoor) {
@@ -4337,6 +4448,7 @@ function spawnGibs(e, dirX, dirZ) {
       floor: e.pos.y, floorT: 0
     });
     emit(wp.x, wp.y, wp.z, 8, { color: 0xc41028, speed: 5, life: 0.5, gravity: -14 });
+    if (i === 0) SFX.gib();
   }
 }
 var bloodPools = [];
@@ -4779,6 +4891,15 @@ function animateEntity(e, dt) {
     p.hip.scale.x = 1 + 0.1 * lf; p.hip.scale.z = 1 + 0.1 * lf;
   } else if (p.hip.scale.y !== 1) { p.hip.scale.set(1, 1, 1); }
   // lean into turns while running
+  // footfalls on the run cycle — silence made movement feel weightless
+  if (e.grounded && speed > 2.2) {
+    var phase = Math.sin(a.run);
+    if (e.stepSign === undefined) e.stepSign = 1;
+    if ((phase > 0 && e.stepSign < 0) || (phase < 0 && e.stepSign > 0)) {
+      e.stepSign = phase > 0 ? 1 : -1;
+      if (e === player || distXZ(e.pos, player ? player.pos : e.pos) < 22) SFX.step();
+    }
+  }
   var yawVel = angDiff(e.prevYaw === undefined ? e.yaw : e.prevYaw, e.yaw) / Math.max(dt, 0.001);
   e.prevYaw = e.yaw;
   var leanT = (speed > 2.5) ? clamp(-yawVel * 0.045, -0.22, 0.22) : 0;
@@ -4882,6 +5003,7 @@ function animateEntity(e, dt) {
       p.torso.rotation.y = Math.sin(t * Math.PI * 4) * 0.8;
     } else if (k === 'ranged') {
       if (e.def && e.def.weapon === 'webs') {
+        if (e.atk.t < 0.02) SFX.web();
         /* Web-shooter: arm punched forward, wrist cocked back, off-hand tucked.
            The old pose left the elbow hyper-extended and read as broken. */
         /* Arm punches out nearly straight — a bent elbow at this shoulder
@@ -5460,7 +5582,7 @@ function triggerFinisher(victim, killer) {
     { radius: 3.0, arc: 2.6, color: 0xffd0a0, vertical: true, life: 0.5, grow: 2.4 });
   spawnRing(victim.pos.x, victim.pos.y, victim.pos.z, 0xffffff, 5, 0.5);
   emit(victim.pos.x, fy, victim.pos.z, 46, { color: 0xc41028, speed: 13, life: 0.9, gravity: -10 });
-  SFX.heavy(); SFX.hit(true);
+  SFX.finisher();
   camKick = -1.1;
   return true;
 }
@@ -5485,6 +5607,7 @@ function killEntity(e, by) {
     }
     var fkind = e.lastHitKind || '';
     if ((fkind === 'heavy' || fkind === 'special' || fkind === 'team') && !e.boss) triggerFinisher(e, by);
+    SFX.slash();
     spawnBloodPool(e.pos.x, e.pos.y, e.pos.z, e.isElite ? 1.8 : (e.boss ? 2.6 : 1));
     G.killCount++;
     G.beatKills = (G.beatKills || 0) + 1;   // gauntlet beats read this
@@ -6417,6 +6540,7 @@ function zoneGrid(n, half) {
 
 function buildActWorld(act) {
   var loc = LOCATIONS[act.loc];
+  G.actIndoor = !!act.indoor;
   var nBeats = act.beats.length;
   var size = clamp(104 + nBeats * 13, 118, 196);
   var half = size / 2;
@@ -6434,8 +6558,20 @@ function buildActWorld(act) {
   scene.fog = new THREE.Fog(loc.fog, loc.fogNear, Math.max(loc.fogFar, size * 1.15));
 
   // ---- lighting rig ----
-  worldGroup.add(new THREE.HemisphereLight(loc.ambient, 0x0a0a10, 0.9));
-  var moon = new THREE.DirectionalLight(loc.sun, 0.62);
+  /* Interiors are lit by whatever is burning inside them, not by the moon.
+     Using the biome's cold outdoor ambient indoors washed the whole level
+     blue (Act 15: grey stone + blue hemisphere + blue sun + blue fog). */
+  var ambCol = loc.ambient, sunCol = loc.sun, sunPow = 0.62, ambPow = 0.9;
+  if (act.indoor) {
+    if (loc.props === 'castle') { ambCol = 0x4a3a2c; sunCol = 0xffb066; sunPow = 0.3; ambPow = 0.75; }
+    else if (loc.props === 'catacombs') { ambCol = 0x2c3a34; sunCol = 0x7fd8b0; sunPow = 0.26; ambPow = 0.7; }
+    else if (loc.props === 'temple') { ambCol = 0x4a2020; sunCol = 0xff7050; sunPow = 0.3; ambPow = 0.75; }
+    else { ambCol = 0x3a3630; sunCol = 0xffd0a0; sunPow = 0.34; ambPow = 0.8; }
+    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45), 14, size * 0.9);
+    scene.background = new THREE.Color(mixHex(loc.fog, ambCol, 0.35));
+  }
+  worldGroup.add(new THREE.HemisphereLight(ambCol, 0x0a0a10, ambPow));
+  var moon = new THREE.DirectionalLight(sunCol, sunPow);
   moon.position.set(size * 0.4, size * 0.8, -size * 0.3);
   if (G.quality === 'high') {
     moon.castShadow = true;
@@ -6563,6 +6699,7 @@ function buildActWorld(act) {
     addStars(loc);
   }
   if (act.indoor) buildInterior(loc, size, half);
+  if (act.indoor) scene.fog.far = size * 0.9;   // buildInterior tightens it; keep the room readable
 
   return stage;
 }
@@ -6721,8 +6858,8 @@ function buildInterior(loc, size, half) {
   if (loc.props === 'castle') { lampCol = 0xffa348; lampEm = 0xff8a20; }
   else if (loc.props === 'catacombs') { lampCol = 0x40e0a0; lampEm = 0x30d090; }
   else if (loc.props === 'temple') { lampCol = 0xff3020; lampEm = 0xff2010; }
-  for (i = -half + 10; i < half - 6; i += 18) {
-    for (j = -half + 10; j < half - 6; j += 26) {
+  for (i = -half + 10; i < half - 6; i += 22) {
+    for (j = -half + 10; j < half - 6; j += 30) {
       if (loc.props === 'castle') {
         addDecor(i, ceilY - 2.6, j, boxGeo(0.3, 3.4, 0.3), 0x2c2e36);        // chandelier chain
         addDecor(i, ceilY - 4.4, j, cylGeo(1.5, 1.2, 0.5, 10), 0x4a3c22);
@@ -6740,7 +6877,7 @@ function buildInterior(loc, size, half) {
       } else {
         addDecor(i, ceilY - 1.9, j, boxGeo(5.2, 0.25, 0.5), 0xfff0c8, lampEm);
       }
-      if (Math.random() < 0.55) addLightPoint(i, ceilY - 3.6, j, lampCol, 0.9, 30);
+      addLightPoint(i, ceilY - 3.6, j, lampCol, 1.05, 34);
     }
   }
   // wall treatment so the shell is not bare slab
@@ -6820,19 +6957,23 @@ function dressCorridorBay(wx, wz, sign, loc, style) {
     addDecor(inX, 5, wz - 6.5, boxGeo(0.9, 10, 1.6), 0x4a4c56);
     addDecor(inX, 5, wz + 6.5, boxGeo(0.9, 10, 1.6), 0x4a4c56);
     addDecor(inX, 9.6, wz, boxGeo(0.8, 1.0, 13), 0x53555f);
-    var niche = new THREE.Mesh(boxGeo(0.7, 5.2, 4.2), matU(0x24262e));
-    niche.position.set(inX + sign * 0.3, 3.2, wz); worldGroup.add(niche);
+    /* The wall slab is 3 deep centred on wx, so its inner face is at
+       wx + sign*1.5. A statue is ~1 wide, so anything closer than ~sign*2.6
+       buries half of it in the wall. Recess the niche and stand the statue
+       clear of the face. */
+    var niche = new THREE.Mesh(boxGeo(1.0, 5.2, 4.2), matU(0x24262e));
+    niche.position.set(inX + sign * 0.15, 3.2, wz); worldGroup.add(niche);
     if (Math.random() < 0.55) {
       var st2 = makeHumanoid({ body: 0x585a64, skin: 0x585a64, accent: 0x585a64, coat: true,
         coatColor: 0x585a64, scale: 0.95, weapon: 'sword', collar: true });
-      st2.group.position.set(inX + sign * 0.2, 0.9, wz);
+      st2.group.position.set(inX + sign * 1.05, 0.9, wz);
       st2.group.rotation.y = sign > 0 ? Math.PI / 2 : -Math.PI / 2;
       worldGroup.add(st2.group);
-      addDecor(inX + sign * 0.2, 0.45, wz, cylGeo(1.0, 1.1, 0.9, 10), 0x44464f);
+      addDecor(inX + sign * 1.05, 0.45, wz, cylGeo(1.0, 1.1, 0.9, 10), 0x44464f);
     } else {
       var banner = new THREE.Mesh(boxGeo(0.15, 5.4, 2.6), matU(0x6a1420));
-      banner.position.set(inX + sign * 0.35, 5.4, wz); worldGroup.add(banner);
-      addDecor(inX + sign * 0.35, 8.3, wz, boxGeo(0.25, 0.4, 3.0), 0xb8933a);
+      banner.position.set(inX + sign * 0.75, 5.4, wz); worldGroup.add(banner);
+      addDecor(inX + sign * 0.75, 8.3, wz, boxGeo(0.25, 0.4, 3.0), 0xb8933a);
     }
     addDecor(inX + sign * 0.4, 5.6, wz - 4.4, boxGeo(0.3, 0.5, 0.5), 0x3a3c44);
     addDecor(inX + sign * 0.7, 5.9, wz - 4.4, sphGeo(0.34, 8), 0xffb347, 0xff8a20);
@@ -6843,8 +6984,8 @@ function dressCorridorBay(wx, wz, sign, loc, style) {
       addDecor(inX, 1.5 + i * 2.1, wz, boxGeo(0.9, 0.25, 13), 0x6e6650);
       var sk;
       for (sk = 0; sk < 5; sk++) {
-        addDecor(inX + sign * 0.25, 1.95 + i * 2.1, wz - 5 + sk * 2.5, sphGeo(0.32, 7), 0xd8d0b8);
-        addDecor(inX + sign * 0.25, 1.7 + i * 2.1, wz - 4.1 + sk * 2.5, boxGeo(0.5, 0.3, 1.3), 0xc4bca4);
+        addDecor(inX + sign * 0.55, 1.95 + i * 2.1, wz - 5 + sk * 2.5, sphGeo(0.32, 7), 0xd8d0b8);
+        addDecor(inX + sign * 0.55, 1.7 + i * 2.1, wz - 4.1 + sk * 2.5, boxGeo(0.5, 0.3, 1.3), 0xc4bca4);
       }
     }
     addDecor(inX, 8.6, wz, boxGeo(0.8, 1.2, 13), 0x5c5544);
@@ -7793,6 +7934,7 @@ function buildMuscleCar(x, z, rotY, bodyCol) {
 function buildHubWorld() {
   clearWorld();
   terminals.length = 0;
+  G.actIndoor = true;   // the safehouse is an interior too
   G.stage = { id: 'hub', loc: 0, name: 'The Garage', type: 'hub', size: 76, pool: ['thrall'], density: 1 };
 
   var HALF = 34;
