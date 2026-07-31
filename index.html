@@ -773,7 +773,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.6.0';
+var GAME_VERSION = 'v1.6.1';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -6781,6 +6781,9 @@ function buildRoofPad(zone, loc, half) {
      lit billboard, so each deck reads as a real rooftop you could stand on. */
   for (i = 0; i < 4; i++) {
     var rx = zone.x + rand(-w * 0.28, w * 0.28), rz = zone.z + rand(-d * 0.28, d * 0.28);
+    // these are forced (they must sit on the pad, which is itself a clear
+    // zone), so the spawn pocket has to be excluded by hand
+    if (dist2(rx, rz, zone.x, zone.z) < 100) continue;
     if (Math.random() < 0.55) {
       var uw = rand(3.5, 6), uh = rand(1.8, 3.0), ud = rand(3.5, 6);
       addProp(rx, y, rz, uw, uh, ud, 0x2a2e3a, { force: true });        // AC unit
@@ -6792,14 +6795,14 @@ function buildRoofPad(zone, loc, half) {
     }
   }
   // water tower on legs
-  var wtx = zone.x - w * 0.3, wtz = zone.z + d * 0.3, li;
+  var wtx = zone.x - w * 0.36, wtz = zone.z + d * 0.36, li;
   for (li = 0; li < 4; li++) {
     addDecor(wtx + (li % 2 ? 1.5 : -1.5), y + 1.6, wtz + (li < 2 ? 1.5 : -1.5), boxGeo(0.28, 3.2, 0.28), 0x2a2018);
   }
   addDecor(wtx, y + 4.6, wtz, cylGeo(2.3, 2.3, 3.4, 12), 0x3a2c20, 0x000000, { castShadow: true });
   addDecor(wtx, y + 6.6, wtz, coneGeo(2.5, 1.2, 12), 0x2c2018);
   // stair head — visually explains how you get up here
-  addProp(zone.x + w * 0.3, y, zone.z + d * 0.3, 5, 3.4, 4.4, loc.ground2, { force: true });
+  addProp(zone.x + w * 0.36, y, zone.z + d * 0.36, 5, 3.4, 4.4, loc.ground2, { force: true });
   addDecor(zone.x + w * 0.3, y + 1.6, zone.z + d * 0.3 - 2.3, boxGeo(2.0, 2.6, 0.3), 0x0e1014);
   // billboard
   addDecor(zone.x - w * 0.32, y + 4.2, zone.z - d * 0.34, boxGeo(0.4, 5.4, 0.4), 0x1c1c24);
@@ -7033,7 +7036,9 @@ function buildTraverseRoute(from, to, loc, half, seed) {
   var y = (from.y || 0) > 0 ? from.y : 1.4;
   var yEnd = (to.y || 0) > 0 ? to.y : y;
   for (i = 1; i <= n; i++) {
-    var t = i / (n + 1);
+    // keep the run clear of both zone centres so it can't swallow a spawn
+    // point or a checkpoint respawn
+    var t = 0.18 + (i / (n + 1)) * 0.64;
     var lateral = Math.sin(i * 1.1 + seed) * Math.min(11, span * 0.16);
     var x = from.x + dx * t - uz * lateral;
     var z = from.z + dz * t + ux * lateral;
@@ -7114,18 +7119,37 @@ function startAct(index, isVs) {
 
   var stage = buildActWorld(act);
   var z0 = G.zones[0];
-  G.safeX = z0.x; G.safeY = (z0.y || 0) + 0.5; G.safeZ = z0.z + 8;
+  var z1 = G.zones.length > 1 ? G.zones[1] : null;
+  /* Face down the route, and stand FORWARD of the zone centre.
+     The old code used a blind `z0.z + 8`, but zone 0 always sits at the far +Z
+     end of the map, so that pushed the player into the sealed end wall — with
+     the chase camera behind them, the screen filled with flat wall colour.
+     Every Act was affected; it just read as "all blue" or "all grey"
+     depending on the biome tint. */
+  var faceX = 0, faceZ = -1;
+  if (z1) {
+    var fdx = z1.x - z0.x, fdz = z1.z - z0.z;
+    var fdl = Math.sqrt(fdx * fdx + fdz * fdz) || 1;
+    faceX = fdx / fdl; faceZ = fdz / fdl;
+  }
+  G.safeX = z0.x + faceX * 5;
+  G.safeZ = z0.z + faceZ * 5;
+  G.safeY = (z0.y || 0) + 0.5;
+  G.spawnYaw = Math.atan2(faceX, faceZ);
 
   blade = makeHero('blade', G.safeX, G.safeZ, true);
   blade.pos.y = G.safeY;
+  blade.yaw = G.spawnYaw;
   cacheMaterials(blade);
   var partnerId = P.partner && P.heroes[P.partner] ? P.partner : 'whistler';
-  ally = makeHero(partnerId, G.safeX + 2.6, G.safeZ, false);
+  // partner stands abreast, perpendicular to the direction of travel
+  ally = makeHero(partnerId, G.safeX - faceZ * 2.6, G.safeZ + faceX * 2.6, false);
   ally.pos.y = G.safeY;
+  ally.yaw = G.spawnYaw;
   cacheMaterials(ally);
   player = blade;
-  camYaw = 0; camPitch = 0.3;
-  camera.position.set(z0.x, G.safeY + 7, G.safeZ + 12);
+  camYaw = G.spawnYaw; camPitch = 0.3;
+  camera.position.set(G.safeX - faceX * 9, G.safeY + 7, G.safeZ - faceZ * 9);
 
   saveProfile();            // checkpoint the profile whenever an Act begins
   clearTransientHUD();
@@ -7169,7 +7193,7 @@ function beatEnter(i) {
   };
   G.beatKills = 0;
   // checkpoint — dying resumes here, not at the top of the Act
-  G.safeX = zone.x; G.safeY = (zone.y || 0) + 0.6; G.safeZ = zone.z;
+  G.safeX = zone.x; G.safeY = (zone.y || 0) + 0.6; G.safeZ = zone.z;   // zone centre is always clear
   G.checkpointBeat = i;
   saveProfile();            // bloodstones picked up so far are banked
 
@@ -7538,8 +7562,10 @@ function resumeFromCheckpoint() {
     if (h.dayMode) endDaywalker(h);
   });
   player = blade; ally = (ally === blade) ? null : ally;
-  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, (zone.y || 0) + 1.0, zone.z + 6); }
-  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, (zone.y || 0) + 1.0, zone.z + 6); }
+  // respawn on the zone centre itself — it is guaranteed clear (radius 13),
+  // whereas a fixed +6 offset can land in whatever borders the zone
+  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, (zone.y || 0) + 1.0, zone.z); }
+  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, (zone.y || 0) + 1.0, zone.z); }
   G.ended = false; G.clearT = 0; G.bossDeathT = 0;
   G.slowmo = 1; G.slowmoT = 0;
   el('dwVig').style.opacity = 0;
