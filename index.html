@@ -657,6 +657,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
       <div class="btn" id="btnSound">♪ Sound: On</div>
       <div class="btn" id="btnInvert">↕ Invert Look: Off</div>
       <div class="btn" id="btnAbandon">✕ Abandon &amp; Return to Safehouse</div>
+      <div class="btn" id="btnMainMenu">⌂ Main Menu</div>
     </div></div>
   </div>
 
@@ -699,6 +700,8 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
         <div class="optVal" id="optSfxVol">55%</div></div>
       <div class="optRow"><div><b>Brightness</b><p>Raise it if the night streets are too dark.</p></div>
         <div class="optVal" id="optBright">100%</div></div>
+      <div class="optRow"><div><b>Deploy Ride</b><p>Which vehicle Blade takes out of the garage.</p></div>
+        <div class="optVal" id="optRide">Car</div></div>
       <div class="optRow"><div><b>Difficulty</b><p>Enemy toughness and damage taken.</p></div>
         <div class="optVal" id="optDiff">Hunter</div></div>
       <div class="optRow"><div><b>Camera Shake</b><p>Impact and explosion shake.</p></div>
@@ -773,7 +776,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.6.1';
+var GAME_VERSION = 'v1.7.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1364,6 +1367,7 @@ function inputInit() {
   window.addEventListener('keydown', function (e) {
     if (KEYMAP[e.code]) { setAct(KEYMAP[e.code], true); if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault(); }
     if (e.code === 'Space' && G.mode === 'dialogue') dlgAdvance();
+    if (G.cutSkippable && G.mode === 'cutscene') { G.cutSkippable = false; skipCutscene(); }
     if (e.code === 'F11' || (e.code === 'KeyV' && G.mode !== 'play')) { e.preventDefault(); toggleFullscreen(); }
     if (e.code === 'Escape') { if (G.mode === 'play') doPause(); else if (G.mode === 'pause') doResume(); }
     audioInit(); audioResume(); menuMusicPoke();
@@ -1380,6 +1384,7 @@ function inputInit() {
 
   cv.addEventListener('mousedown', function (e) {
     audioInit(); audioResume(); menuMusicPoke();
+    if (G.cutSkippable && G.mode === 'cutscene') { G.cutSkippable = false; skipCutscene(); }
     if (G.mode === 'dialogue') { dlgAdvance(); return; }
     if (G.mode !== 'play') return;
     if (!IN.pointerLocked && !IN.touch && !IN.lockBlocked) {
@@ -1561,6 +1566,13 @@ function pollGamepad() {
   for (bi in layout.map) { if (layout.map.hasOwnProperty(bi)) map(parseInt(bi, 10), layout.map[bi]); }
   if (btn(9) && !padPrev.p9) { if (G.mode === 'play' || G.mode === 'hub') doPause(); else if (G.mode === 'pause') doResume(); }
   padPrev.p9 = btn(9);
+  // A / Start advance dialogue and cutscenes; B / Start skips a whole cutscene
+  if (G.mode === 'dialogue' || G.mode === 'cutscene') {
+    if (btn(0) && !padPrev.pA) dlgAdvance();
+    padPrev.pA = btn(0);
+    if (btn(1) && !padPrev.pB) { if (typeof skipCutscene === 'function') skipCutscene(); }
+    padPrev.pB = btn(1);
+  } else { padPrev.pA = false; padPrev.pB = false; }
   // menu navigation on the d-pad
   if (G.mode === 'title' || G.mode === 'menu' || G.mode === 'pause' || G.mode === 'result' || G.mode === 'hubmenu') {
     if (btn(12) && !padPrev.p12) padMenuMove(-1);
@@ -1710,12 +1722,52 @@ var HEROES = {
 var HERO_ORDER = ['blade', 'whistler', 'spider', 'rider', 'elsa', 'knight'];
 
 /* Cosmetic skins — unlocked with bloodstones, purely visual. */
+/* Outfits. Index 0 is always the default and free. `skin` overrides let a
+   suit change silhouette too (mask, coat, hood), not just palette. */
 var SKINS = {
   blade: [
     { name: 'Night Hunter', body: 0x1b1b20, accent: 0xb8202c, trim: 0xd8d8e0 },
     { name: 'Silver Line', body: 0x24242c, accent: 0xc8ccd8, trim: 0xffffff, cost: 60 },
     { name: 'Bloodpact', body: 0x2a0d12, accent: 0xff2038, trim: 0xffb0b8, cost: 90 },
-    { name: 'Daystrike', body: 0xe8e2d0, accent: 0xffa020, trim: 0xfff0c0, cost: 140 }
+    { name: 'Daystrike', body: 0xe8e2d0, accent: 0xffa020, trim: 0xfff0c0, cost: 140 },
+    { name: 'Trench Coat', body: 0x15161c, accent: 0x8a8f9c, trim: 0xc0c4d0, cost: 120, longCoat: true },
+    { name: 'Ronin', body: 0x1a1218, accent: 0xd8b020, trim: 0xf0e0a0, cost: 160, collar: true },
+    { name: 'Nightstalker Black', body: 0x0c0c10, accent: 0x303038, trim: 0x60646e, cost: 200 }
+  ],
+  spider: [
+    { name: 'Classic Red', body: 0xc02030, accent: 0x1a48b8, trim: 0xffffff },
+    { name: 'Symbiote Black', body: 0x121218, accent: 0x2a2a34, trim: 0xf0f0f4, cost: 110 },
+    { name: 'Scarlet Spider', body: 0xb01820, accent: 0x141418, trim: 0xe8e8ec, cost: 130 },
+    { name: 'Future Foundation', body: 0xe8e8ee, accent: 0x1a1a24, trim: 0xffffff, cost: 170 },
+    { name: 'Iron Spider', body: 0x9a1420, accent: 0xd8a020, trim: 0xffd870, cost: 220 }
+  ],
+  whistler: [
+    { name: 'Field Rig', body: 0x1b2028, accent: 0x2fbfd8, trim: 0xf0ece0 },
+    { name: 'Urban Grey', body: 0x2c3038, accent: 0x9aa4b0, trim: 0xe0e4ea, cost: 80 },
+    { name: 'Crimson Hunt', body: 0x2a1218, accent: 0xd82c3c, trim: 0xffd0d4, cost: 120 }
+  ],
+  rider: [
+    { name: 'Hellfire', body: 0x141418, accent: 0xff6a12, trim: 0xffc060 },
+    { name: 'Cold Flame', body: 0x101418, accent: 0x30b0ff, trim: 0xa0e0ff, cost: 150 },
+    { name: 'Bone Rider', body: 0x1c1a16, accent: 0xd8d0b8, trim: 0xfff0d0, cost: 180 }
+  ],
+  elsa: [
+    { name: 'Bloodstone', body: 0x3a2028, accent: 0xd83048, trim: 0xffd0d8 },
+    { name: 'Monster Hunter', body: 0x24301e, accent: 0xc8a030, trim: 0xf0e0b0, cost: 100 },
+    { name: 'Midnight', body: 0x14141c, accent: 0x9a30d8, trim: 0xd0b0ff, cost: 140 }
+  ],
+  knight: [
+    { name: 'Moonlight', body: 0xe8e8e8, accent: 0xf5f5ff, trim: 0xffffff },
+    { name: 'Mr. Knight', body: 0xf4f4f8, accent: 0xd8d8e0, trim: 0x202028, cost: 130 },
+    { name: 'Eclipse', body: 0x1a1a22, accent: 0x8890a0, trim: 0xd0d4e0, cost: 170 }
+  ],
+  deadpool: [
+    { name: 'Merc Red', body: 0xa8101c, accent: 0x14141a, trim: 0xf2f2f6 },
+    { name: 'X-Force', body: 0x30343c, accent: 0x14141a, trim: 0xc0c4cc, cost: 140 }
+  ],
+  carti: [
+    { name: 'King Vamp', body: 0x1c2b6e, accent: 0xd81020, trim: 0xf0f0f4 },
+    { name: 'Whole Lotta Red', body: 0x8a1018, accent: 0xff2436, trim: 0xffd0d4, cost: 160 }
   ]
 };
 
@@ -1771,6 +1823,36 @@ var ENEMIES = {
 };
 
 /* Mini-boss / boss definitions. Each boss is an enemy with a scripted move set. */
+/* Additional archetypes so the roster changes shape as the story advances,
+   rather than the same five silhouettes in new colours. */
+ENEMIES.stalker = {
+  id: 'stalker', name: 'Stalker', hp: 62, speed: 7.6, dmg: 12, reach: 2.4, tokens: 2,
+  body: 0x1a1420, skin: 0xbfae9e, accent: 0x8a30d8, scale: 0.94,
+  windup: 0.22, recover: 0.3, staggerRes: 0.1, ranged: false, dashAttack: true,
+  hunch: 0.3, thin: 0.86, xp: 2
+};
+ENEMIES.warden = {
+  id: 'warden', name: 'Blood Warden', hp: 210, speed: 3.2, dmg: 21, reach: 3.4, tokens: 5,
+  body: 0x3a1218, skin: 0xd8c0b0, accent: 0xc8302c, scale: 1.34,
+  windup: 0.8, recover: 0.85, staggerRes: 0.75, ranged: false, slam: true, xp: 5
+};
+ENEMIES.acolyte = {
+  id: 'acolyte', name: 'Acolyte', hp: 74, speed: 3.6, dmg: 12, reach: 15, tokens: 3,
+  body: 0x241a30, skin: 0xd0c4b8, accent: 0x50e0b0, scale: 1.0,
+  windup: 0.85, recover: 0.8, staggerRes: 0.15, ranged: true, projectile: 'hex', xp: 3
+};
+ENEMIES.houndling = {
+  id: 'houndling', name: 'Houndling', hp: 48, speed: 8.2, dmg: 10, reach: 2.0, tokens: 2,
+  body: 0x2c1a14, skin: 0x6a4a38, accent: 0xff6a12, scale: 0.8,
+  windup: 0.24, recover: 0.3, staggerRes: 0, ranged: false, dashAttack: true,
+  hunch: 0.62, thin: 0.8, xp: 2
+};
+ENEMIES.revenant = {
+  id: 'revenant', name: 'Revenant', hp: 160, speed: 4.6, dmg: 17, reach: 2.9, tokens: 4,
+  body: 0x1e2a26, skin: 0x9ab0a4, accent: 0x60ffb0, scale: 1.12,
+  windup: 0.45, recover: 0.5, staggerRes: 0.5, ranged: false, revive: true, xp: 4
+};
+
 var BOSSES = {
   sable: {
     id: 'sable', name: 'Deacon Sable', sub: 'Vampire Enforcer', hp: 1450, speed: 5.6, dmg: 18,
@@ -1963,12 +2045,14 @@ BOSSES.crimsonguard = {
 };
 
 /* Enemy pools per biome, escalating within each act via ACT.pool overrides. */
+/* Each biome fields a distinct mix, and later biomes introduce the heavier
+   archetypes, so the enemy roster visibly evolves across the campaign. */
 var POOLS = [
-  ['thrall', 'thrall', 'vampire', 'bat', 'familiar'],
-  ['thrall', 'vampire', 'spitter', 'brute', 'bat'],
-  ['vampire', 'cultist', 'bat', 'reaver', 'brute'],
-  ['wight', 'cultist', 'thrall', 'reaver', 'spitter'],
-  ['reaver', 'vampire', 'familiar', 'brute', 'cultist']
+  ['thrall', 'thrall', 'vampire', 'bat', 'familiar', 'houndling'],
+  ['thrall', 'vampire', 'spitter', 'brute', 'bat', 'stalker', 'houndling'],
+  ['vampire', 'cultist', 'bat', 'reaver', 'brute', 'stalker', 'warden'],
+  ['wight', 'cultist', 'thrall', 'reaver', 'spitter', 'acolyte', 'revenant'],
+  ['reaver', 'vampire', 'familiar', 'brute', 'cultist', 'warden', 'revenant', 'acolyte']
 ];
 
 var ACTS = [
@@ -2102,6 +2186,32 @@ var BOSS_ALLIES = {
    [DATA] Story — one pre/post beat per Act, plus optional mid-Act lines
    keyed by beat index. Blade stays terse; the partners carry the humour.
    ========================================================================== */
+/* Spoken beats the moment a major boss falls — staged on the spot rather than
+   waiting for the act-complete screen, so the kill lands dramatically. */
+var BOSS_DEFEAT = {
+  sable: [['SABLE', 'The docks… he\'s already loading…'],
+          ['BLADE', 'Who is?'],
+          ['SABLE', 'You were always too… late…'],
+          ['BLADE', 'Save it.']],
+  harvester: [['HARVESTER', 'The hold… it is already awake…'],
+              ['BLADE', 'Then I\'ll put it back to sleep.']],
+  vrasta: [['VRASTA', 'Four hundred years. Ended by my own blood.'],
+           ['BLADE', 'You stopped being family a long time ago.'],
+           ['VRASTA', 'Below the keep… they sing… you will hear it too…']],
+  bonecaller: [['BONECALLER', 'The song does not need me to finish.'],
+               ['BLADE', 'Then I\'ll cut the throat that carries it.'],
+               ['BONECALLER', 'It already has yours…']],
+  vhalimar: [['VHALIMAR', 'You are my blood. You cannot end me.'],
+             ['BLADE', 'I\'m the correction.'],
+             ['VHALIMAR', 'Then correct… what comes after…']],
+  deadpool: [['DEADPOOL', 'Okay, okay — timeout ACTUALLY this time.'],
+             ['BLADE', 'You lost.'],
+             ['DEADPOOL', 'I was pacing myself. For the sequel.']],
+  carti: [['CARTI', 'Whole crowd knelt for me.'],
+          ['BLADE', 'They\'ll get up now.'],
+          ['CARTI', 'Not all of them…']]
+};
+
 var ACT_SCRIPT = {
   0: { pre: [['BLADE', 'Three blocks. Forty people. No bodies.'],
              ['ABIGAIL', 'And one very grumpy man with a sword. I\'m on comms.'],
@@ -2314,7 +2424,7 @@ ACTS.push({
   n: 'King Vamp', loc: 4, layout: 'linear', recruit: null, indoor: true, dlc: 2,
   blurb: 'A sold-out arena. Everyone inside changed at once.',
   pool: ['fan', 'fan', 'fanfast', 'fanjump', 'fanscream'],
-  beats: [Gt(40), F(3), Gt(55), Hn(3), Gt(70), B('carti')]
+  beats: [Gt(22), F(3), Gt(30), Hn(3), Gt(38), B('carti')]
 });
 
 (function initDlcActs() {
@@ -2329,7 +2439,7 @@ ACTS.push({
     for (j = 0; j < a.beats.length; j++) {
       b = a.beats[j];
       if (b.k === 'fight') b.w = b.w + 2;
-      else if (b.k === 'gauntlet') b.n = Math.round(b.n * 1.4);
+      else if (b.k === 'gauntlet') b.n = Math.round(b.n * (a.dlc === 2 ? 1.0 : 1.4));
       else if (b.k === 'hunt') b.n = b.n + 1;
       else if (b.k === 'objective') b.n = b.n + 1;
     }
@@ -2991,6 +3101,21 @@ function buildHeroModel(heroId, skinIdx) {
   cfg.backSheath = (d.weapon === 'sword');
   applyBossLook(heroId, cfg);
   if (heroId === 'deadpool') { cfg.thin = 0.97; }
+  /* Outfit overrides can change shape as well as palette. */
+  var skinList = SKINS[heroId];
+  if (skinList) {
+    var skIdx = (P.skins && P.skins[heroId]) || 0;
+    var sk2 = skinList[clamp(skIdx, 0, skinList.length - 1)];
+    if (sk2) {
+      if (sk2.body !== undefined) { cfg.body = sk2.body; cfg.coatColor = sk2.body; }
+      if (sk2.accent !== undefined) { cfg.accent = sk2.accent; cfg.emblem = sk2.accent; }
+      if (sk2.trim !== undefined) cfg.trim = sk2.trim;
+      if (sk2.longCoat !== undefined) { cfg.coat = true; cfg.longCoat = sk2.longCoat; }
+      if (sk2.collar !== undefined) cfg.collar = sk2.collar;
+      if (sk2.hood !== undefined) cfg.hood = sk2.hood;
+      if (sk2.mask !== undefined) cfg.mask = sk2.mask;
+    }
+  }
   if (heroId === 'carti') { cfg.thin = 0.94; }
   if (heroId === 'blade') {
     cfg.hair = 0x140f0c; cfg.flatTop = true; cfg.pony = false;
@@ -3039,6 +3164,11 @@ function buildEnemyModel(def) {
   if (def.id === 'brute') { cfg.weapon = 'claws'; cfg.fangs = true; cfg.hunch = 0.26; cfg.bulk = 1.35; cfg.spikes = true; }
   if (def.id === 'reaver') { cfg.weapon = 'sword'; cfg.coat = true; cfg.coatColor = def.body; cfg.spikes = true; cfg.gloves = 0x1a1a20; cfg.collar = true; }
   if (def.id === 'wight') { cfg.skull = true; cfg.weapon = 'claws'; cfg.fangs = false; cfg.thin = 0.72; cfg.ragged = true; }
+  if (def.id === 'stalker') { cfg.weapon = 'claws'; cfg.fangs = true; cfg.hood = true; cfg.coat = true; cfg.coatColor = def.body; cfg.gloves = 0x14101a; }
+  if (def.id === 'warden') { cfg.weapon = 'sword'; cfg.helm = true; cfg.helmColor = 0x5a1018; cfg.spikes = true; cfg.collar = true; cfg.gloves = 0x1a1a20; }
+  if (def.id === 'acolyte') { cfg.weapon = 'staff'; cfg.hood = true; cfg.coat = true; cfg.longCoat = true; cfg.coatColor = def.body; cfg.crown = true; cfg.crownColor = def.accent; }
+  if (def.id === 'houndling') { cfg.weapon = 'claws'; cfg.fangs = true; cfg.bigJaw = true; cfg.ragged = true; cfg.pads = false; }
+  if (def.id === 'revenant') { cfg.weapon = 'claws'; cfg.skull = true; cfg.ragged = true; cfg.drips = true; cfg.spikes = true; }
   if (def.id === 'bat') { cfg.weapon = null; cfg.fangs = true; cfg.scale = def.scale; }
   // bosses
   if (def.moves) {
@@ -3168,25 +3298,50 @@ function resolveCollision(pos, r, h, vel) {
 }
 /* Line-of-sight-ish check for the camera: pull in if a box blocks the view. */
 var _rayDir = null;
+/* Pull the camera in until nothing solid sits between it and the player.
+   The old version had three faults that let walls fill the screen:
+     1. it floored the pull-in at 0.28 of the boom, so on a short boom the
+        camera could still end up well inside a wall;
+     2. it sampled a bare point every 0.6 units, ignoring the near plane, so a
+        surface could sit between the camera and its own near clip;
+     3. the caller damped toward the result, so the camera slid THROUGH
+        geometry on its way there.
+   This version sweeps with a radius, allows a full pull-in, and reports
+   whether the result must be applied immediately. */
+var CAM_RADIUS = 0.55;   // must exceed camera.near so the wall is never inside the near plane
+function pointSolid(px, py, pz, pad) {
+  var i, c, r = pad || 0;
+  for (i = 0; i < colliders.length; i++) {
+    c = colliders[i];
+    if (c.maxY <= 0.4) continue;                       // ground planes
+    if (px > c.minX - r && px < c.maxX + r &&
+        py > c.minY - r && py < c.maxY + r &&
+        pz > c.minZ - r && pz < c.maxZ + r) return true;
+  }
+  return false;
+}
 function cameraClear(target, desired) {
   if (!_rayDir) _rayDir = new THREE.Vector3();
   _rayDir.copy(desired).sub(target);
   var len = _rayDir.length();
   if (len < 0.01) return desired;
   _rayDir.multiplyScalar(1 / len);
-  var i, c, t, step, px, py, pz, hit = len;
-  for (step = 0.6; step < len; step += 0.6) {
-    px = target.x + _rayDir.x * step; py = target.y + _rayDir.y * step; pz = target.z + _rayDir.z * step;
-    for (i = 0; i < colliders.length; i++) {
-      c = colliders[i];
-      if (px > c.minX - 0.3 && px < c.maxX + 0.3 && py > c.minY && py < c.maxY + 0.2 && pz > c.minZ - 0.3 && pz < c.maxZ + 0.3) {
-        hit = Math.min(hit, step - 0.5); break;
-      }
+  var step, hit = len;
+  // march out from the player; stop at the first solid, keeping CAM_RADIUS back
+  for (step = 0.35; step <= len; step += 0.35) {
+    if (pointSolid(target.x + _rayDir.x * step,
+                   target.y + _rayDir.y * step,
+                   target.z + _rayDir.z * step, CAM_RADIUS)) {
+      hit = Math.max(0.6, step - 0.45);
+      break;
     }
-    if (hit < len) break;
   }
-  t = clamp(hit / len, 0.28, 1);
-  desired.set(target.x + _rayDir.x * len * t, target.y + _rayDir.y * len * t, target.z + _rayDir.z * len * t);
+  var t = clamp(hit / len, 0.12, 1);
+  desired.set(target.x + _rayDir.x * len * t,
+              target.y + _rayDir.y * len * t,
+              target.z + _rayDir.z * len * t);
+  // tell the caller to snap rather than ease when we had to pull in hard
+  G.camSnap = (t < 0.985);
   return desired;
 }
 
@@ -4835,6 +4990,10 @@ function makeEnemy(typeId, x, z, elite) {
   }
   var model = buildEnemyModel(dv);
   var hpMul = (1 + 0.055 * G.locIndex + (G.vs ? G.vsWave * 0.09 : 0)) * DIFFS[G.diffIdx === undefined ? 1 : G.diffIdx].hp;
+  /* The King Vamp arena is designed around carving through a crowd, so its
+     fodder ignores biome scaling — otherwise temple scaling turned "one or two
+     hits" into five. */
+  if (d.id === 'fan' || d.id === 'fanfast' || d.id === 'fanjump') hpMul = Math.min(hpMul, 1);
   var e = makeEntity({
     kind: 'enemy', team: 'enemy', def: dv, model: model, x: x, z: z,
     maxHp: Math.round(d.hp * hpMul * (elite ? 2.4 : 1)), elite: elite
@@ -5587,6 +5746,19 @@ function triggerFinisher(victim, killer) {
   return true;
 }
 function killEntity(e, by) {
+  /* Revenants rise once before staying down — forces you to finish them
+     properly instead of moving on. */
+  if (e.def && e.def.revive && !e.hasRisen && e.kind === 'enemy') {
+    e.hasRisen = true;
+    e.hp = Math.round(e.maxHp * 0.45);
+    e.stagger = 0; e.atk = null; e.invuln = 0.8;
+    e.name = 'Risen ' + (e.def.name || '');
+    spawnRing(e.pos.x, e.pos.y, e.pos.z, 0x60ffb0, 5, 0.7);
+    emit(e.pos.x, e.pos.y + 1, e.pos.z, 26, { color: 0x60ffb0, speed: 7, life: 0.8, gravity: 2 });
+    SFX.spawn();
+    toast('It gets back up');
+    return;
+  }
   if (e.dead) return;
   e.dead = true; e.deadT = 0; e.atk = null; e.hp = 0;
   if (e.healthBar) e.healthBar.group.visible = false;
@@ -5630,7 +5802,14 @@ function killEntity(e, by) {
         toast(e.def.name + ' yields — they will fight beside you');
       }
     }
-    if (e.boss) onBossDefeated(e);
+    if (e.boss) {
+      // stage a short defeat scene if this boss has lines
+      var bd3 = BOSS_DEFEAT[e.def.id];
+      if (bd3 && !G.vs) {
+        G.pendingDefeatScene = { id: e.def.id, lines: bd3 };
+      }
+      onBossDefeated(e);
+    }
   } else {
     SFX.lose();
     emit(e.pos.x, e.pos.y + 1, e.pos.z, 20, { color: 0xff4040, speed: 5, life: 0.8, gravity: -8 });
@@ -5916,17 +6095,31 @@ function updateCamera(e, dt) {
     e.pos.z - Math.cos(camYaw) * horiz
   );
   cameraClear(_camTarget, _camDesired);
-  camera.position.x = damp(camera.position.x, _camDesired.x, 13, dt);
-  camera.position.y = damp(camera.position.y, _camDesired.y, 11, dt);
-  camera.position.z = damp(camera.position.z, _camDesired.z, 13, dt);
+  /* Pulling IN must be immediate — easing toward the safe spot means sliding
+     through the wall on the way. Easing back OUT stays smooth. */
+  if (G.camSnap) {
+    camera.position.copy(_camDesired);
+  } else {
+    camera.position.x = damp(camera.position.x, _camDesired.x, 13, dt);
+    camera.position.y = damp(camera.position.y, _camDesired.y, 11, dt);
+    camera.position.z = damp(camera.position.z, _camDesired.z, 13, dt);
+  }
+  // last-resort guard: if we still ended up inside something (moving geometry,
+  // a mover platform), lift straight up until clear
+  var guard = 0;
+  while (pointSolid(camera.position.x, camera.position.y, camera.position.z, CAM_RADIUS) && guard < 24) {
+    camera.position.y += 0.35;
+    guard++;
+  }
 
   // shake
   if (shake.amt > 0) {
     shake.amt = Math.max(0, shake.amt - dt * 2.6);
     var s = shake.amt * shake.amt * 0.7;
-    camera.position.x += rand(-s, s);
-    camera.position.y += rand(-s, s);
-    camera.position.z += rand(-s, s);
+    var sx = rand(-s, s), sy = rand(-s, s), sz = rand(-s, s);
+    if (!pointSolid(camera.position.x + sx, camera.position.y + sy, camera.position.z + sz, CAM_RADIUS)) {
+      camera.position.x += sx; camera.position.y += sy; camera.position.z += sz;
+    }
   }
   camera.lookAt(_camTarget.x, _camTarget.y + 0.4, _camTarget.z);
 }
@@ -6632,6 +6825,26 @@ function buildActWorld(act) {
       buildTraverseRoute(zones[zi - 1], zones[zi], loc, half, zi);
     }
   }
+  /* Combat zones must be flat ground. A traversal run that ends inside the
+     next fight's arena leaves the player up on a stepping stone while the
+     crowd spawns on the floor below — out of reach, and the beat can hang. */
+  var czi, cz3;
+  for (czi = 0; czi < zones.length; czi++) {
+    var bk = act.beats[czi].k;
+    if (bk !== 'fight' && bk !== 'gauntlet' && bk !== 'boss' && bk !== 'elite') continue;
+    for (cz3 = platforms.length - 1; cz3 >= 0; cz3--) {
+      var pm = platforms[cz3];
+      if (!pm || !pm.position) continue;
+      if (dist2(pm.position.x, pm.position.z, zones[czi].x, zones[czi].z) > 144) continue;
+      if (pm.position.y < 1.0) continue;
+      if (pm.parent) pm.parent.remove(pm);
+      if (pm.userData && pm.userData.col) {
+        var ci4 = colliders.indexOf(pm.userData.col);
+        if (ci4 >= 0) colliders.splice(ci4, 1);
+      }
+      platforms.splice(cz3, 1);
+    }
+  }
   /* Rooftop Acts have no ground, so any pair of zones NOT joined by a traverse
      beat still needs a way across — otherwise the run simply dead-ends. */
   if (style === 'rooftop') {
@@ -6652,9 +6865,14 @@ function buildActWorld(act) {
     else buildTemple(stage, loc, half);
   }
 
-  // zone landmarks
+  /* Zone landmarks.
+     Only grid Acts get the raised arena floor. In a linear corridor it put the
+     player on a 0.5-high plinth while enemies spawned on the corridor ground —
+     a height split that left them permanently out of reach and could hang a
+     beat. Linear/rooftop Acts get a flush marker instead. */
   for (zi = 0; zi < zones.length; zi++) {
     if (style === 'rooftop') buildRoofPad(zones[zi], loc, half);
+    else if (style === 'linear') buildZoneMarker(zones[zi], loc, zi);
     else buildZoneLandmark(zones[zi], loc, act.beats[zi], zi);
   }
   if (style === 'linear') buildCorridorWalls(zones, loc, half);
@@ -6910,6 +7128,28 @@ function buildInterior(loc, size, half) {
 }
 
 /* A visual anchor per zone so the player can read the map at a glance. */
+/* Flush zone marker for corridor Acts: paint and light, no raised floor, so
+   the player and the enemies always share one walking surface. */
+function buildZoneMarker(zone, loc, idx) {
+  var i, a, r;
+  floorQuad(zone.x, zone.z, 20, 20, loc.ground2, 0.03);
+  floorQuad(zone.x, zone.z, 17, 17, loc.ground, 0.035);
+  for (i = 0; i < 4; i++) {
+    a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    floorQuad(zone.x + Math.sin(a) * 8.5, zone.z + Math.cos(a) * 8.5, 3.2, 3.2, loc.accent, 0.04);
+  }
+  // marker posts sit at the rim, clear of the fighting space
+  for (i = 0; i < 4; i++) {
+    a = (i / 4) * Math.PI * 2;
+    addProp(zone.x + Math.sin(a) * 10.5, 0, zone.z + Math.cos(a) * 10.5, 1.2, rand(3.0, 4.5), 1.2, loc.ground2, { force: true });
+  }
+  var beacon = new THREE.Mesh(cylGeo(0.5, 0.5, 26, 8),
+    matU(loc.accent, loc.accent, { transparent: true, opacity: 0.14, depthWrite: false }));
+  beacon.position.set(zone.x, 13, zone.z);
+  worldGroup.add(beacon);
+  zone.beacon = beacon;
+  addLightPoint(zone.x, 6, zone.z, loc.accent, 1.0, 26);
+}
 function buildZoneLandmark(zone, loc, beat, idx) {
   var i, a, r, px, pz;
   var roadHalf2 = (loc.props === 'city') ? CITY_ROAD_HALF : -1;   // -1 = no road to avoid
@@ -7030,7 +7270,11 @@ function dressCorridorBay(wx, wz, sign, loc, style) {
 function buildTraverseRoute(from, to, loc, half, seed) {
   var dx = to.x - from.x, dz = to.z - from.z;
   var span = Math.sqrt(dx * dx + dz * dz);
-  var n = Math.max(6, Math.min(14, Math.floor(span / 8)));
+  /* The route only occupies the middle 64% of the span (see the inset below),
+     so size the step count against THAT, not the raw span — otherwise the
+     stones spread past jump range. */
+  var usable = span * 0.64;
+  var n = Math.max(6, Math.min(18, Math.ceil(usable / 6.5)));
   var ux = dx / span, uz = dz / span;
   var px = from.x, pz = from.z, i;
   var y = (from.y || 0) > 0 ? from.y : 1.4;
@@ -7048,9 +7292,13 @@ function buildTraverseRoute(from, to, loc, half, seed) {
       y += (i % 6 === 5) ? -1.2 : rand(0.9, 1.8);
       y = clamp(y, 1.2, 19);
     }
-    var gap = Math.sqrt(dist2(x, z, px, pz));
-    if (gap > 9.5) { x = px + (x - px) * (9.5 / gap); z = pz + (z - pz) * (9.5 / gap); }
     x = clamp(x, -half + 8, half - 8); z = clamp(z, -half + 8, half - 8);
+    // clamp the reach LAST, after every other adjustment, or it doesn't hold
+    var gap = Math.sqrt(dist2(x, z, px, pz));
+    if (gap > 8.5) {
+      x = px + (x - px) * (8.5 / gap);
+      z = pz + (z - pz) * (8.5 / gap);
+    }
     // A low stepping-stone that happens to cross the carriageway reads as
     // debris sitting in the street (and can clip parked traffic) — lift it
     // clear of car roofline so it reads as an overpass instead.
@@ -7138,13 +7386,17 @@ function startAct(index, isVs) {
   G.spawnYaw = Math.atan2(faceX, faceZ);
 
   blade = makeHero('blade', G.safeX, G.safeZ, true);
+  /* Sample the actual ground rather than trusting the zone's nominal height —
+     a stale value left the player hovering ~2.4 above the floor, so ground
+     enemies were permanently out of reach. */
+  G.safeY = groundHeightAt(G.safeX, G.safeZ, (z0.y || 0) + 8, 0.6);
   blade.pos.y = G.safeY;
   blade.yaw = G.spawnYaw;
   cacheMaterials(blade);
   var partnerId = P.partner && P.heroes[P.partner] ? P.partner : 'whistler';
   // partner stands abreast, perpendicular to the direction of travel
   ally = makeHero(partnerId, G.safeX - faceZ * 2.6, G.safeZ + faceX * 2.6, false);
-  ally.pos.y = G.safeY;
+  ally.pos.y = groundHeightAt(ally.pos.x, ally.pos.z, G.safeY + 8, 0.6);
   ally.yaw = G.spawnYaw;
   cacheMaterials(ally);
   player = blade;
@@ -7193,7 +7445,19 @@ function beatEnter(i) {
   };
   G.beatKills = 0;
   // checkpoint — dying resumes here, not at the top of the Act
-  G.safeX = zone.x; G.safeY = (zone.y || 0) + 0.6; G.safeZ = zone.z;   // zone centre is always clear
+  G.safeX = zone.x; G.safeZ = zone.z;   // zone centre is always clear
+  G.safeY = groundHeightAt(zone.x, zone.z, (zone.y || 0) + 8, 0.6);
+  /* If the player is left hanging above the floor (a cutscene handing back
+     mid-fall, say), drop them onto it now — otherwise ground enemies are
+     unreachable and the beat cannot progress. */
+  if (player && !player.grounded) {
+    var gY = groundHeightAt(player.pos.x, player.pos.z, player.pos.y + 4, 0.6);
+    if (player.pos.y - gY > 0.6 && player.pos.y - gY < 12) {
+      player.pos.y = gY;
+      player.vel.y = 0;
+      player.grounded = true;
+    }
+  }
   G.checkpointBeat = i;
   saveProfile();            // bloodstones picked up so far are banked
 
@@ -7322,8 +7586,23 @@ function spawnAtZone(zone, n, elite) {
     // height so rooftop Acts don't spawn enemies into the void below
     var spot = findClearSpot(x, z, 1.1, half);
     x = spot.x; z = spot.z;
-    var y = groundHeightAt(x, z, (zone.y || 0) + 6, 0.6);
-    if ((zone.y || 0) > 4 && y < zone.y - 6) { x = zone.x + rand(-7, 7); z = zone.z + rand(-7, 7); y = groundHeightAt(x, z, zone.y + 6, 0.6); }
+    /* Sample from the PLAYER's height, not the zone's nominal height. Zones
+       sit on a raised landmark floor, so sampling from the zone put spawns on
+       the ground 2.4 below the player — attacks could never reach them and the
+       beat could not progress. */
+    /* Spawn on the surface the PLAYER is standing on. Sampling from the zone
+       height dropped enemies onto the floor below a raised platform, where
+       nothing could reach them and the beat could never complete. */
+    var refY = player ? player.pos.y : (zone.y || 0);
+    var y = groundHeightAt(x, z, refY + 4, 0.6);
+    var tries2 = 0;
+    while (Math.abs(y - refY) > 2.0 && tries2 < 12) {
+      var alt = findClearSpot(zone.x + rand(-13, 13), zone.z + rand(-13, 13), 1.1, half);
+      x = alt.x; z = alt.z;
+      y = groundHeightAt(x, z, refY + 4, 0.6);
+      tries2++;
+    }
+    if (Math.abs(y - refY) > 2.0) { x = player ? player.pos.x + rand(-7, 7) : x; z = player ? player.pos.z + rand(-7, 7) : z; y = refY; }
     var e = makeEnemy(pick(G.act.pool), x, z, elite);
     e.pos.y = y;
     spawnRing(x, y + 0.1, z, 0x8a1020, 2.4, 0.5);
@@ -7430,6 +7709,39 @@ function beatComplete() {
   var b = G.beat;
   if (!b || b.done) return;
   b.done = true;
+  /* A downed boss gets its scene before we move on. */
+  if (G.pendingDefeatScene) {
+    var ds2 = G.pendingDefeatScene;
+    G.pendingDefeatScene = null;
+    var cast2 = [{ id: 'blade', x: -2.2, z: 1.2, yaw: 0.4 }];
+    if (BOSSES[ds2.id]) cast2.push({ id: ds2.id, x: 2.4, z: -1.4, yaw: -2.6, sway: 0.25 });
+    var pid2 = P.partner;
+    if (pid2 && HEROES[pid2] && pid2 !== 'blade') cast2.push({ id: pid2, x: -5.2, z: -0.4, yaw: 0.3 });
+    var nextBeat = G.beatIndex + 1;
+    playCutscene({
+      actors: cast2,
+      shots: [
+        { from: [0.5, 1.2, 7.5], fromTo: [0.5, 1.5, 5.4], to: [0.5, 1.4, -0.6], dur: 11 },
+        { from: [6.5, 2.0, 1.5], fromTo: [4.4, 1.7, 1.0], to: [0, 1.5, 0], dur: 11 }
+      ],
+      lines: ds2.lines,
+      then: function () {
+        el('bossBar').classList.remove('on');
+        boss = null;
+        G.beat = null;
+        if (nextBeat >= G.act.beats.length) { actCleared(); }
+        else {
+          showScreen(null);
+          el('hud').classList.add('on');
+          G.mode = 'play';
+          musicStart(G.act.loc, false);
+          G.beatIndex = nextBeat - 1;
+          G.beatAdvanceT = 0.6;
+        }
+      }
+    });
+    return;
+  }
   var next = G.beatIndex + 1;
   el('bossBar').classList.remove('on');
   boss = null;
@@ -7564,8 +7876,9 @@ function resumeFromCheckpoint() {
   player = blade; ally = (ally === blade) ? null : ally;
   // respawn on the zone centre itself — it is guaranteed clear (radius 13),
   // whereas a fixed +6 offset can land in whatever borders the zone
-  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, (zone.y || 0) + 1.0, zone.z); }
-  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, (zone.y || 0) + 1.0, zone.z); }
+  var respawnY = groundHeightAt(zone.x, zone.z, (zone.y || 0) + 8, 0.6);
+  if (player) { player.isPlayer = true; player.aiOnly = 'off'; player.pos.set(zone.x, respawnY + 0.2, zone.z); }
+  if (ally) { ally.isPlayer = false; ally.aiOnly = 'on'; ally.pos.set(zone.x + 2.5, respawnY + 0.2, zone.z); }
   G.ended = false; G.clearT = 0; G.bossDeathT = 0;
   G.slowmo = 1; G.slowmoT = 0;
   el('dwVig').style.opacity = 0;
@@ -7688,6 +8001,86 @@ function buildCutStage(actorDefs) {
   }
 }
 
+/* Deploy sequence: the shutter rolls up and Blade rides out into the night.
+   Built as its own staged scene so it reads cinematically rather than as a
+   hard cut from the safehouse to the street. */
+function playDeployCutscene(then) {
+  G.prevMode = G.mode;
+  G.mode = 'cutscene';
+  clearWorld();
+  cutActors.length = 0;
+  scene.background = new THREE.Color(0x05050a);
+  scene.fog = new THREE.Fog(0x06070c, 18, 90);
+  worldGroup.add(new THREE.HemisphereLight(0x2a2632, 0x08080c, 0.5));
+  var key = new THREE.DirectionalLight(0xb8c8f0, 0.45);
+  key.position.set(10, 20, 14);
+  worldGroup.add(key); worldGroup.add(key.target);
+
+  // wet road out of the garage mouth
+  var road = new THREE.Mesh(new THREE.PlaneGeometry(70, 120), matU(0x12141b));
+  road.rotation.x = -Math.PI / 2;
+  worldGroup.add(road);
+  var i;
+  for (i = -50; i < 50; i += 9) floorQuad(0, i, 0.4, 4.4, 0x9a9070, 0.03);
+  // garage front wall with the shutter opening
+  addProp(-14, 0, 16, 20, 16, 3, 0x22222a, { force: true, castShadow: false });
+  addProp(14, 0, 16, 20, 16, 3, 0x22222a, { force: true, castShadow: false });
+  addProp(0, 11, 16, 12, 6, 3, 0x22222a, { force: true, castShadow: false });
+  var shutter = new THREE.Mesh(boxGeo(11.6, 10.5, 0.5), matU(0x2a2a32));
+  shutter.position.set(0, 5.4, 15.4);
+  worldGroup.add(shutter);
+  var slat;
+  for (i = 0; i < 10; i++) {
+    slat = new THREE.Mesh(boxGeo(11.2, 0.7, 0.2), matU(i % 2 ? 0x33333a : 0x282830));
+    slat.position.y = -4.6 + i * 1.02;
+    shutter.add(slat);
+  }
+  G.cutShutter = shutter;
+  // interior glow behind, red sign above
+  addLightPoint(0, 6, 20, 0xffb870, 1.6, 40);
+  addDecor(0, 12.4, 15.2, boxGeo(11, 0.9, 0.3), 0xff2436, 0xff2436);
+  addLightPoint(0, 12.4, 12, 0xff3040, 1.2, 26);
+  // street lamps flanking the exit
+  for (i = 0; i < 3; i++) {
+    addDecor(-11, 4.2, -6 - i * 22, cylGeo(0.16, 0.19, 8.4, 6), 0x2c2e38);
+    addDecor(-9.6, 8.2, -6 - i * 22, boxGeo(2.9, 0.22, 0.22), 0x2c2e38);
+    addDecor(-8.4, 7.95, -6 - i * 22, boxGeo(1.1, 0.34, 0.7), 0xfff0c0, 0xffd890);
+    addLightPoint(-8.4, 7.6, -6 - i * 22, 0xffc880, 1.1, 26);
+  }
+  addCollider(0, -2, 0, 200, 2, 200, { walkable: true });
+  weather = makeWeather('rain', LOCATIONS[0]);
+
+  // the vehicle, with Blade riding it out
+  var useBike = (P.deployRide === 'bike');
+  var ride = buildVehicle(useBike ? 'bike' : 'muscle', 0, 12, Math.PI, 0x14141a);
+  G.cutRide = ride;
+  var m = buildHeroModel('blade', (P.skins && P.skins.blade) || 0);
+  m.group.position.set(useBike ? 0 : -0.6, useBike ? 1.15 : 0.9, useBike ? 12.2 : 12.4);
+  m.group.rotation.y = Math.PI;
+  ride.add(m.group);
+  m.group.position.set(useBike ? 0 : -0.6, useBike ? 0.55 : 0.35, useBike ? -0.4 : 0.2);
+  cutActors.push({ id: 'blade', group: m.group, parts: m.parts, t: 0, sway: 0.4 });
+
+  cutShots = [
+    { from: [-9, 3.2, 26], fromTo: [-6, 2.6, 20], to: [0, 3, 14], dur: 3.2 },
+    { from: [7, 1.6, 2], fromTo: [5, 1.4, -6], to: [0, 1.4, 6], dur: 3.4 },
+    { from: [0, 5.5, -26], fromTo: [0, 3.4, -34], to: [0, 1.6, -6], dur: 3.6 }
+  ];
+  cutShot = 0; cutT = 0;
+  G.cutRideT = 0;
+  G.dlgDone = null;
+  G.cutDone = then || null;
+  showScreen(null);
+  el('hud').classList.remove('on');
+  el('touch').classList.remove('on');
+  el('toast').style.display = 'none';
+  cineBars(true);
+  applyCutShot(0);
+  toast(pick(['Sun\'s down. Let\'s work.', 'Time to go hunting.', 'Keep the lights on, Abigail.']));
+  el('toast').style.display = '';   // this one line should show
+  G.cutSkippable = true;            // any press cuts straight to the Act
+}
+
 function playCutscene(cfg) {
   G.prevMode = G.mode;
   G.mode = 'cutscene';
@@ -7721,6 +8114,22 @@ function updateCutscene(dt) {
   camera.position.set(px, py, pz);
   camera.lookAt(s.to[0], s.to[1] + Math.sin(G.time * 0.4) * 0.05, s.to[2]);
   if (f >= 1 && cutShot < cutShots.length - 1) { cutShot++; cutT = 0; }
+  /* deploy scene: shutter rolls up, then the ride pulls out and away */
+  if (G.cutShutter) {
+    G.cutRideT = (G.cutRideT || 0) + dt;
+    var st2 = clamp((G.cutRideT - 0.3) / 1.6, 0, 1);
+    G.cutShutter.position.y = 5.4 + st2 * 9.6;
+    if (G.cutRideT > 2.0 && G.cutRide) {
+      var driveT = G.cutRideT - 2.0;
+      var speed2 = Math.min(26, driveT * 13);
+      G.cutRide.position.z -= speed2 * dt;
+      if (Math.random() < 0.5) {
+        emit(G.cutRide.position.x + rand(-1, 1), 0.2, G.cutRide.position.z + 3.4, 1,
+          { color: 0x8a8f9c, speed: 0.6, life: 0.7, gravity: 1.2, size: 0.9 });
+      }
+    }
+    if (G.cutRideT > 9.5) { G.cutShutter = null; G.cutRide = null; endCutscene(); return; }
+  }
   if (G.cutSteam && Math.random() < 0.5) {
     emit(G.cutSteam.x + rand(-1.2, 1.2), 0.2, G.cutSteam.z + rand(-1.2, 1.2), 1,
       { color: 0x9aa6b8, speed: 0.5, life: 2.4, gravity: 0.7, size: 1.5 });
@@ -7760,6 +8169,9 @@ function clearCutActors() {
 }
 function cancelCutscene() {
   cutShots = null;
+  G.cutSkippable = false;
+  G.slowmo = 1; G.slowmoT = 0; G.hitStop = 0;   // restore normal time
+  G.cutShutter = null; G.cutRide = null;
   if (IN.touch) el('touch').classList.add('on');
   el('toast').style.display = '';
   clearCutActors();
@@ -7767,8 +8179,22 @@ function cancelCutscene() {
   G.cutDone = null;
   cineBars(false);
 }
+/* Skip the rest of a cutscene (B on a pad, or the on-screen prompt). */
+function skipCutscene() {
+  if (G.cutShutter) { G.cutShutter = null; G.cutRide = null; endCutscene(); return; }
+  if (!cutShots) { dlgAdvance(); return; }
+  dlgQueue = []; dlgIdx = 0;
+  dlgActive = false;
+  el('dlg').classList.remove('on');
+  var done = G.dlgDone;
+  G.dlgDone = null;
+  if (done) done(); else endCutscene();
+}
 function endCutscene() {
   cutShots = null;
+  G.cutSkippable = false;
+  G.slowmo = 1; G.slowmoT = 0; G.hitStop = 0;   // restore normal time
+  G.cutShutter = null; G.cutRide = null;
   if (IN.touch) el('touch').classList.add('on');
   el('toast').style.display = '';
   clearCutActors();
@@ -8068,6 +8494,7 @@ function buildHubWorld() {
     var cx2 = rand(-HALF + 6, HALF - 6), cz2 = rand(-HALF + 6, HALF - 6);
     if (Math.abs(cx2) < 12 && Math.abs(cz2) < 12) continue;
     if (nearTerminal(cx2, cz2, 7)) continue;      // crates were spawning through screens
+    if (spotBlocked(cx2, cz2, 2.6)) continue;     // ...and inside the car and bike
     var hgt = randi(1, 2);
     for (j = 0; j < hgt; j++) addProp(cx2, j * 1.7, cz2, 1.7, 1.7, 1.7, j % 2 ? 0x4a3c26 : 0x3c3020, { force: true });
   }
@@ -8847,6 +9274,7 @@ function openHub() {
 
 /* Little CSS portrait so the roster shows WHO each partner is instead of a
    flat colour swatch. */
+function hx2(c) { var s = c.toString(16); while (s.length < 6) s = '0' + s; return s; }
 function hx(c) { var s = c.toString(16); while (s.length < 6) s = '0' + s; return '#' + s; }
 var WEAPON_GLYPH = { sword: '⚔', crossbow: '🏹', shotgun: '▬', chain: '⛓', darts: '✦', webs: '❋', claws: '⋔', staff: '⌖' };
 function heroFigure(h, owned) {
@@ -8942,18 +9370,26 @@ function renderHub() {
       html += '</div>';
     }
     html += '</div>';
-    html += '<div class="hr"></div><div class="hdr">Blade Skins</div><div class="grid">';
-    for (i = 0; i < SKINS.blade.length; i++) {
-      var sk = SKINS.blade[i];
-      var ownSkin = (P.unlockedSkins.blade || [0]).indexOf(i) >= 0;
-      html += '<div class="card' + (P.skins.blade === i ? ' sel' : '') + '" data-skin="' + i + '">';
-      html += '<div class="swatch" style="background:linear-gradient(135deg,#' + sk.body.toString(16) + ',#' + sk.accent.toString(16) + ')"></div>';
-      html += '<h4>' + sk.name + '</h4>';
-      html += '<p>' + (ownSkin ? 'Owned' : ('Cost ◆' + sk.cost)) + '</p>';
-      html += '<div class="chip' + (ownSkin ? ' good' : '') + '">' + (P.skins.blade === i ? 'Equipped' : (ownSkin ? 'Equip' : 'Buy')) + '</div>';
+    /* Outfits for every hero you own, not just Blade. */
+    var hi2, hid2, list2, si3, sk;
+    for (hi2 = 0; hi2 < HERO_ORDER.length; hi2++) {
+      hid2 = HERO_ORDER[hi2];
+      list2 = SKINS[hid2];
+      if (!list2 || !P.heroes[hid2]) continue;
+      html += '<div class="hr"></div><div class="hdr">' + HEROES[hid2].name + ' — Outfits</div><div class="grid">';
+      for (si3 = 0; si3 < list2.length; si3++) {
+        sk = list2[si3];
+        var ownSkin = ((P.unlockedSkins[hid2] || [0]).indexOf(si3) >= 0);
+        var equipped = ((P.skins[hid2] || 0) === si3);
+        html += '<div class="card' + (equipped ? ' sel' : '') + '" data-skin="' + si3 + '" data-skinhero="' + hid2 + '">';
+        html += '<div class="swatch" style="background:linear-gradient(135deg,#' + hx2(sk.body) + ',#' + hx2(sk.accent) + ')"></div>';
+        html += '<h4>' + sk.name + '</h4>';
+        html += '<p>' + (ownSkin ? 'Owned' : ('Cost ◆' + sk.cost)) + '</p>';
+        html += '<div class="chip' + (ownSkin ? ' good' : '') + '">' + (equipped ? 'Equipped' : (ownSkin ? 'Equip' : 'Buy')) + '</div>';
+        html += '</div>';
+      }
       html += '</div>';
     }
-    html += '</div>';
   } else if (hubTab === 'upgrades') {
     html += '<div class="sub">Bloodstones buy permanent upgrades. Every hero levels separately.</div>';
     for (i = 0; i < HERO_ORDER.length; i++) {
@@ -9030,15 +9466,16 @@ function wireHub() {
   for (i = 0; i < skns.length; i++) {
     skns[i].addEventListener('click', function () {
       var si = parseInt(this.getAttribute('data-skin'), 10);
-      var sk = SKINS.blade[si];
-      if (!P.unlockedSkins.blade) P.unlockedSkins.blade = [0];
-      if (P.unlockedSkins.blade.indexOf(si) < 0) {
+      var shero = this.getAttribute('data-skinhero') || 'blade';
+      var sk = SKINS[shero][si];
+      if (!P.unlockedSkins[shero]) P.unlockedSkins[shero] = [0];
+      if (P.unlockedSkins[shero].indexOf(si) < 0) {
         if (P.tokens < sk.cost) { toast('Need ◆' + sk.cost); return; }
         P.tokens -= sk.cost;
-        P.unlockedSkins.blade.push(si);
+        P.unlockedSkins[shero].push(si);
         toast('Unlocked ' + sk.name);
       }
-      P.skins.blade = si;
+      P.skins[shero] = si;
       saveProfile(); SFX.ui(); renderHub();
       // rebuild the standing model so the change is visible immediately
       if (G.mode === 'hubmenu' || G.mode === 'hub') G.hubSkinDirty = true;
@@ -9254,7 +9691,10 @@ function initRenderer() {
   // Phones start on the lighter path (no shadow map, 1x pixel ratio).
   // Toggle it any time from the pause menu.
   var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  if (isTouch || Math.min(W, H) < 520) G.quality = 'low';
+  /* Default to high quality everywhere; modern phones handle it. Players can
+     still drop to low in Options if they want the framerate back. Only very
+     small screens auto-downgrade. */
+  if (Math.min(W, H) < 400) G.quality = 'low';
   renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2, powerPreference: 'high-performance' });
   renderer.setPixelRatio(G.quality === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : 1);
   renderer.setSize(W, H);
@@ -9383,6 +9823,7 @@ function updateOptionLabels() {
   var sv = el('optSfxVol'); if (sv) sv.textContent = pct(G.sfxVol);
   var br = el('optBright'); if (br) br.textContent = pct(G.brightness);
   var df = el('optDiff'); if (df) df.textContent = DIFFS[G.diffIdx].name;
+  var rd = el('optRide'); if (rd) rd.textContent = (P.deployRide === 'bike') ? 'Bike' : 'Car';
   var sh = el('optShake'); if (sh) sh.textContent = SHAKE_NAMES[shakeName()];
   var dn = el('optDmg'); if (dn) dn.textContent = G.dmgNums ? 'On' : 'Off';
   var iv = el('optInvert'); if (iv) iv.textContent = G.invert ? 'On' : 'Off';
@@ -9423,6 +9864,7 @@ function wireOptions() {
   bind('optSfxVol', function () { G.sfxVol = G.sfxVol >= 0.99 ? 0 : Math.min(1, G.sfxVol + 0.25); });
   bind('optBright', function () { G.brightness = G.brightness >= 1.59 ? 0.7 : Math.min(1.6, G.brightness + 0.15); });
   bind('optDiff', function () { G.diffIdx = (G.diffIdx + 1) % DIFFS.length; });
+  bind('optRide', function () { P.deployRide = (P.deployRide === 'bike') ? 'car' : 'bike'; saveProfile(); });
   bind('optShake', function () { G.shakeScale = SHAKE_STEPS[(shakeName() + 1) % SHAKE_STEPS.length]; });
   bind('optDmg', function () { G.dmgNums = !G.dmgNums; });
   bind('optInvert', function () { G.invert = !G.invert; });
@@ -9551,7 +9993,8 @@ function wireMenus() {
     SFX.ui();
     var idx = (G.selectedAct !== undefined && actUnlocked(G.selectedAct))
       ? G.selectedAct : Math.min(P.story, ACTS.length - 1);
-    startAct(idx, false);
+    showScreen(null);
+    playDeployCutscene(function () { startAct(idx, false); });
   });
   el('btnHubTitle').addEventListener('click', function () {
     SFX.ui();
@@ -9579,6 +10022,13 @@ function wireMenus() {
     SFX.ui(); G.optReturn = 'pause'; updateOptionLabels(); showScreen('scOptions');
   });
   el('btnAbandon').addEventListener('click', function () { SFX.ui(); openHub(); });
+  el('btnMainMenu').addEventListener('click', function () {
+    SFX.ui();
+    saveProfile();
+    cancelCutscene();
+    G.act = null; G.beat = null;
+    goTitle();
+  });
 
   el('btnResNext').addEventListener('click', function () { SFX.ui(); openHub(); });
   el('btnResRetry').addEventListener('click', function () {
