@@ -776,7 +776,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.7.1';
+var GAME_VERSION = 'v1.7.2';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -6760,7 +6760,9 @@ function buildActWorld(act) {
     else if (loc.props === 'catacombs') { ambCol = 0x3a3630; sunCol = 0xffc890; sunPow = 0.3; ambPow = 0.75; }
     else if (loc.props === 'temple') { ambCol = 0x4a2020; sunCol = 0xff7050; sunPow = 0.3; ambPow = 0.75; }
     else { ambCol = 0x3a3630; sunCol = 0xffd0a0; sunPow = 0.34; ambPow = 0.8; }
-    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45), 14, size * 0.9);
+    /* near must exceed the camera boom (~9) with margin, or the world fogs
+       out before it is ever drawn. */
+    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45), 34, size * 1.1);
     scene.background = new THREE.Color(mixHex(loc.fog, ambCol, 0.35));
   }
   worldGroup.add(new THREE.HemisphereLight(ambCol, 0x0a0a10, ambPow));
@@ -6917,7 +6919,7 @@ function buildActWorld(act) {
     addStars(loc);
   }
   if (act.indoor) buildInterior(loc, size, half);
-  if (act.indoor) scene.fog.far = size * 0.9;   // buildInterior tightens it; keep the room readable
+
 
   return stage;
 }
@@ -7049,7 +7051,10 @@ function buildRoofPad(zone, loc, half) {
    Acts read as building interiors rather than open ground. */
 function buildInterior(loc, size, half) {
   var i, j;
-  scene.fog = new THREE.Fog(loc.fog, 10, size * 0.75);
+  /* Do NOT tighten fog here. The Act builder has already set an interior fog
+     appropriate to the room; overriding near to 10 put the fog plane closer
+     than the chase camera's boom, washing the whole world to a flat colour
+     while fog-exempt particles kept drawing. */
   var ceilY = 17;
   var ceil = new THREE.Mesh(new THREE.PlaneGeometry(size + 40, size + 40), matU(0x0c0c10));
   ceil.rotation.x = Math.PI / 2; ceil.position.y = ceilY;
