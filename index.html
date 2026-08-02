@@ -776,7 +776,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.7.0';
+var GAME_VERSION = 'v1.7.1';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1931,7 +1931,7 @@ var LOCATIONS = [
   },
   {
     id: 'catacombs', name: 'The Bone Choir', short: 'Catacombs',
-    fog: 0x070f0c, sky: 0x081210, ground: 0x393528, ground2: 0x4a4433,
+    fog: 0x0d0c0a, sky: 0x0f0e0c, ground: 0x393528, ground2: 0x4a4433,
     accent: 0x50e0a0, accent2: 0xd8d0b0, ambient: 0x2a3a32, sun: 0x60a888,
     props: 'catacombs', fogNear: 12, fogFar: 68, rain: false, snow: false, embers: false,
     boss: 'bonecaller',
@@ -6757,7 +6757,7 @@ function buildActWorld(act) {
   var ambCol = loc.ambient, sunCol = loc.sun, sunPow = 0.62, ambPow = 0.9;
   if (act.indoor) {
     if (loc.props === 'castle') { ambCol = 0x4a3a2c; sunCol = 0xffb066; sunPow = 0.3; ambPow = 0.75; }
-    else if (loc.props === 'catacombs') { ambCol = 0x2c3a34; sunCol = 0x7fd8b0; sunPow = 0.26; ambPow = 0.7; }
+    else if (loc.props === 'catacombs') { ambCol = 0x3a3630; sunCol = 0xffc890; sunPow = 0.3; ambPow = 0.75; }
     else if (loc.props === 'temple') { ambCol = 0x4a2020; sunCol = 0xff7050; sunPow = 0.3; ambPow = 0.75; }
     else { ambCol = 0x3a3630; sunCol = 0xffd0a0; sunPow = 0.34; ambPow = 0.8; }
     scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45), 14, size * 0.9);
@@ -7077,7 +7077,7 @@ function buildInterior(loc, size, half) {
      rather than warehouse strip lights in a castle. */
   var lampCol = 0xffc890, lampEm = 0xffd890;
   if (loc.props === 'castle') { lampCol = 0xffa348; lampEm = 0xff8a20; }
-  else if (loc.props === 'catacombs') { lampCol = 0x40e0a0; lampEm = 0x30d090; }
+  else if (loc.props === 'catacombs') { lampCol = 0xffb877; lampEm = 0xffa050; }   // tapers, not radioactive glow
   else if (loc.props === 'temple') { lampCol = 0xff3020; lampEm = 0xff2010; }
   for (i = -half + 10; i < half - 6; i += 22) {
     for (j = -half + 10; j < half - 6; j += 30) {
@@ -7233,8 +7233,11 @@ function dressCorridorBay(wx, wz, sign, loc, style) {
     }
     addDecor(inX, 8.6, wz, boxGeo(0.8, 1.2, 13), 0x5c5544);
     addDecor(inX + sign * 0.5, 6.4, wz + 4.2, cylGeo(0.1, 0.1, 1.4, 6), 0x2a2a22);
-    addDecor(inX + sign * 0.5, 7.2, wz + 4.2, sphGeo(0.3, 8), 0x60ffb0, 0x30d090);
-    addLightPoint(inX + sign * 1.5, 7.0, wz + 4.2, 0x40e0a0, 1.0, 16);
+    // one candle in four burns with the choir's green witchfire; the rest are
+    // ordinary tapers, so the green reads as an accent rather than a wash
+    var witch = (Math.abs(Math.round(wz / 16)) % 4 === 0);
+    addDecor(inX + sign * 0.5, 7.2, wz + 4.2, sphGeo(0.3, 8), witch ? 0x60ffb0 : 0xffd0a0, witch ? 0x30d090 : 0xff9840);
+    addLightPoint(inX + sign * 1.5, 7.0, wz + 4.2, witch ? 0x50e0a0 : 0xffb066, 1.0, 16);
   } else if (style === 'city') {
     // market arcade: shutters, awnings, hanging signage, crates
     addDecor(inX, 2.4, wz, boxGeo(0.6, 4.8, 12.4), 0x24262e);
@@ -8016,12 +8019,37 @@ function playDeployCutscene(then) {
   key.position.set(10, 20, 14);
   worldGroup.add(key); worldGroup.add(key.target);
 
-  // wet road out of the garage mouth
+  /* A back alley, not a highway. The garage opens onto a short forecourt that
+     meets a side street further out — kerbs, a pavement and a wall opposite,
+     so it reads as a building on a street rather than a door onto tarmac. */
   var road = new THREE.Mesh(new THREE.PlaneGeometry(70, 120), matU(0x12141b));
   road.rotation.x = -Math.PI / 2;
   worldGroup.add(road);
   var i;
-  for (i = -50; i < 50; i += 9) floorQuad(0, i, 0.4, 4.4, 0x9a9070, 0.03);
+  // concrete apron directly outside the shutter
+  floorQuad(0, 8, 26, 18, 0x1e2028, 0.022);
+  floorQuad(0, 8, 24, 16, 0x23252e, 0.024);
+  for (i = -11; i <= 11; i += 5.5) floorQuad(i, 8, 0.16, 16, 0x2c2f38, 0.026);   // slab joints
+  // kerb line where the apron meets the road
+  floorQuad(0, -2.2, 30, 0.9, 0x33363f, 0.028);
+  floorQuad(0, -3.4, 30, 1.6, 0x191c22, 0.026);
+  // the side street runs ACROSS the frame, not away from the door
+  for (i = -34; i < 34; i += 9) floorQuad(i, -12, 4.4, 0.4, 0x9a9070, 0.03);
+  floorQuad(0, -20.5, 70, 0.9, 0x33363f, 0.028);
+  // far pavement and the wall opposite, so the view terminates
+  floorQuad(0, -25, 70, 8, 0x191d25, 0.026);
+  addProp(-20, 0, -32, 26, 22, 10, 0x141821, { solid: false, castShadow: false });
+  addProp(12, 0, -32, 22, 26, 10, 0x11151d, { solid: false, castShadow: false });
+  var wi4;
+  for (wi4 = 0; wi4 < 5; wi4++) {
+    if (Math.random() < 0.4) continue;
+    addDecor(-20 + rand(-8, 8), 5 + wi4 * 4.5, -27.2, boxGeo(1.7, 1.2, 0.3), 0xffd890, 0xffbe60);
+    if (Math.random() < 0.5) addDecor(12 + rand(-7, 7), 5 + wi4 * 4.5, -27.2, boxGeo(1.7, 1.2, 0.3), 0xffd890, 0xffbe60);
+  }
+  // alley dressing
+  addProp(-13.5, 0, 4, 4.6, 2.2, 2.6, 0x243028, { castShadow: true });
+  addProp(13.5, 0, 1, 2.0, 2.0, 2.0, 0x3c3020, { castShadow: true });
+  addDecor(-13.5, 2.35, 4, boxGeo(4.8, 0.3, 2.8), 0x2c3a30);
   // garage front wall with the shutter opening
   addProp(-14, 0, 16, 20, 16, 3, 0x22222a, { force: true, castShadow: false });
   addProp(14, 0, 16, 20, 16, 3, 0x22222a, { force: true, castShadow: false });
@@ -8055,11 +8083,32 @@ function playDeployCutscene(then) {
   var ride = buildVehicle(useBike ? 'bike' : 'muscle', 0, 12, Math.PI, 0x14141a);
   G.cutRide = ride;
   var m = buildHeroModel('blade', (P.skins && P.skins.blade) || 0);
-  m.group.position.set(useBike ? 0 : -0.6, useBike ? 1.15 : 0.9, useBike ? 12.2 : 12.4);
   m.group.rotation.y = Math.PI;
   ride.add(m.group);
-  m.group.position.set(useBike ? 0 : -0.6, useBike ? 0.55 : 0.35, useBike ? -0.4 : 0.2);
-  cutActors.push({ id: 'blade', group: m.group, parts: m.parts, t: 0, sway: 0.4 });
+  if (useBike) {
+    // seated astride: hips on the seat, legs tucked
+    m.group.position.set(0, 0.5, -0.35);
+    m.group.scale.setScalar(0.95);
+    if (m.parts.legL) { m.parts.legL.rotation.x = -1.1; m.parts.legL.userData.shin.rotation.x = 1.5; }
+    if (m.parts.legR) { m.parts.legR.rotation.x = -1.1; m.parts.legR.userData.shin.rotation.x = 1.5; }
+    if (m.parts.armL) { m.parts.armL.rotation.x = -1.15; m.parts.armL.userData.fore.rotation.x = 0.3; }
+    if (m.parts.armR) { m.parts.armR.rotation.x = -1.15; m.parts.armR.userData.fore.rotation.x = 0.3; }
+    if (m.parts.torso) m.parts.torso.rotation.x = 0.28;
+  } else {
+    /* Seated INSIDE the cabin. He was previously parented at roof height with
+       a standing pose, so head and shoulders punched through the roof. Sunk to
+       seat level, legs folded into the footwell, hands on the wheel — and the
+       lower body is hidden since the bodywork would clip it anyway. */
+    m.group.position.set(-0.62, -0.02, 0.35);
+    m.group.scale.setScalar(0.92);
+    if (m.parts.legL) m.parts.legL.visible = false;
+    if (m.parts.legR) m.parts.legR.visible = false;
+    if (m.parts.armL) { m.parts.armL.rotation.x = -1.35; m.parts.armL.userData.fore.rotation.x = 0.55; }
+    if (m.parts.armR) { m.parts.armR.rotation.x = -1.35; m.parts.armR.userData.fore.rotation.x = 0.55; }
+    if (m.parts.torso) m.parts.torso.rotation.x = 0.12;
+    if (m.parts.sheath) m.parts.sheath.visible = false;   // would spear the seat
+  }
+  cutActors.push({ id: 'blade', group: m.group, parts: m.parts, t: 0, sway: 0.25 });
 
   cutShots = [
     { from: [-9, 3.2, 26], fromTo: [-6, 2.6, 20], to: [0, 3, 14], dur: 3.2 },
@@ -8122,7 +8171,14 @@ function updateCutscene(dt) {
     if (G.cutRideT > 2.0 && G.cutRide) {
       var driveT = G.cutRideT - 2.0;
       var speed2 = Math.min(26, driveT * 13);
-      G.cutRide.position.z -= speed2 * dt;
+      // pull out, then swing onto the side street
+      if (G.cutRide.position.z > -12) {
+        G.cutRide.position.z -= speed2 * dt;
+      } else {
+        G.cutRide.rotation.y = damp(G.cutRide.rotation.y, Math.PI * 1.5, 3.4, dt);
+        G.cutRide.position.x -= speed2 * dt * Math.min(1, (driveT - 1.0));
+        G.cutRide.position.z -= speed2 * dt * 0.25;
+      }
       if (Math.random() < 0.5) {
         emit(G.cutRide.position.x + rand(-1, 1), 0.2, G.cutRide.position.z + 3.4, 1,
           { color: 0x8a8f9c, speed: 0.6, life: 0.7, gravity: 1.2, size: 0.9 });
