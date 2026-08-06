@@ -776,7 +776,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.7.2';
+var GAME_VERSION = 'v1.7.3';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1933,7 +1933,7 @@ var LOCATIONS = [
     id: 'catacombs', name: 'The Bone Choir', short: 'Catacombs',
     fog: 0x0d0c0a, sky: 0x0f0e0c, ground: 0x393528, ground2: 0x4a4433,
     accent: 0x50e0a0, accent2: 0xd8d0b0, ambient: 0x2a3a32, sun: 0x60a888,
-    props: 'catacombs', fogNear: 12, fogFar: 68, rain: false, snow: false, embers: false,
+    props: 'catacombs', fogNear: 24, fogFar: 112, rain: false, snow: false, embers: false,
     boss: 'bonecaller',
     blurb: 'Under the keep: a choir with no mouths, singing anyway.'
   },
@@ -6748,7 +6748,9 @@ function buildActWorld(act) {
 
   clearWorld();
   scene.background = new THREE.Color(loc.sky);
-  scene.fog = new THREE.Fog(loc.fog, loc.fogNear, Math.max(loc.fogFar, size * 1.15));
+  /* fogNear must clear the camera boom (~9) with margin or the world fogs out
+     before it is drawn; fogFar must reach past the play space. */
+  scene.fog = new THREE.Fog(loc.fog, Math.max(20, loc.fogNear), Math.max(loc.fogFar, size * 1.15));
 
   // ---- lighting rig ----
   /* Interiors are lit by whatever is burning inside them, not by the moon.
@@ -6762,7 +6764,8 @@ function buildActWorld(act) {
     else { ambCol = 0x3a3630; sunCol = 0xffd0a0; sunPow = 0.34; ambPow = 0.8; }
     /* near must exceed the camera boom (~9) with margin, or the world fogs
        out before it is ever drawn. */
-    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45), 34, size * 1.1);
+    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45),
+                              Math.max(34, loc.fogNear), Math.max(size * 1.1, loc.fogFar));
     scene.background = new THREE.Color(mixHex(loc.fog, ambCol, 0.35));
   }
   worldGroup.add(new THREE.HemisphereLight(ambCol, 0x0a0a10, ambPow));
