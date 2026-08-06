@@ -776,7 +776,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.7.3';
+var GAME_VERSION = 'v1.7.4';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1931,8 +1931,8 @@ var LOCATIONS = [
   },
   {
     id: 'catacombs', name: 'The Bone Choir', short: 'Catacombs',
-    fog: 0x0d0c0a, sky: 0x0f0e0c, ground: 0x393528, ground2: 0x4a4433,
-    accent: 0x50e0a0, accent2: 0xd8d0b0, ambient: 0x2a3a32, sun: 0x60a888,
+    fog: 0x070806, sky: 0x070806, ground: 0x393528, ground2: 0x4a4433,
+    accent: 0x50e0a0, accent2: 0xd8d0b0, ambient: 0x241f18, sun: 0xb09070,
     props: 'catacombs', fogNear: 24, fogFar: 112, rain: false, snow: false, embers: false,
     boss: 'bonecaller',
     blurb: 'Under the keep: a choir with no mouths, singing anyway.'
@@ -2093,13 +2093,13 @@ var ACTS = [
     beats: [E('gorse'), F(3), T(), E('lamia'), X(3), F(3)] },
 
   /* ---------------- ACT IV — THE BONE CHOIR ---------------- */
-  { n: 'Ossuary', loc: 3, layout: 'linear', recruit: null, indoor: true, blurb: 'Mind the bones. Some of them are still employed.',
+  { n: 'Ossuary', loc: 3, layout: 'linear', recruit: null, blurb: 'Mind the bones. Some of them are still employed.',
     beats: [F(3), X(3), O(4), F(4)] },
-  { n: 'Drowned Crypt', loc: 3, layout: 'grid', recruit: null, indoor: true, blurb: 'Flooded. Singing. Neither of those should be true.',
+  { n: 'Drowned Crypt', loc: 3, layout: 'grid', recruit: null, blurb: 'Flooded. Singing. Neither of those should be true.',
     beats: [T(), F(3), Hn(3), T(), F(3)] },
-  { n: 'Rite of Marrow', loc: 3, layout: 'linear', recruit: null, indoor: true, blurb: 'Break the altars before the rite completes.',
+  { n: 'Rite of Marrow', loc: 3, layout: 'linear', recruit: null, blurb: 'Break the altars before the rite completes.',
     beats: [Gt(24), O(4), T(), F(3), E('ossuar')] },
-  { n: 'The Choirmaster', loc: 3, layout: 'grid', recruit: 'knight', indoor: true, blurb: 'Every bone in you already knows the tune.',
+  { n: 'The Choirmaster', loc: 3, layout: 'grid', recruit: 'knight', blurb: 'Every bone in you already knows the tune.',
     beats: [F(3), T(), X(3), F(4), B('bonecaller')] },
   { n: 'The Open Door', loc: 3, layout: 'linear', recruit: null, blurb: 'The choir was never a ritual. It was a hinge.',
     beats: [E('ossuar'), Gt(26), T(), F(4), Hn(3)] },
@@ -6764,9 +6764,9 @@ function buildActWorld(act) {
     else { ambCol = 0x3a3630; sunCol = 0xffd0a0; sunPow = 0.34; ambPow = 0.8; }
     /* near must exceed the camera boom (~9) with margin, or the world fogs
        out before it is ever drawn. */
-    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.45),
+    scene.fog = new THREE.Fog(mixHex(loc.fog, ambCol, 0.15),
                               Math.max(34, loc.fogNear), Math.max(size * 1.1, loc.fogFar));
-    scene.background = new THREE.Color(mixHex(loc.fog, ambCol, 0.35));
+    scene.background = new THREE.Color(mixHex(loc.fog, ambCol, 0.12));   // stay near-black; empty distance must not read as a wash
   }
   worldGroup.add(new THREE.HemisphereLight(ambCol, 0x0a0a10, ambPow));
   var moon = new THREE.DirectionalLight(sunCol, sunPow);
