@@ -776,7 +776,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.8.0';
+var GAME_VERSION = 'v1.9.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -5711,6 +5711,30 @@ function damageEntity(e, amount, srcX, srcZ, opts) {
   // difficulty scales incoming damage on the player's side only
   if (e.team === 'player') amount *= DIFFS[G.diffIdx === undefined ? 1 : G.diffIdx].dmg;
   amount = Math.max(1, amount);
+  /* Lamia's mirages pop on any contact. */
+  if (e.isDecoy) {
+    e.hp = 0;
+    emit(e.pos.x, e.pos.y + 1, e.pos.z, 18, { color: 0xc060ff, speed: 7, life: 0.5, gravity: 0 });
+    toast('A mirage');
+  }
+  /* The Crimson Guard's stance only breaks to a heavy; anything lighter is
+     turned aside and staggers the attacker instead. */
+  if (e.guarding) {
+    if (o.source === 'heavy' || o.source === 'special' || o.source === 'team') {
+      e.guarding = false; e.guardT = 0; e.invuln = 0; e.guardLock = 5;
+      e.stagger = Math.max(e.stagger, 1.2);
+      spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xffffff, 7, 0.6);
+      SFX.parry(); addShake(0.7);
+      toast('Guard broken');
+    } else {
+      // light attacks still chip through at a quarter rate, so the fight can
+      // never stall completely if the player has no heavy available
+      amount *= 0.25;
+      SFX.block();
+      spawnRing(e.pos.x, e.pos.y + 1, e.pos.z, 0xff6060, 2.4, 0.3);
+      if (o.by && o.by.kind === 'hero') o.by.stagger = Math.max(o.by.stagger, 0.35);
+    }
+  }
   e.hp -= amount;
   e.hitFlash = 0.18;
   e.lastAttacker = o.by || null;
@@ -6649,6 +6673,89 @@ function updateBoss(e, dt) {
       emit(e.pos.x, e.pos.y + 1.6, e.pos.z, 24, { color: 0x50e0b0, speed: 5, life: 0.7, gravity: 2 });
       toast('The choir sings — Bonecaller mends');
     }
+  } else if (sig === 'kroven' && e.sigT <= 0) {
+    /* Night Market broker: throws down a bounty marker. Stand in it and every
+       enemy in the level beelines for you; leave it and he re-places it. */
+    e.sigT = 10;
+    if (tgt) {
+      e.bountyX = tgt.pos.x; e.bountyZ = tgt.pos.z;
+      e.bountyT = 6;
+      spawnTelegraph(e.bountyX, 0.06, e.bountyZ, 6.5, 6, 0xe8c020);
+      toast('Kroven marks the ground — move off the bounty');
+    }
+  } else if (sig === 'tidewrack' && e.sigT <= 0) {
+    /* Drowned foreman: floods the arena. Standing still in the surge drags
+       you toward him; keep moving to break the pull. */
+    e.sigT = 12;
+    e.surgeT = 5;
+    spawnRing(e.pos.x, 0.1, e.pos.z, 0x30d0b0, 22, 1.4);
+    tone(70, 1.4, 'sawtooth', 0.16, 34);
+    toast('The tide turns — keep moving');
+  } else if (sig === 'lamia' && e.sigT <= 0 && e.phase >= 1) {
+    /* Handmaid: splits into decoys. Only one is real; hitting a copy pops it. */
+    e.sigT = 14;
+    var di3, made = [];
+    for (di3 = 0; di3 < 3; di3++) {
+      var da = rand(0, Math.PI * 2), dr = rand(7, 13);
+      var dx2 = clamp(e.pos.x + Math.sin(da) * dr, -G.stage.size / 2 + 5, G.stage.size / 2 - 5);
+      var dz2 = clamp(e.pos.z + Math.cos(da) * dr, -G.stage.size / 2 + 5, G.stage.size / 2 - 5);
+      var dec = makeEnemy('vampire', dx2, dz2, false);
+      dec.maxHp = 1; dec.hp = 1;
+      dec.isDecoy = true;
+      dec.name = 'Mirage';
+      dec.root.scale.multiplyScalar(1.18);
+      made.push(dec);
+    }
+    e.invuln = Math.max(e.invuln, 0.4);
+    bossBlink(e, tgt);
+    spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xc060ff, 6, 0.7);
+    toast('Lady Lamia scatters — find the real one');
+  } else if (sig === 'ossuar' && e.sigT <= 0) {
+    /* First Voice: raises a bone wall between you and him, forcing a flank. */
+    e.sigT = 11;
+    if (tgt) {
+      var wa2 = angleTo(e.pos.x, e.pos.z, tgt.pos.x, tgt.pos.z);
+      var wmx = (e.pos.x + tgt.pos.x) / 2, wmz = (e.pos.z + tgt.pos.z) / 2;
+      var seg2;
+      for (seg2 = -2; seg2 <= 2; seg2++) {
+        var sxx = wmx + Math.cos(wa2) * seg2 * 2.6;
+        var szz = wmz - Math.sin(wa2) * seg2 * 2.6;
+        var wallM = addProp(sxx, 0, szz, 2.4, 5, 2.4, 0xcfc6b0, { force: true });
+        if (wallM) {
+          G.boneWalls = G.boneWalls || [];
+          G.boneWalls.push({ mesh: wallM, life: 8 });
+        }
+      }
+      emit(wmx, 1, wmz, 24, { color: 0xd8d0b8, speed: 7, life: 0.7, gravity: -4 });
+      SFX.big();
+      toast('Ossuar raises the dead between you');
+    }
+  } else if (sig === 'crimsonguard' && e.sigT <= 0 && !e.guardLock) {
+    /* Vhalimar's shield: raises guard until you break the stance with a heavy.
+       guardLock stops it re-raising the instant it is broken. */
+    e.sigT = 13;
+    e.guarding = true;
+    e.guardT = 6;
+    spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xff3040, 5, 0.7);
+    toast('Guard up — break it with a HEAVY');
+  } else if (sig === 'deadpool' && e.sigT <= 0) {
+    /* Merc: regenerates, and taunts while doing it. */
+    e.sigT = 9;
+    if (e.hp < e.maxHp * 0.85) {
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.07);
+      emit(e.pos.x, e.pos.y + 1.4, e.pos.z, 20, { color: 0xff5a6a, speed: 5, life: 0.7, gravity: 2 });
+      toast(pick(['Deadpool: Healing factor! Suck it.',
+                  'Deadpool: I regenerate. It is my whole thing.',
+                  'Deadpool: Did that hurt? It grew back.']));
+    }
+  } else if (sig === 'carti' && e.sigT <= 0) {
+    /* King Vamp: drops the bass — a shockwave plus a crowd surge. */
+    e.sigT = 11;
+    spawnTelegraph(e.pos.x, e.pos.y, e.pos.z, 12, 0.8, 0xd81020);
+    G.pendingWaves.push({ x: e.pos.x, z: e.pos.z, t: 0.8, dmg: e.def.dmg * 0.8, owner: e });
+    bossSummon(e, 4 + e.phase);
+    tone(48, 1.3, 'sawtooth', 0.2, 28);
+    toast('Carti drops the bass');
   } else if (sig === 'vhalimar' && e.sigT <= 0 && e.phase >= 2) {
     e.sigT = 12;                                 // thirst: drains you to heal
     if (tgt && d < 18) {
@@ -6659,6 +6766,47 @@ function updateBoss(e, dt) {
       toast('Vhalimar drinks');
     }
   }
+  /* ---- upkeep for the signature mechanics ---- */
+  if (e.bountyT > 0) {
+    e.bountyT -= dt;
+    if (player && dist2(player.pos.x, player.pos.z, e.bountyX, e.bountyZ) < 42) {
+      // standing in the bounty: every enemy converges on you
+      var bi5;
+      for (bi5 = 0; bi5 < enemies.length; bi5++) {
+        if (!enemies[bi5].dead) enemies[bi5].aiTarget = player;
+      }
+      if (Math.random() < 0.1) emit(e.bountyX, 0.3, e.bountyZ, 2,
+        { color: 0xe8c020, speed: 3, life: 0.6, gravity: 2 });
+    }
+  }
+  if (e.surgeT > 0) {
+    e.surgeT -= dt;
+    if (player) {
+      var mv = Math.sqrt(player.vel.x * player.vel.x + player.vel.z * player.vel.z);
+      if (mv < 3.5) {   // standing still: dragged toward him
+        var sdx = e.pos.x - player.pos.x, sdz = e.pos.z - player.pos.z;
+        var sdl = Math.sqrt(sdx * sdx + sdz * sdz) || 1;
+        player.vel.x += (sdx / sdl) * 13 * dt;
+        player.vel.z += (sdz / sdl) * 13 * dt;
+      }
+    }
+    if (Math.random() < 0.35) emit(e.pos.x + rand(-9, 9), 0.2, e.pos.z + rand(-9, 9), 1,
+      { color: 0x30d0b0, speed: 1.4, life: 0.8, gravity: 1.6, size: 0.9 });
+  }
+  if (e.guardLock > 0) e.guardLock -= dt;
+  if (e.guarding) {
+    e.guardT -= dt;
+    /* Do NOT set invuln here — damageEntity already decides what the stance
+       turns aside. Setting it every frame made the boss unkillable. */
+    if (e.guardT <= 0) {
+      e.guarding = false;
+      e.guardLock = 5;
+      toast('The guard drops');
+    }
+    if (Math.random() < 0.2) emit(e.pos.x, e.pos.y + 1.6, e.pos.z, 1,
+      { color: 0xff3040, speed: 1.2, life: 0.5, gravity: 1.4, size: 0.7 });
+  }
+
   // ward drops once the summons are dead
   if (e.warded) {
     e.wardT = (e.wardT || 0) - dt;
@@ -6745,6 +6893,26 @@ function bossRing(e) {
   spawnTelegraph(e.pos.x, e.pos.y, e.pos.z, 4.5, 0.65, 0xff5030);
   tone(220, 0.6, 'sawtooth', 0.1, 70);
   G.pendingWaves.push({ x: e.pos.x, z: e.pos.z, t: 0.65, dmg: e.def.dmg * 0.9, owner: e });
+}
+function updateBoneWalls(dt) {
+  if (!G.boneWalls || !G.boneWalls.length) return;
+  var i, w;
+  for (i = G.boneWalls.length - 1; i >= 0; i--) {
+    w = G.boneWalls[i];
+    w.life -= dt;
+    if (w.life <= 0) {
+      if (w.mesh) {
+        if (w.mesh.parent) w.mesh.parent.remove(w.mesh);
+        if (w.mesh.userData && w.mesh.userData.col) {
+          var ci = colliders.indexOf(w.mesh.userData.col);
+          if (ci >= 0) colliders.splice(ci, 1);
+        }
+        emit(w.mesh.position.x, 1, w.mesh.position.z, 8,
+          { color: 0xd8d0b8, speed: 4, life: 0.5, gravity: -6 });
+      }
+      G.boneWalls.splice(i, 1);
+    }
+  }
 }
 function updatePendingWaves(dt) {
   var i, w;
@@ -7480,6 +7648,7 @@ function startAct(index, isVs) {
   G.reviveT = 0; G.vsWave = 0;
   G.beatIndex = -1; G.beat = null; G.beatKills = 0;
   G.finisherT = 0; G.finisherCd = 0;
+  G.boneWalls = [];
   G.bossesBeaten = [];
 
   var stage = buildActWorld(act);
@@ -9901,6 +10070,7 @@ function loop(now) {
     updateProjectiles(dt);
     updateShockwaves(dt);
     updatePendingWaves(dt);
+    updateBoneWalls(dt);
     updateWorld(dt);
     reviveCheck(raw);
     updateBossDeath(raw);
