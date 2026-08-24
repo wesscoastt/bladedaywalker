@@ -752,6 +752,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 
+
 /* ============================================================================
    BLADE: DAYWALKER — NIGHT HUNT
    A single-file Three.js r128 action game inspired by Marvel team-up brawlers.
@@ -777,7 +778,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v1.9.1';
+var GAME_VERSION = 'v3.1.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1538,9 +1539,21 @@ var PAD_LAYOUTS = {
 };
 var PAD_ORDER = ['fof', 'brawler', 'triggers'];
 var padPrev = {};
+var padBlocked = false;
 function pollGamepad() {
-  if (!navigator.getGamepads) return;
-  var pads = navigator.getGamepads(), gp = null, i;
+  if (!navigator.getGamepads || padBlocked) return;
+  /* Embedding the game in an iframe without allow="gamepad" makes this throw
+     a SecurityError on every frame. Fail once, disable, and carry on — the
+     game is fully playable on keyboard and touch without a pad. */
+  var pads;
+  try {
+    pads = navigator.getGamepads();
+  } catch (e) {
+    padBlocked = true;
+    return;
+  }
+  if (!pads) return;
+  var gp = null, i;
   for (i = 0; i < pads.length; i++) { if (pads[i] && pads[i].connected) { gp = pads[i]; break; } }
   if (!gp) return;
   var dz = 0.22;
@@ -2586,6 +2599,594 @@ function meshBox(w, h, d, color, emissive) { return new THREE.Mesh(boxGeo(w, h, 
    Everything is primitives so it stays a single file with zero assets.
    Returned `parts` are animated procedurally by the animation system.
    ========================================================================== */
+/* ==========================================================================
+   [GEO] shapeGeo — chamfered, tapered limb geometry.
+
+   Replaces raw boxGeo() for body parts. Built as a stack of rounded-rect
+   rings lofted along Y, which gives three things a box cannot:
+     - a taper from one end to the other (shoulders down to waist, thigh to
+       knee, forearm to wrist)
+     - chamfered edges, which catch the light and read far better under the
+       game's flat Lambert shading
+     - an optional profile bulge (the calf muscle, the chest)
+
+   Authored in Blender first and verified against the exact part dimensions
+   and pivots in makeHumanoid, so it drops in without touching animation.
+   Dimensions and origin match boxGeo(w, h, d) exactly.
+   ========================================================================== */
+var _shapeCache = {};
+function shapeGeo(w, h, d, o) {
+  o = o || {};
+  var bevel = o.bevel === undefined ? Math.min(w, d) * 0.16 : o.bevel;
+  var botF = o.bot === undefined ? 1 : o.bot;      // scale at the bottom
+  var topF = o.top === undefined ? 1 : o.top;      // scale at the top
+  var bulge = o.bulge || 0;                        // mid-height swell
+  var bow = o.bow || 0;                            // push +Z at mid height
+  var CS = o.seg || 3;                             // points per corner
+
+  var key = [w, h, d, bevel, botF, topF, bulge, bow, CS].join('_');
+  if (_shapeCache[key]) return _shapeCache[key];
+
+  bevel = Math.min(bevel, Math.min(w, d) * 0.35, h * 0.35);
+  var hw = w / 2, hd = d / 2, hh = h / 2;
+
+  // ring heights: flat cap, chamfer, body, chamfer, flat cap
+  var rings = [
+    { y: -hh, inset: true },
+    { y: -hh + bevel, inset: false },
+    { y: hh - bevel, inset: false },
+    { y: hh, inset: true }
+  ];
+
+  function ringPoints(a, b, rc) {
+    var pts = [], c, s, sx, sz, cx, cz, a0, ang;
+    var corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+    rc = Math.max(0.001, Math.min(rc, a * 0.9, b * 0.9));
+    for (c = 0; c < 4; c++) {
+      sx = corners[c][0]; sz = corners[c][1];
+      cx = sx * (a - rc); cz = sz * (b - rc);
+      a0 = Math.atan2(sz, sx) - Math.PI / 4;
+      for (s = 0; s < CS; s++) {
+        ang = a0 + (s / CS) * (Math.PI / 2);
+        pts.push([cx + Math.cos(ang) * rc, cz + Math.sin(ang) * rc]);
+      }
+    }
+    return pts;
+  }
+
+  var i, j, t, f, a, b, rc, pts;
+  var loops = [], ys = [];
+  for (i = 0; i < rings.length; i++) {
+    t = (rings[i].y + hh) / h;                     // 0 at the sole, 1 at the top
+    f = botF + (topF - botF) * t;
+    if (bulge) f *= 1 + bulge * Math.sin(t * Math.PI);
+    a = hw * f; b = hd * f; rc = bevel * f;
+    if (rings[i].inset) { a = Math.max(0.002, a - bevel); b = Math.max(0.002, b - bevel); }
+    pts = ringPoints(a, b, rc);
+    if (bow) {
+      // scale by how far forward the point already is, so the chest swells
+      // smoothly instead of stepping at z = 0
+      for (j = 0; j < pts.length; j++) {
+        var fwd = clamp(pts[j][1] / Math.max(0.001, b), 0, 1);
+        pts[j][1] += bow * Math.sin(t * Math.PI) * fwd;
+      }
+    }
+    loops.push(pts);
+    ys.push(rings[i].y);
+  }
+
+  var N = loops[0].length, pos = [];
+  function push(p) { pos.push(p[0], p[1], p[2]); }
+  function V(li, k) { return [loops[li][k][0], ys[li], loops[li][k][1]]; }
+
+  // side bands
+  for (i = 0; i < loops.length - 1; i++) {
+    for (j = 0; j < N; j++) {
+      var k2 = (j + 1) % N;
+      var v00 = V(i, j), v01 = V(i, k2), v10 = V(i + 1, j), v11 = V(i + 1, k2);
+      push(v00); push(v10); push(v11);
+      push(v00); push(v11); push(v01);
+    }
+  }
+  // caps as fans
+  /* Cap winding must run opposite to the side bands or the renderer culls
+     them and the part reads as an open shell — this is what made car panels
+     disappear from certain angles. */
+  var cBot = [0, ys[0], 0], cTop = [0, ys[ys.length - 1], 0];
+  for (j = 0; j < N; j++) {
+    var n2 = (j + 1) % N;
+    push(cBot); push(V(0, j)); push(V(0, n2));
+    push(cTop); push(V(loops.length - 1, n2)); push(V(loops.length - 1, j));
+  }
+
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.computeVertexNormals();     // non-indexed -> per-face normals, stays faceted
+  _shapeCache[key] = g;
+  return g;
+}
+
+/* ==========================================================================
+   [GEO] bladeGeo — a real sword blade instead of a flat slab.
+
+   The old blade was boxGeo(0.1, 1.68, 0.03) with a separate edge strip glued
+   to one side: a rectangle, dead flat, with no distal taper and no cross
+   section. It reads as a plank at any distance.
+
+   This lofts a single-edged cross-section along the length:
+       spine (thick, flat) -> bevel -> cutting edge (zero thickness)
+   with a distal taper in both width and thickness, and a clip point at the
+   tip. Two bevel facets per side means the blade actually catches light as it
+   swings, which is most of what sells a sword.
+
+   Runs from y = 0 (guard) to y = len (tip), matching the primitive it
+   replaces, so the weapon pitch solver is unaffected.
+   ========================================================================== */
+function bladeGeo(len, w, t, o) {
+  o = o || {};
+  var key = 'blade_' + [len, w, t, o.rings || 8].join('_');
+  if (_shapeCache[key]) return _shapeCache[key];
+
+  var RINGS = o.rings || 8;
+  var tipStart = 0.84;            // where the clip point begins
+  var i, j;
+
+  function section(u) {
+    // distal taper: the blade loses width and thickness toward the point
+    var wf, tf, skew;
+    if (u <= tipStart) {
+      var a = u / tipStart;
+      wf = 1 - 0.18 * a;
+      tf = 1 - 0.40 * a;
+      skew = 0;
+    } else {
+      var b = (u - tipStart) / (1 - tipStart);
+      wf = 0.82 * (1 - b) + 0.05 * b;
+      tf = 0.60 * (1 - b) + 0.04 * b;
+      skew = 0.42 * b * b;        // spine sweeps toward the edge = clip point
+    }
+    var hw = (w / 2) * wf, ht = (t / 2) * tf;
+    var sp = -hw + (hw * 2) * skew;
+    // counter-clockwise looking down the blade from the tip
+    return [
+      [sp, ht],                   // spine, top face
+      [hw * 0.15, ht * 0.78],     // top bevel shoulder
+      [hw, 0],                    // cutting edge
+      [hw * 0.15, -ht * 0.78],    // bottom bevel shoulder
+      [sp, -ht]                   // spine, bottom face
+    ];
+  }
+
+  var loops = [], ys = [];
+  for (i = 0; i <= RINGS; i++) {
+    var u = i / RINGS;
+    loops.push(section(u));
+    ys.push(u * len);
+  }
+
+  var N = 5, pos = [];
+  function P(li, k) { return [loops[li][k][0], ys[li], loops[li][k][1]]; }
+  function push(p) { pos.push(p[0], p[1], p[2]); }
+
+  /* section() walks the profile spine -> edge -> spine, which is the reverse
+     rotational order of shapeGeo's rings, so these bands wind the other way. */
+  for (i = 0; i < loops.length - 1; i++) {
+    for (j = 0; j < N; j++) {
+      var k = (j + 1) % N;
+      var v00 = P(i, j), v01 = P(i, k), v10 = P(i + 1, j), v11 = P(i + 1, k);
+      push(v00); push(v11); push(v10);
+      push(v00); push(v01); push(v11);
+    }
+  }
+  // cap the base against the guard; the tip converges on its own
+  var base = [0, ys[0], 0];
+  for (j = 0; j < N; j++) {
+    var k2 = (j + 1) % N;
+    push(base); push(P(0, k2)); push(P(0, j));
+  }
+
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.computeVertexNormals();
+  _shapeCache[key] = g;
+  return g;
+}
+
+/* Tapered gun barrel / staff shaft: a chamfered tube with a muzzle taper. */
+function barrelGeo(len, r0, r1, o) {
+  o = o || {};
+  var SEG = o.seg || 8;
+  var key = 'barrel_' + [len, r0, r1, SEG].join('_');
+  if (_shapeCache[key]) return _shapeCache[key];
+  var pos = [], i, j;
+  var steps = [0, 0.08, 0.85, 1];
+  var loops = [], zs = [];
+  for (i = 0; i < steps.length; i++) {
+    var u = steps[i];
+    var r = r0 + (r1 - r0) * u;
+    if (i === 0) r *= 0.82;                 // chamfer at the breech
+    if (i === steps.length - 1) r *= 0.86;  // chamfer at the muzzle
+    var ring = [];
+    for (j = 0; j < SEG; j++) {
+      var a = (j / SEG) * Math.PI * 2 + Math.PI / SEG;
+      ring.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    loops.push(ring); zs.push((u - 0.5) * len);
+  }
+  function P(li, k) { return [loops[li][k][0], loops[li][k][1], zs[li]]; }
+  function push(p) { pos.push(p[0], p[1], p[2]); }
+  for (i = 0; i < loops.length - 1; i++) {
+    for (j = 0; j < SEG; j++) {
+      var k = (j + 1) % SEG;
+      var v00 = P(i, j), v01 = P(i, k), v10 = P(i + 1, j), v11 = P(i + 1, k);
+      push(v00); push(v11); push(v10);
+      push(v00); push(v01); push(v11);
+    }
+  }
+  var cb = [0, 0, zs[0]], ct = [0, 0, zs[zs.length - 1]];
+  for (j = 0; j < SEG; j++) {
+    var k3 = (j + 1) % SEG;
+    push(cb); push(P(0, k3)); push(P(0, j));
+    push(ct); push(P(loops.length - 1, j)); push(P(loops.length - 1, k3));
+  }
+  var g2 = new THREE.BufferGeometry();
+  g2.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g2.computeVertexNormals();
+  _shapeCache[key] = g2;
+  return g2;
+}
+
+
+/* Ribbed drum: a barrel with rolled top/bottom hoops and a mid rib, instead of
+   a plain cylinder. */
+function drumGeo(r, h, o) {
+  o = o || {};
+  var SEG = o.seg || 10;
+  var key = 'drum_' + [r, h, SEG].join('_');
+  if (_shapeCache[key]) return _shapeCache[key];
+  var prof = [[0.0, 0.86], [0.05, 1.0], [0.13, 0.97], [0.45, 1.0], [0.55, 1.0],
+              [0.87, 0.97], [0.95, 1.0], [1.0, 0.86]];
+  var loops = [], ys = [], i, j;
+  for (i = 0; i < prof.length; i++) {
+    var rr = r * prof[i][1], ring = [];
+    for (j = 0; j < SEG; j++) {
+      var a = (j / SEG) * Math.PI * 2;
+      ring.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+    }
+    loops.push(ring); ys.push((prof[i][0] - 0.5) * h);
+  }
+  var pos = [];
+  function P(li, k) { return [loops[li][k][0], ys[li], loops[li][k][1]]; }
+  function push(p) { pos.push(p[0], p[1], p[2]); }
+  for (i = 0; i < loops.length - 1; i++) {
+    for (j = 0; j < SEG; j++) {
+      var k = (j + 1) % SEG;
+      var v00 = P(i, j), v01 = P(i, k), v10 = P(i + 1, j), v11 = P(i + 1, k);
+      push(v00); push(v10); push(v11);
+      push(v00); push(v11); push(v01);
+    }
+  }
+  var cb = [0, ys[0], 0], ct = [0, ys[ys.length - 1], 0];
+  for (j = 0; j < SEG; j++) {
+    var k2 = (j + 1) % SEG;
+    push(cb); push(P(0, j)); push(P(0, k2));
+    push(ct); push(P(loops.length - 1, k2)); push(P(loops.length - 1, j));
+  }
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.computeVertexNormals();
+  _shapeCache[key] = g;
+  return g;
+}
+
+
+/* Decorative detail gate. The model overhaul added cornices, string courses,
+   crate battens, container rails and column banding — all pure decoration that
+   costs a draw call each. On low quality (which mobile selects by default on
+   small screens) they are skipped, keeping the silhouette work but shedding
+   the trim. */
+function detail() { return G.quality !== 'low'; }
+
+
+/* ==========================================================================
+   [PERF] mergeStatics — batch static world geometry into a few draw calls.
+
+   The model overhaul left an Act at ~1,800 meshes before a single enemy
+   spawns, and Three.js issues one draw call per mesh. Everything built by
+   addProp/addDecor is static scenery, so it can be baked into one merged mesh
+   per material.
+
+   Collision is unaffected: colliders are separate AABB records, not meshes.
+   Anything the game keeps a handle on and later mutates — moving platforms,
+   the boss's bone walls, zone beacons, the garage shutter, animated shards —
+   is excluded, either because it is not flagged or because it is unflagged
+   here explicitly.
+   ========================================================================== */
+function mergeStatics() {
+  var i, j, k;
+  // never merge anything that is animated or later removed individually
+  for (i = 0; i < platforms.length; i++) {
+    if (platforms[i]) platforms[i].userData.mergeable = false;
+  }
+  if (G.boneWalls) {
+    for (i = 0; i < G.boneWalls.length; i++) {
+      if (G.boneWalls[i].mesh) G.boneWalls[i].mesh.userData.mergeable = false;
+    }
+  }
+  for (i = 0; i < colliders.length; i++) {
+    if (colliders[i].mover && colliders[i].mesh) colliders[i].mesh.userData.mergeable = false;
+  }
+
+  var groups = {}, list = [];
+  worldGroup.traverse(function (o) {
+    if (o.isMesh && o.userData.mergeable && o.geometry && o.material) list.push(o);
+  });
+  for (i = 0; i < list.length; i++) {
+    var m = list[i], mat = m.material;
+    var key = mat.color.getHexString() + '_' +
+      (mat.emissive ? mat.emissive.getHexString() : '000000') + '_' +
+      (mat.transparent ? 1 : 0) + '_' + (mat.opacity === undefined ? 1 : mat.opacity.toFixed(2)) +
+      '_' + (m.castShadow ? 1 : 0);
+    if (!groups[key]) groups[key] = { mat: mat, cast: m.castShadow, items: [] };
+    groups[key].items.push(m);
+  }
+
+  var merged = 0, removed = 0;
+  var v = new THREE.Vector3(), nm = new THREE.Matrix3();
+  for (k in groups) {
+    var g = groups[k];
+    if (g.items.length < 4) continue;          // not worth a batch
+    var pos = [], nor = [];
+    for (i = 0; i < g.items.length; i++) {
+      var src = g.items[i];
+      src.updateMatrixWorld(true);
+      var geo = src.geometry;
+      var pa = geo.attributes.position, na = geo.attributes.normal;
+      if (!pa) continue;
+      nm.getNormalMatrix(src.matrixWorld);
+      var idx = geo.index ? geo.index.array : null;
+      var count = idx ? idx.length : pa.count;
+      for (j = 0; j < count; j++) {
+        var vi = idx ? idx[j] : j;
+        v.set(pa.getX(vi), pa.getY(vi), pa.getZ(vi)).applyMatrix4(src.matrixWorld);
+        pos.push(v.x, v.y, v.z);
+        if (na) {
+          v.set(na.getX(vi), na.getY(vi), na.getZ(vi)).applyMatrix3(nm).normalize();
+          nor.push(v.x, v.y, v.z);
+        }
+      }
+    }
+    if (!pos.length) continue;
+    var bg = new THREE.BufferGeometry();
+    bg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    if (nor.length === pos.length) {
+      bg.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(nor), 3));
+    } else {
+      bg.computeVertexNormals();
+    }
+    var batch = new THREE.Mesh(bg, g.mat);
+    batch.castShadow = g.cast;
+    batch.receiveShadow = true;
+    batch.userData.merged = true;
+    worldGroup.add(batch);
+    for (i = 0; i < g.items.length; i++) {
+      var it = g.items[i];
+      if (it.parent) it.parent.remove(it);
+      removed++;
+    }
+    merged++;
+  }
+  return { batches: merged, removed: removed };
+}
+
+/* ==========================================================================
+   [GEO] headGeo / handGeo — PS1/PS2-era character detail.
+
+   A head built from one tapered box reads as a brick no matter how it is
+   shaded. Real low-poly characters of that era spent their budget on the
+   silhouette landmarks the eye actually reads: brow, nose, cheek, chin, and
+   the back of the skull. This lofts a head from horizontal slices whose
+   cross-sections change shape with height, so the profile has a face.
+
+   handGeo does the same for hands: a palm block with a thumb ridge and a
+   tapered finger mass instead of a cube, which is the other thing that
+   instantly reads as "blocky".
+   ========================================================================== */
+/* ==========================================================================
+   [GEO] headGeo — PS2-era head, rebuilt.
+
+   The previous version took `brow` and `nose` as multipliers around 1 and had
+   no control over jaw, cheek, chin or cranium, so every character shared one
+   face. This one is driven by real anatomical parameters and was shaped in
+   Blender until the profile and front both read before being ported.
+
+   Structure: tapered jaw, cheekbones at the widest point, a brow ridge formed
+   by the ring profile itself (a separate brow plate reads as a shelf bolted to
+   the face), an occipital bulge, and a nose wedge that runs from the bridge
+   down past the nostrils and undercuts back to the face.
+
+   Faceted and low poly on purpose — silhouette first, no smoothing.
+   ========================================================================== */
+function headGeo(w, h, d, o) {
+  o = o || {};
+  var jaw = o.jaw === undefined ? 0.78 : o.jaw;
+  var cheek = o.cheek === undefined ? 1.0 : o.cheek;
+  var brow = o.brow === undefined ? 0.045 : o.brow;
+  var nose = o.nose === undefined ? 0.55 : o.nose;
+  var chin = o.chin === undefined ? 0.008 : o.chin;
+  var occ = o.occ === undefined ? 0.06 : o.occ;
+  var CS = o.seg || 2;
+
+  var key = 'head_' + [w, h, d, jaw, cheek, brow, nose, chin, occ, CS].join('_');
+  if (_shapeCache[key]) return _shapeCache[key];
+
+  // [t, widthScale, depthScale, zOffset]
+  var prof = [
+    [0.00, jaw * 0.46, 0.56, 0.034 + chin],
+    [0.13, jaw * 0.78, 0.83, 0.022 + chin * 0.6],
+    [0.30, cheek * 0.97, 0.98, 0.006],
+    [0.46, cheek * 1.03, 1.00, 0.004],
+    [0.60, cheek * 0.99, 1.00, brow * 1.5],
+    [0.72, 0.96, 0.98, brow * 0.55],
+    [0.86, 0.92, 0.92, -occ * 0.4],
+    [1.00, 0.70, 0.70, -occ]
+  ];
+
+  var hw = w / 2, hd = d / 2, hh = h / 2, rc0 = Math.min(w, d) * 0.15;
+  var i2, j2, pos = [];
+
+  function ring(a2, b2, rc) {
+    var pts = [], c, s, sx, sz, cx, cz, a0, ang;
+    rc = Math.max(0.001, Math.min(rc, a2 * 0.85, b2 * 0.85));
+    var corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+    for (c = 0; c < 4; c++) {
+      sx = corners[c][0]; sz = corners[c][1];
+      cx = sx * (a2 - rc); cz = sz * (b2 - rc);
+      a0 = Math.atan2(sz, sx) - Math.PI / 4;
+      for (s = 0; s < CS; s++) {
+        ang = a0 + (s / CS) * (Math.PI / 2);
+        pts.push([cx + Math.cos(ang) * rc, cz + Math.sin(ang) * rc]);
+      }
+    }
+    return pts;
+  }
+
+  var loops = [], ys = [];
+  for (i2 = 0; i2 < prof.length; i2++) {
+    var a3 = hw * prof[i2][1], b3 = hd * prof[i2][2], zo = prof[i2][3];
+    var pts = ring(a3, b3, rc0 * prof[i2][1]);
+    for (j2 = 0; j2 < pts.length; j2++) {
+      if (pts[j2][1] > 0) pts[j2][1] += zo * (pts[j2][1] / Math.max(0.001, b3));
+    }
+    loops.push(pts); ys.push(-hh + prof[i2][0] * h);
+  }
+
+  var N = loops[0].length;
+  function P(li, k) { return [loops[li][k][0], ys[li], loops[li][k][1]]; }
+  function push(p) { pos.push(p[0], p[1], p[2]); }
+  function quad(p1, p2, p3, p4) { push(p1); push(p2); push(p3); push(p1); push(p3); push(p4); }
+
+  for (i2 = 0; i2 < loops.length - 1; i2++) {
+    for (j2 = 0; j2 < N; j2++) {
+      var k3 = (j2 + 1) % N;
+      quad(P(i2, j2), P(i2 + 1, j2), P(i2 + 1, k3), P(i2, k3));
+    }
+  }
+  var cb = [0, ys[0], 0], ct = [0, ys[ys.length - 1], 0];
+  for (j2 = 0; j2 < N; j2++) {
+    var k4 = (j2 + 1) % N;
+    push(cb); push(P(0, j2)); push(P(0, k4));
+    push(ct); push(P(loops.length - 1, k4)); push(P(loops.length - 1, j2));
+  }
+
+  if (nose > 0) {
+    var nz = hd * 0.99;
+    var yBr = -hh + 0.585 * h, yTip = -hh + 0.375 * h, yBase = -hh + 0.315 * h;
+    var wBr = hw * 0.115, wTip = hw * 0.20;
+    var pj = hd * 0.72 * nose, pjB = hd * 0.30 * nose;
+    var brL = [-wBr, yBr, nz * 0.96], brR = [wBr, yBr, nz * 0.96];
+    var tpL = [-wTip * 0.55, yTip, nz + pj], tpR = [wTip * 0.55, yTip, nz + pj];
+    var baL = [-wTip, yBase, nz + pjB], baR = [wTip, yBase, nz + pjB];
+    var flL = [-wTip, yBase, nz * 0.94], flR = [wTip, yBase, nz * 0.94];
+    // reversed winding: the nose faces must point away from the head
+    quad(tpL, tpR, brR, brL);
+    quad(flL, baL, tpL, brL);
+    quad(tpR, baR, flR, brR);
+    quad(baL, baR, tpR, tpL);
+    quad(flL, flR, baR, baL);
+  }
+
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.computeVertexNormals();
+  _shapeCache[key] = g;
+  return g;
+}
+
+/* Palm with a thumb ridge and tapered fingers. Hand hangs down -Y. */
+function handGeo(w, h, d, o) {
+  o = o || {};
+  var side = o.side === undefined ? 1 : o.side;   // +1 right, -1 left
+  var key = 'hand_' + [w, h, d, side].join('_');
+  if (_shapeCache[key]) return _shapeCache[key];
+  var SEG = 8, i, j;
+  // [t, widthF, depthF, thumbOut]
+  var slices = [
+    [0.00, 0.72, 0.78, 0.00],   // fingertips
+    [0.22, 0.92, 0.96, 0.00],   // knuckles
+    [0.52, 1.00, 1.00, 0.34],   // palm + thumb
+    [0.80, 0.90, 0.92, 0.16],   // heel of hand
+    [1.00, 0.74, 0.80, 0.00]    // wrist
+  ];
+  var loops = [], ys = [];
+  for (i = 0; i < slices.length; i++) {
+    var sl = slices[i];
+    var a = (w / 2) * sl[1], b = (d / 2) * sl[2], ring = [];
+    for (j = 0; j < SEG; j++) {
+      var ang = (j / SEG) * Math.PI * 2;
+      var cx = Math.cos(ang), cz = Math.sin(ang);
+      var sq = 0.6;
+      var px = cx * a * (1 - sq + sq * Math.abs(cx));
+      var pz = cz * b * (1 - sq + sq * Math.abs(cz));
+      if (cx * side > 0.4) px += sl[3] * w * 0.5 * cx * side;   // thumb mass
+      ring.push([px, pz]);
+    }
+    loops.push(ring);
+    ys.push((0.5 - sl[0]) * h);
+  }
+  var pos = [];
+  function P2(li, k) { return [loops[li][k][0], ys[li], loops[li][k][1]]; }
+  function push2(p) { pos.push(p[0], p[1], p[2]); }
+  for (i = 0; i < loops.length - 1; i++) {
+    for (j = 0; j < SEG; j++) {
+      var k = (j + 1) % SEG;
+      var v00 = P2(i, j), v01 = P2(i, k), v10 = P2(i + 1, j), v11 = P2(i + 1, k);
+      push2(v00); push2(v11); push2(v10);
+      push2(v00); push2(v01); push2(v11);
+    }
+  }
+  var cb2 = [0, ys[0], 0], ct2 = [0, ys[ys.length - 1], 0];
+  for (j = 0; j < SEG; j++) {
+    var k3 = (j + 1) % SEG;
+    push2(cb2); push2(P2(0, k3)); push2(P2(0, j));
+    push2(ct2); push2(P2(loops.length - 1, j)); push2(P2(loops.length - 1, k3));
+  }
+  var g2 = new THREE.BufferGeometry();
+  g2.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g2.computeVertexNormals();
+  _shapeCache[key] = g2;
+  return g2;
+}
+
+/* Per-character head shapes. Anyone not listed gets the default. */
+var HEAD_SHAPES = {
+  blade:    { jaw: 0.86, cheek: 1.00, brow: 0.055, nose: 0.62, chin: 0.010, occ: 0.05 },
+  whistler: { jaw: 0.60, cheek: 0.94, brow: 0.026, nose: 0.40, chin: 0.002, occ: 0.08 },
+  elsa:     { jaw: 0.62, cheek: 0.96, brow: 0.028, nose: 0.42, chin: 0.004, occ: 0.075 },
+  lamia:    { jaw: 0.58, cheek: 0.95, brow: 0.030, nose: 0.40, chin: 0.002, occ: 0.08 },
+  vrasta:   { jaw: 0.60, cheek: 0.97, brow: 0.034, nose: 0.44, chin: 0.004, occ: 0.075 },
+  carti:    { jaw: 0.70, cheek: 0.96, brow: 0.038, nose: 0.50, chin: 0.006, occ: 0.06 },
+  spider:   { jaw: 0.72, cheek: 0.96, brow: 0.020, nose: 0.30, chin: 0.004, occ: 0.06 },
+  deadpool: { jaw: 0.76, cheek: 0.98, brow: 0.022, nose: 0.32, chin: 0.006, occ: 0.06 },
+  knight:   { jaw: 0.78, cheek: 0.98, brow: 0.030, nose: 0.35, chin: 0.006, occ: 0.06 },
+  rider:    { jaw: 0.80, cheek: 0.96, brow: 0.060, nose: 0.50, chin: 0.010, occ: 0.05 },
+  // enemies: heavier and more brutal the bigger they are
+  brute:    { jaw: 1.02, cheek: 1.08, brow: 0.090, nose: 0.50, chin: 0.020, occ: 0.02 },
+  warden:   { jaw: 1.00, cheek: 1.06, brow: 0.085, nose: 0.46, chin: 0.018, occ: 0.03 },
+  reaver:   { jaw: 0.92, cheek: 1.02, brow: 0.072, nose: 0.52, chin: 0.014, occ: 0.04 },
+  maw:      { jaw: 1.06, cheek: 1.05, brow: 0.095, nose: 0.42, chin: 0.024, occ: 0.02 },
+  houndling:{ jaw: 0.94, cheek: 0.92, brow: 0.080, nose: 0.72, chin: 0.018, occ: 0.03 },
+  stalker:  { jaw: 0.66, cheek: 0.90, brow: 0.065, nose: 0.56, chin: 0.006, occ: 0.07 },
+  thrall:   { jaw: 0.70, cheek: 0.92, brow: 0.050, nose: 0.48, chin: 0.006, occ: 0.06 },
+  vampire:  { jaw: 0.74, cheek: 0.98, brow: 0.058, nose: 0.50, chin: 0.008, occ: 0.055 },
+  cultist:  { jaw: 0.68, cheek: 0.90, brow: 0.055, nose: 0.46, chin: 0.006, occ: 0.065 },
+  // skulls have no nose and a hollow, wide-browed cranium
+  wight:    { jaw: 0.56, cheek: 0.84, brow: 0.080, nose: 0.0, chin: 0.0, occ: 0.10 },
+  revenant: { jaw: 0.58, cheek: 0.86, brow: 0.078, nose: 0.0, chin: 0.0, occ: 0.10 },
+  bonecaller:{ jaw: 0.56, cheek: 0.85, brow: 0.082, nose: 0.0, chin: 0.0, occ: 0.10 },
+  ossuar:   { jaw: 0.55, cheek: 0.83, brow: 0.085, nose: 0.0, chin: 0.0, occ: 0.11 }
+};
+
 function makeHumanoid(cfg) {
   var g = new THREE.Group();
   var s = cfg.scale || 1;
@@ -2604,21 +3205,21 @@ function makeHumanoid(cfg) {
   // torso
   var torso = new THREE.Group(); hip.add(torso);
   var bulk = cfg.bulk || 1, thin = cfg.thin || 1;
-  var chest = new THREE.Mesh(boxGeo(0.78 * bulk, 0.92, 0.44 * bulk), bodyM); chest.position.y = 1.28; torso.add(chest);
+  var chest = new THREE.Mesh(shapeGeo(0.78 * bulk, 0.92, 0.44 * bulk, { bot: 0.82, top: 1.06, bow: 0.03 }), bodyM); chest.position.y = 1.28; torso.add(chest);
   if (cfg.collar) {                                  // upturned coat collar
-    var colL = new THREE.Mesh(boxGeo(0.14, 0.34, 0.12), matU(cfg.coatColor || bodyC));
+    var colL = new THREE.Mesh(shapeGeo(0.15, 0.34, 0.13, { bevel: 0.03, seg: 2, bot: 0.8, top: 1.15 }), matU(cfg.coatColor || bodyC));
     colL.position.set(-0.24, 1.72, 0.16); colL.rotation.x = -0.3; colL.rotation.z = -0.18; torso.add(colL);
     var colR = colL.clone(); colR.position.x = 0.24; colR.rotation.z = 0.18; torso.add(colR);
-    var colB = new THREE.Mesh(boxGeo(0.56, 0.3, 0.1), matU(cfg.coatColor || bodyC));
+    var colB = new THREE.Mesh(shapeGeo(0.57, 0.3, 0.11, { bevel: 0.03, seg: 2, bot: 0.82, top: 1.12 }), matU(cfg.coatColor || bodyC));
     colB.position.set(0, 1.76, -0.2); colB.rotation.x = 0.28; torso.add(colB);
   }
   if (cfg.pouches) {                                 // utility belt
     var pi2;
     for (pi2 = 0; pi2 < 4; pi2++) {
-      var pch = new THREE.Mesh(boxGeo(0.14, 0.18, 0.1), matU(0x241c18));
+      var pch = new THREE.Mesh(shapeGeo(0.15, 0.19, 0.11, { bevel: 0.032, seg: 2, bot: 0.85, top: 1.0 }), matU(0x241c18));
       pch.position.set(-0.3 + pi2 * 0.2, 0.74, 0.26); torso.add(pch);
     }
-    var hipL = new THREE.Mesh(boxGeo(0.12, 0.24, 0.16), matU(0x241c18));
+    var hipL = new THREE.Mesh(shapeGeo(0.13, 0.25, 0.17, { bevel: 0.032, seg: 2, bot: 0.85, top: 1.0 }), matU(0x241c18));
     hipL.position.set(-0.44, 0.76, 0.02); torso.add(hipL);
     var hipR = hipL.clone(); hipR.position.x = 0.44; torso.add(hipR);
   }
@@ -2634,34 +3235,34 @@ function makeHumanoid(cfg) {
   if (cfg.ragged) {                                  // torn hanging strips
     var rg;
     for (rg = 0; rg < 5; rg++) {
-      var strip = new THREE.Mesh(boxGeo(0.12, rand(0.3, 0.7), 0.05), matU(bodyC));
+      var strip = new THREE.Mesh(shapeGeo(0.13, rand(0.3, 0.7), 0.055, { bevel: 0.018, seg: 2, bot: 0.45, top: 1.0 }), matU(bodyC));
       strip.position.set(-0.3 + rg * 0.15, 0.7, 0.24 * (rg % 2 ? 1 : -1));
       strip.rotation.z = rand(-0.2, 0.2); torso.add(strip);
     }
   }
-  var belt = new THREE.Mesh(boxGeo(0.8, 0.14, 0.46), accM); belt.position.y = 0.84; torso.add(belt);
-  var shoulders = new THREE.Mesh(boxGeo(1.0 * bulk, 0.22, 0.46 * bulk), bodyM); shoulders.position.y = 1.66; torso.add(shoulders);
+  var belt = new THREE.Mesh(shapeGeo(0.8, 0.14, 0.46, { bevel: 0.035, seg: 2 }), accM); belt.position.y = 0.84; torso.add(belt);
+  var shoulders = new THREE.Mesh(shapeGeo(1.0 * bulk, 0.22, 0.46 * bulk, { bevel: 0.05, seg: 2 }), bodyM); shoulders.position.y = 1.66; torso.add(shoulders);
   // accent shoulder pads + chest emblem: silhouettes read per-hero at a glance
   if (cfg.pads !== false) {
     // Pads must not share a face plane with the shoulder block or the two
     // surfaces z-fight and strobe. Shoulders span y 1.55-1.77, so the pads sit
     // proud of that on every axis.
-    var padL = new THREE.Mesh(boxGeo(0.26, 0.18, 0.52), accM);
+    var padL = new THREE.Mesh(shapeGeo(0.30, 0.22, 0.54, { bevel: 0.06, seg: 2, bot: 1.0, top: 0.62, bulge: 0.1 }), accM);
     padL.position.set(-0.52, 1.73, 0); torso.add(padL);
     var padR = padL.clone(); padR.position.x = 0.52; torso.add(padR);
   }
   if (cfg.emblem) {
-    var emb = new THREE.Mesh(boxGeo(0.19, 0.19, 0.05), matU(cfg.emblem, cfg.emblem));
+    var emb = new THREE.Mesh(shapeGeo(0.2, 0.2, 0.055, { bevel: 0.045, seg: 2, bot: 0.55, top: 0.55 }), matU(cfg.emblem, cfg.emblem));
     emb.position.set(0, 1.36, 0.243); emb.rotation.z = Math.PI / 4; torso.add(emb);
   }
-  var buckle = new THREE.Mesh(boxGeo(0.18, 0.12, 0.05), matU(trimC));
+  var buckle = new THREE.Mesh(shapeGeo(0.19, 0.13, 0.055, { bevel: 0.03, seg: 2 }), matU(trimC));
   buckle.position.set(0, 0.84, 0.253); torso.add(buckle);
 
   // head
   var headG = new THREE.Group(); headG.position.y = 1.9; torso.add(headG);
-  var head = new THREE.Mesh(boxGeo(0.42, 0.46, 0.42), skinM); headG.add(head);
+  var head = new THREE.Mesh(headGeo(0.42, 0.48, 0.43, cfg.headShape || {}), skinM); headG.add(head);
   if (cfg.glasses) {
-    var vis = new THREE.Mesh(boxGeo(0.46, 0.13, 0.09), matU(0x08080a, 0x18101a));
+    var vis = new THREE.Mesh(shapeGeo(0.46, 0.14, 0.1, { bevel: 0.03, seg: 2, bot: 0.9, top: 1.0 }), matU(0x08080a, 0x18101a));
     vis.position.set(0, 0.065, 0.225); headG.add(vis);
     var sheen = new THREE.Mesh(boxGeo(0.42, 0.03, 0.02), matU(0x5a6478, 0x2a3040));
     sheen.position.set(0, 0.10, 0.272); headG.add(sheen);
@@ -2670,18 +3271,19 @@ function makeHumanoid(cfg) {
     var tmplR = tmplL.clone(); tmplR.position.x = 0.216; headG.add(tmplR);
   }
   if (cfg.hood) {
-    var hood = new THREE.Mesh(boxGeo(0.52, 0.5, 0.5), bodyM);
+    var hood = new THREE.Mesh(shapeGeo(0.53, 0.5, 0.51, { bevel: 0.1, seg: 2, bot: 1.0, top: 0.74 }), bodyM);
     hood.position.set(0, 0.06, -0.03); headG.add(hood);
   }
   if (cfg.mask) {
-    var mask = new THREE.Mesh(boxGeo(0.44, 0.48, 0.44), matU(cfg.maskColor || accC));
+    var mask = new THREE.Mesh(shapeGeo(0.46, 0.52, 0.46, { bevel: 0.08, seg: 3, bot: 0.86, top: 1.0 }), matU(cfg.maskColor || accC));
     mask.position.set(0, 0, 0.01); headG.add(mask);
     var eyeM = matU(trimC, trimC);
     var e1 = new THREE.Mesh(boxGeo(0.14, 0.10, 0.04), eyeM); e1.position.set(-0.10, 0.05, 0.23); headG.add(e1);
     var e2 = e1.clone(); e2.position.x = 0.10; headG.add(e2);
   }
   if (cfg.skull) {
-    var jaw = new THREE.Mesh(boxGeo(0.30, 0.14, 0.34), matU(0x201814)); jaw.position.set(0, -0.18, 0.04); headG.add(jaw);
+    var jaw = new THREE.Mesh(shapeGeo(0.30, 0.16, 0.34, { bevel: 0.045, seg: 2, bot: 0.74, top: 1.0 }), matU(0x201814));
+    jaw.position.set(0, -0.18, 0.04); headG.add(jaw);
     var eyeL = new THREE.Mesh(boxGeo(0.10, 0.12, 0.06), matU(accC, accC)); eyeL.position.set(-0.11, 0.04, 0.2); headG.add(eyeL);
     var eyeR = eyeL.clone(); eyeR.position.x = 0.11; headG.add(eyeR);
   }
@@ -2690,7 +3292,7 @@ function makeHumanoid(cfg) {
      which is what made the forehead strobe. */
   if (cfg.hair) {
     var hairH = cfg.flatTop ? 0.13 : 0.19;
-    var hair = new THREE.Mesh(boxGeo(0.40, hairH, 0.40), matU(cfg.hair));
+    var hair = new THREE.Mesh(shapeGeo(0.41, hairH, 0.41, { bevel: 0.05, seg: 2, bot: 1.0, top: 0.78 }), matU(cfg.hair));
     hair.position.set(0, 0.23 + hairH / 2 - 0.04, -0.01);
     headG.add(hair);
     if (cfg.flatTop) {                       // tight fade at the temples
@@ -2699,7 +3301,7 @@ function makeHumanoid(cfg) {
       var fadeR = fadeL.clone(); fadeR.position.x = 0.215; headG.add(fadeR);
     }
     if (cfg.pony) {
-      var pony = new THREE.Mesh(boxGeo(0.16, 0.5, 0.16), matU(cfg.hair));
+      var pony = new THREE.Mesh(shapeGeo(0.17, 0.5, 0.17, { bevel: 0.035, seg: 2, bot: 0.5, top: 1.0 }), matU(cfg.hair));
       pony.position.set(0, 0.02, -0.29); headG.add(pony);
     }
   }
@@ -2722,21 +3324,21 @@ function makeHumanoid(cfg) {
     }
   }
   // neck so the head doesn't float
-  var neck = new THREE.Mesh(boxGeo(0.2, 0.14, 0.2), skinM); neck.position.y = 1.78; torso.add(neck);
+  var neck = new THREE.Mesh(shapeGeo(0.21, 0.14, 0.21, { bevel: 0.04, seg: 2 }), skinM); neck.position.y = 1.78; torso.add(neck);
 
   // arms
   function arm(sx) {
     var a = new THREE.Group(); a.position.set(sx * 0.5 * bulk, 1.6, 0);
     // deltoid cap bridges torso to arm — thin characters had a visible gap
-    var delt = new THREE.Mesh(boxGeo(0.26 * bulk, 0.26, 0.3 * bulk), bodyM);
+    var delt = new THREE.Mesh(shapeGeo(0.27 * bulk, 0.26, 0.31 * bulk, { bevel: 0.06, seg: 2, bot: 0.7, top: 1.0 }), bodyM);
     delt.position.y = -0.02; a.add(delt);
-    var upper = new THREE.Mesh(boxGeo(0.22 * bulk * thin, 0.52, 0.24 * bulk * thin), bodyM); upper.position.y = -0.26; a.add(upper);
+    var upper = new THREE.Mesh(shapeGeo(0.22 * bulk * thin, 0.52, 0.24 * bulk * thin, { bot: 0.86, top: 1.10 }), bodyM); upper.position.y = -0.26; a.add(upper);
     var fore = new THREE.Group(); fore.position.y = -0.52; a.add(fore);
-    var lower = new THREE.Mesh(boxGeo(0.20 * bulk * thin, 0.5, 0.22 * bulk * thin), bodyM); lower.position.y = -0.25; fore.add(lower);
+    var lower = new THREE.Mesh(shapeGeo(0.20 * bulk * thin, 0.5, 0.22 * bulk * thin, { bot: 0.80, top: 1.12 }), bodyM); lower.position.y = -0.25; fore.add(lower);
     var handM = cfg.gloves ? matU(cfg.gloves) : skinM;
-    var hand = new THREE.Mesh(boxGeo(0.21, 0.19, 0.21), handM); hand.position.y = -0.56; fore.add(hand);
+    var hand = new THREE.Mesh(handGeo(0.21, 0.19, 0.21, { side: sx }), handM); hand.position.y = -0.56; fore.add(hand);
     if (cfg.gloves) {                                // gauntlet cuff
-      var cuff = new THREE.Mesh(boxGeo(0.235, 0.14, 0.235), accM);
+      var cuff = new THREE.Mesh(shapeGeo(0.24, 0.14, 0.24, { bevel: 0.04, seg: 2, bot: 1.0, top: 0.92 }), accM);
       cuff.position.y = -0.42; fore.add(cuff);
     }
     a.userData.fore = fore; a.userData.hand = hand;
@@ -2748,12 +3350,12 @@ function makeHumanoid(cfg) {
   // legs
   function leg(sx) {
     var l = new THREE.Group(); l.position.set(sx * 0.22, 0.84, 0);
-    var thigh = new THREE.Mesh(boxGeo(0.26, 0.5, 0.28), bodyM); thigh.position.y = -0.25; l.add(thigh);
+    var thigh = new THREE.Mesh(shapeGeo(0.26, 0.5, 0.28, { bot: 0.84, top: 1.08 }), bodyM); thigh.position.y = -0.25; l.add(thigh);
     var shin = new THREE.Group(); shin.position.y = -0.5; l.add(shin);
-    var calf = new THREE.Mesh(boxGeo(0.24, 0.5, 0.26), bodyM); calf.position.y = -0.25; shin.add(calf);
-    var foot = new THREE.Mesh(boxGeo(0.26, 0.14, 0.4), matU(0x14141a)); foot.position.set(0, -0.5, 0.06); shin.add(foot);
-    var kneepad = new THREE.Mesh(boxGeo(0.27, 0.16, 0.1), accM); kneepad.position.set(0, 0.02, 0.15); shin.add(kneepad);
-    var bootTrim = new THREE.Mesh(boxGeo(0.285, 0.06, 0.3), accM); bootTrim.position.set(0, -0.41, 0.01); shin.add(bootTrim);
+    var calf = new THREE.Mesh(shapeGeo(0.24, 0.5, 0.26, { bot: 0.80, top: 0.98, bulge: 0.18 }), bodyM); calf.position.y = -0.25; shin.add(calf);
+    var foot = new THREE.Mesh(shapeGeo(0.28, 0.14, 0.4, { bevel: 0.032 }), matU(0x14141a)); foot.position.set(0, -0.5, 0.06); shin.add(foot);
+    var kneepad = new THREE.Mesh(shapeGeo(0.28, 0.17, 0.11, { bevel: 0.035, seg: 2, bot: 0.85, top: 0.85 }), accM); kneepad.position.set(0, 0.02, 0.15); shin.add(kneepad);
+    var bootTrim = new THREE.Mesh(shapeGeo(0.29, 0.07, 0.31, { bevel: 0.025, seg: 2 }), accM); bootTrim.position.set(0, -0.41, 0.01); shin.add(bootTrim);
     l.userData.shin = shin;
     hip.add(l);
     return l;
@@ -2772,7 +3374,11 @@ function makeHumanoid(cfg) {
       seg = new THREE.Group();
       var segX = (i - (panels - 1) / 2) * spread;
       seg.position.set(segX, 1.62, -0.3);
-      var panel = new THREE.Mesh(boxGeo(spread * 1.12, panelH, 0.1), coatM);
+      /* Chamfered but NOT flared at the hem. A flare looks more like cloth, but
+         measured against the previous build it pushed coat/leg intersections
+         from 45 to 52 frames per walk cycle, and panel-vs-leg separation is a
+         fix that took several sessions to land. Chamfer alone, parity kept. */
+      var panel = new THREE.Mesh(shapeGeo(spread * 1.12, panelH, 0.1, { bevel: 0.028, seg: 2, bot: 1.0, top: 0.88 }), coatM);
       panel.position.y = -panelH / 2; seg.add(panel);
       // which leg swings underneath this panel — the animator keeps the panel
       // trailing behind that leg so the two never intersect
@@ -2781,7 +3387,7 @@ function makeHumanoid(cfg) {
       torso.add(seg); coatPieces.push(seg);
     }
     if (cfg.longCoat) {                 // open front flaps
-      var flapL = new THREE.Mesh(boxGeo(0.16, 1.5, 0.09), coatM);
+      var flapL = new THREE.Mesh(shapeGeo(0.17, 1.5, 0.095, { bevel: 0.028, seg: 2, bot: 1.0, top: 0.85 }), coatM);
       flapL.position.set(-0.36, 0.95, 0.2); torso.add(flapL);
       var flapR = flapL.clone(); flapR.position.x = 0.36; torso.add(flapR);
     }
@@ -2798,7 +3404,7 @@ function makeHumanoid(cfg) {
     var hem = new THREE.Mesh(cylGeo(0.67, 0.69, 0.1, 12), accM);
     hem.position.y = -0.17; hip.add(hem);
     legL.visible = false; legR.visible = false;     // hidden beneath it
-    var bodice = new THREE.Mesh(boxGeo(0.62, 0.5, 0.4), accM);
+    var bodice = new THREE.Mesh(shapeGeo(0.63, 0.5, 0.41, { bevel: 0.07, seg: 2, bot: 0.84, top: 1.04 }), accM);
     bodice.position.y = 1.05; torso.add(bodice);
   }
 
@@ -2816,11 +3422,13 @@ function makeHumanoid(cfg) {
 
   if (cfg.helm) {                                   // full faceplate
     var helmM = matU(cfg.helmColor || accC, 0x000000);
-    var dome = new THREE.Mesh(boxGeo(0.46, 0.5, 0.46), helmM);
+    var dome = new THREE.Mesh(shapeGeo(0.46, 0.5, 0.46, { bevel: 0.09, seg: 2, bot: 0.86, top: 0.92, bulge: 0.08 }), helmM);
     dome.position.y = 0.02; headG.add(dome);
+    var brow = new THREE.Mesh(shapeGeo(0.44, 0.08, 0.1, { bevel: 0.025, seg: 2 }), helmM);
+    brow.position.set(0, 0.13, 0.2); headG.add(brow);
     var visorSlot = new THREE.Mesh(boxGeo(0.34, 0.07, 0.06), matU(0x1a0206, 0x400810));
     visorSlot.position.set(0, 0.05, 0.235); headG.add(visorSlot);
-    var crest = new THREE.Mesh(boxGeo(0.07, 0.3, 0.5), accM);
+    var crest = new THREE.Mesh(shapeGeo(0.08, 0.3, 0.5, { bevel: 0.025, seg: 2, bot: 1.0, top: 0.45 }), accM);
     crest.position.y = 0.34; headG.add(crest);
   }
 
@@ -2835,7 +3443,7 @@ function makeHumanoid(cfg) {
   }
 
   if (cfg.bigJaw) {                                 // The Maw
-    var jawB = new THREE.Mesh(boxGeo(0.44, 0.24, 0.36), matU(0x40201c));
+    var jawB = new THREE.Mesh(shapeGeo(0.46, 0.26, 0.38, { bevel: 0.06, seg: 2, bot: 0.7, top: 1.0 }), matU(0x40201c));
     jawB.position.set(0, -0.22, 0.1); headG.add(jawB);
     var ti3;
     for (ti3 = 0; ti3 < 5; ti3++) {
@@ -2857,41 +3465,41 @@ function makeHumanoid(cfg) {
   }
 
   if (cfg.jersey) {                                 // basketball jersey over bare arms
-    var jer = new THREE.Mesh(boxGeo(0.86, 0.86, 0.5), matU(cfg.body === undefined ? 0x1c2b6e : bodyC));
+    var jer = new THREE.Mesh(shapeGeo(0.87, 0.86, 0.51, { bevel: 0.075, seg: 2, bot: 1.04, top: 0.94 }), matU(cfg.body === undefined ? 0x1c2b6e : bodyC));
     jer.position.y = 1.24; torso.add(jer);
-    var trimJ = new THREE.Mesh(boxGeo(0.9, 0.1, 0.53), matU(0xf0f0f4));
+    var trimJ = new THREE.Mesh(shapeGeo(0.905, 0.105, 0.535, { bevel: 0.03, seg: 2 }), matU(0xf0f0f4));
     trimJ.position.y = 0.83; torso.add(trimJ);
     var numA = new THREE.Mesh(boxGeo(0.16, 0.3, 0.05), matU(0xf0f0f4));
     numA.position.set(-0.13, 1.3, 0.27); torso.add(numA);
     var numB = numA.clone(); numB.position.x = 0.13; torso.add(numB);
-    var jBand = new THREE.Mesh(boxGeo(0.88, 0.07, 0.52), matU(cfg.accent === undefined ? 0xd81020 : accC));
+    var jBand = new THREE.Mesh(shapeGeo(0.885, 0.075, 0.525, { bevel: 0.025, seg: 2 }), matU(cfg.accent === undefined ? 0xd81020 : accC));
     jBand.position.y = 1.62; torso.add(jBand);
   }
   if (cfg.cap) {                                    // fitted cap, brim forward
     var capC = matU(cfg.accent === undefined ? 0xd81020 : accC);
-    var crownC = new THREE.Mesh(boxGeo(0.44, 0.2, 0.44), capC);
+    var crownC = new THREE.Mesh(shapeGeo(0.45, 0.21, 0.45, { bevel: 0.06, seg: 3, bot: 1.0, top: 0.82 }), capC);
     crownC.position.y = 0.3; headG.add(crownC);
-    var brimC = new THREE.Mesh(boxGeo(0.44, 0.06, 0.26), capC);
+    var brimC = new THREE.Mesh(shapeGeo(0.45, 0.065, 0.27, { bevel: 0.03, seg: 3, bot: 1.0, top: 0.86 }), capC);
     brimC.position.set(0, 0.22, 0.32); headG.add(brimC);
   }
   if (cfg.longHair) {                               // locs falling past the shoulders
     var lh, hc = matU(cfg.hair || 0x120c10);
     for (lh = 0; lh < 7; lh++) {
-      var strand2 = new THREE.Mesh(boxGeo(0.07, rand(0.7, 1.15), 0.07), hc);
+      var strand2 = new THREE.Mesh(shapeGeo(0.075, rand(0.7, 1.15), 0.075, { bevel: 0.022, seg: 2, bot: 0.6, top: 1.0 }), hc);
       var la = (lh / 7) * Math.PI * 2;
       strand2.position.set(Math.sin(la) * 0.2, -0.25, Math.cos(la) * 0.2 - 0.05);
       headG.add(strand2);
     }
   }
   if (cfg.vest) {                                   // layered tactical vest
-    var vest = new THREE.Mesh(boxGeo(0.84 * bulk, 0.66, 0.5 * bulk), matU(cfg.vest));
+    var vest = new THREE.Mesh(shapeGeo(0.85 * bulk, 0.66, 0.51 * bulk, { bevel: 0.07, seg: 2, bot: 0.88, top: 1.02 }), matU(cfg.vest));
     vest.position.y = 1.3; torso.add(vest);
     var vi;
     for (vi = 0; vi < 3; vi++) {
-      var mag = new THREE.Mesh(boxGeo(0.14, 0.2, 0.1), matU(0x121620));
+      var mag = new THREE.Mesh(shapeGeo(0.145, 0.21, 0.105, { bevel: 0.025, seg: 2, bot: 0.88, top: 1.0 }), matU(0x121620));
       mag.position.set(-0.24 + vi * 0.24, 1.16, 0.27); torso.add(mag);
     }
-    var clasp = new THREE.Mesh(boxGeo(0.1, 0.42, 0.06), accM);
+    var clasp = new THREE.Mesh(shapeGeo(0.105, 0.42, 0.065, { bevel: 0.022, seg: 2 }), accM);
     clasp.position.set(0, 1.34, 0.27); torso.add(clasp);
   }
   if (cfg.quiver) {                                 // bolt quiver across the back
@@ -2906,9 +3514,9 @@ function makeHumanoid(cfg) {
     }
   }
   if (cfg.headset) {                                // comms — she is the voice on the radio
-    var band2 = new THREE.Mesh(boxGeo(0.44, 0.05, 0.06), matU(0x1a1e26));
+    var band2 = new THREE.Mesh(shapeGeo(0.45, 0.055, 0.065, { bevel: 0.02, seg: 2 }), matU(0x1a1e26));
     band2.position.set(0, 0.2, 0.04); headG.add(band2);
-    var ear = new THREE.Mesh(boxGeo(0.07, 0.12, 0.1), matU(0x1a1e26));
+    var ear = new THREE.Mesh(shapeGeo(0.075, 0.125, 0.105, { bevel: 0.025, seg: 2, bot: 0.85, top: 1.0 }), matU(0x1a1e26));
     ear.position.set(-0.23, 0.05, 0.02); headG.add(ear);
     var mic = new THREE.Mesh(boxGeo(0.03, 0.03, 0.22), matU(0x1a1e26));
     mic.position.set(-0.2, -0.02, 0.15); mic.rotation.y = 0.4; headG.add(mic);
@@ -2916,9 +3524,9 @@ function makeHumanoid(cfg) {
     micTip.position.set(-0.14, -0.05, 0.25); headG.add(micTip);
   }
   if (cfg.armGuard) {                               // bracer on the bow arm
-    var guard2 = new THREE.Mesh(boxGeo(0.24, 0.3, 0.26), matU(0x2b323c));
+    var guard2 = new THREE.Mesh(shapeGeo(0.25, 0.3, 0.27, { bevel: 0.05, seg: 2, bot: 0.9, top: 1.0 }), matU(0x2b323c));
     guard2.position.y = -0.3; armL.userData.fore.add(guard2);
-    var strap2 = new THREE.Mesh(boxGeo(0.26, 0.05, 0.28), accM);
+    var strap2 = new THREE.Mesh(shapeGeo(0.265, 0.055, 0.285, { bevel: 0.02, seg: 2 }), accM);
     strap2.position.y = -0.2; armL.userData.fore.add(strap2);
   }
   if (cfg.pendant) {                                // Elsa's bloodstone
@@ -2948,7 +3556,7 @@ function makeHumanoid(cfg) {
     for (cp = 0; cp < 4; cp++) {
       var cseg = new THREE.Group();
       cseg.position.set((cp - 1.5) * 0.26, 1.72, -0.28);
-      var cpan = new THREE.Mesh(boxGeo(0.3, 1.7, 0.07), capeM);
+      var cpan = new THREE.Mesh(shapeGeo(0.31, 1.7, 0.075, { bevel: 0.025, seg: 2, bot: 1.0, top: 0.9 }), capeM);
       cpan.position.y = -0.85; cseg.add(cpan);
       torso.add(cseg); capeSegs.push(cseg);
     }
@@ -2974,38 +3582,46 @@ function makeHumanoid(cfg) {
   var weapon = new THREE.Group();
   var wtype = cfg.weapon;
   if (wtype === 'sword') {
-    var bladeM = new THREE.Mesh(boxGeo(0.1, 1.68, 0.03), matU(0xd8dce8, 0x2a3040));
-    bladeM.position.y = 0.84; weapon.add(bladeM);
-    var edge = new THREE.Mesh(boxGeo(0.035, 1.68, 0.055), matU(0xffffff, 0x606880));
-    edge.position.set(0.052, 0.84, 0); weapon.add(edge);
-    var guard = new THREE.Mesh(boxGeo(0.42, 0.08, 0.12), matU(accC, accC)); guard.position.y = 0.06; weapon.add(guard);
-    var grip = new THREE.Mesh(boxGeo(0.09, 0.34, 0.09), matU(0x14100e)); grip.position.y = -0.16; weapon.add(grip);
+    var bladeM = new THREE.Mesh(bladeGeo(1.68, 0.1, 0.03), matU(0xd8dce8, 0x2a3040));
+    weapon.add(bladeM);
+    var guard = new THREE.Mesh(shapeGeo(0.42, 0.09, 0.13, { bevel: 0.028, seg: 2 }), matU(accC, accC));
+    guard.position.y = 0.06; weapon.add(guard);
+    var grip = new THREE.Mesh(shapeGeo(0.085, 0.34, 0.085, { bevel: 0.022, seg: 2, bot: 1.05, top: 0.92 }), matU(0x14100e));
+    grip.position.y = -0.16; weapon.add(grip);
+    var pommel = new THREE.Mesh(shapeGeo(0.13, 0.11, 0.13, { bevel: 0.03, seg: 2 }), matU(accC, accC));
+    pommel.position.y = -0.37; weapon.add(pommel);
   } else if (wtype === 'crossbow') {
-    var stock = new THREE.Mesh(boxGeo(0.13, 0.18, 1.0), matU(0x241c16)); stock.position.y = 0.4; weapon.add(stock);
-    var rail = new THREE.Mesh(boxGeo(0.07, 0.06, 1.1), matU(0x39434f)); rail.position.set(0, 0.52, 0); weapon.add(rail);
-    var limbL = new THREE.Mesh(boxGeo(0.5, 0.06, 0.09), matU(0x39434f));
+    var stock = new THREE.Mesh(shapeGeo(0.13, 1.0, 0.18, { bevel: 0.03, bot: 0.9, top: 1.02 }), matU(0x241c16));
+    stock.position.y = 0.4; stock.rotation.x = Math.PI / 2; weapon.add(stock);
+    var rail = new THREE.Mesh(shapeGeo(0.075, 1.1, 0.065, { bevel: 0.02, seg: 2, bot: 1.0, top: 0.85 }), matU(0x39434f));
+    rail.position.set(0, 0.52, 0); rail.rotation.x = Math.PI / 2; weapon.add(rail);
+    var limbL = new THREE.Mesh(shapeGeo(0.5, 0.06, 0.09, { bevel: 0.02, bot: 1.0, top: 1.0 }), matU(0x39434f));
     limbL.position.set(-0.26, 0.4, 0.42); limbL.rotation.z = 0.22; weapon.add(limbL);
     var limbR = limbL.clone(); limbR.position.x = 0.26; limbR.rotation.z = -0.22; weapon.add(limbR);
     var strg = new THREE.Mesh(boxGeo(0.96, 0.02, 0.02), matU(0xc8cedb)); strg.position.set(0, 0.4, 0.3); weapon.add(strg);
-    var sight = new THREE.Mesh(boxGeo(0.06, 0.12, 0.18), matU(accC, accC)); sight.position.set(0, 0.62, 0.16); weapon.add(sight);
+    var sight = new THREE.Mesh(shapeGeo(0.065, 0.13, 0.19, { bevel: 0.022, seg: 2, bot: 1.0, top: 0.7 }), matU(accC, accC));
+    sight.position.set(0, 0.62, 0.16); weapon.add(sight);
     var loaded = new THREE.Mesh(boxGeo(0.035, 0.035, 0.6), matU(0xb8c4d4)); loaded.position.set(0, 0.57, 0.2); weapon.add(loaded);
-    var gripC = new THREE.Mesh(boxGeo(0.1, 0.3, 0.12), matU(0x241c16)); gripC.position.set(0, 0.16, -0.24); gripC.rotation.x = 0.3; weapon.add(gripC);
+    var gripC = new THREE.Mesh(shapeGeo(0.105, 0.3, 0.125, { bevel: 0.026, seg: 2, bot: 1.06, top: 0.9 }), matU(0x241c16));
+    gripC.position.set(0, 0.16, -0.24); gripC.rotation.x = 0.3; weapon.add(gripC);
   } else if (wtype === 'shotgun') {
-    var barrel = new THREE.Mesh(boxGeo(0.14, 0.14, 1.1), matU(0x2c3038)); weapon.add(barrel);
-    var wood = new THREE.Mesh(boxGeo(0.14, 0.16, 0.42), matU(0x5a3418)); wood.position.z = -0.5; weapon.add(wood);
-    var bay = new THREE.Mesh(boxGeo(0.05, 0.05, 0.4), matU(0xe0e4ee, 0x404858)); bay.position.z = 0.62; weapon.add(bay);
+    var barrel = new THREE.Mesh(barrelGeo(1.1, 0.07, 0.055), matU(0x2c3038)); weapon.add(barrel);
+    var wood = new THREE.Mesh(shapeGeo(0.14, 0.16, 0.42, { bevel: 0.03 }), matU(0x5a3418));
+    wood.position.z = -0.5; wood.rotation.x = Math.PI / 2; weapon.add(wood);
+    var bay = new THREE.Mesh(bladeGeo(0.42, 0.055, 0.03), matU(0xe0e4ee, 0x404858));
+    bay.position.z = 0.42; bay.rotation.x = -Math.PI / 2; weapon.add(bay);
   } else if (wtype === 'chain') {
     // built along +Y like the blade so the shared weapon pitch solver applies
     var link, ci;
     for (ci = 0; ci < 8; ci++) {
-      link = new THREE.Mesh(boxGeo(0.14, 0.17, 0.14), matU(0x30302e, ci > 3 ? 0xff5a10 : 0x220800));
+      link = new THREE.Mesh(shapeGeo(0.14, 0.17, 0.14, { bevel: 0.035, seg: 2 }), matU(0x30302e, ci > 3 ? 0xff5a10 : 0x220800));
       link.position.y = 0.16 + ci * 0.2;
       link.rotation.y = ci * 0.4;
       weapon.add(link);
     }
     var hook = new THREE.Mesh(coneGeo(0.11, 0.3, 5), matU(0x50504c, 0xff5a10));
     hook.position.y = 1.72; weapon.add(hook);
-    var grip3 = new THREE.Mesh(boxGeo(0.1, 0.26, 0.1), matU(0x14100e));
+    var grip3 = new THREE.Mesh(shapeGeo(0.105, 0.26, 0.105, { bevel: 0.024, seg: 2, bot: 1.05, top: 0.9 }), matU(0x14100e));
     grip3.position.y = -0.1; weapon.add(grip3);
   } else if (wtype === 'darts') {
     var d1 = new THREE.Mesh(boxGeo(0.5, 0.06, 0.06), matU(0xf0f0f4, 0x505058)); weapon.add(d1);
@@ -3017,7 +3633,8 @@ function makeHumanoid(cfg) {
       claw.position.set((cI - 1) * 0.11, 0.2, 0.06); claw.rotation.x = -0.2; weapon.add(claw);
     }
   } else if (wtype === 'staff') {
-    var shaft = new THREE.Mesh(cylGeo(0.05, 0.05, 2.0, 7), matU(0x241a24)); weapon.add(shaft);
+    var shaft = new THREE.Mesh(barrelGeo(2.0, 0.055, 0.038), matU(0x241a24));
+    shaft.rotation.x = Math.PI / 2; weapon.add(shaft);
     var orb = new THREE.Mesh(sphGeo(0.2, 10), matU(accC, accC)); orb.position.y = 1.05; weapon.add(orb);
   } else if (wtype === 'webs') {
     var wgl = new THREE.Mesh(sphGeo(0.14, 8), matU(trimC, 0x303040)); weapon.add(wgl);
@@ -3035,18 +3652,18 @@ function makeHumanoid(cfg) {
   var sheath = null;
   if (cfg.backSheath && wtype === 'sword') {
     sheath = new THREE.Group();
-    var scab = new THREE.Mesh(boxGeo(0.15, 1.55, 0.1), matU(0x17120f));
+    var scab = new THREE.Mesh(shapeGeo(0.15, 1.55, 0.1, { bevel: 0.028, seg: 2, bot: 1.02, top: 0.9 }), matU(0x17120f));
     scab.position.y = 0.5; sheath.add(scab);
-    var scabTip = new THREE.Mesh(boxGeo(0.13, 0.16, 0.09), matU(accC, accC));
+    var scabTip = new THREE.Mesh(shapeGeo(0.135, 0.17, 0.095, { bevel: 0.028, seg: 2, bot: 0.55, top: 1.0 }), matU(accC, accC));
     scabTip.position.y = -0.32; sheath.add(scabTip);
-    var sGuard = new THREE.Mesh(boxGeo(0.38, 0.08, 0.11), matU(accC, accC));
+    var sGuard = new THREE.Mesh(shapeGeo(0.38, 0.09, 0.12, { bevel: 0.025, seg: 2 }), matU(accC, accC));
     sGuard.position.y = 1.3; sheath.add(sGuard);
-    var sGrip = new THREE.Mesh(boxGeo(0.09, 0.32, 0.09), matU(0x14100e));
+    var sGrip = new THREE.Mesh(shapeGeo(0.085, 0.32, 0.085, { bevel: 0.022, seg: 2, bot: 1.05, top: 0.92 }), matU(0x14100e));
     sGrip.position.y = 1.5; sheath.add(sGrip);
-    var sPommel = new THREE.Mesh(boxGeo(0.13, 0.1, 0.13), matU(accC, accC));
+    var sPommel = new THREE.Mesh(shapeGeo(0.13, 0.11, 0.13, { bevel: 0.03 }), matU(accC, accC));
     sPommel.position.y = 1.69; sheath.add(sPommel);
     // strap across the chest
-    var strap = new THREE.Mesh(boxGeo(0.12, 1.5, 0.05), matU(0x201814));
+    var strap = new THREE.Mesh(shapeGeo(0.125, 1.5, 0.055, { bevel: 0.018, seg: 2 }), matU(0x201814));
     strap.position.set(0.06, 1.3, 0.24); strap.rotation.z = 0.55; torso.add(strap);
     sheath.position.set(0.05, 0.78, -0.36);
     sheath.rotation.z = 0.5;
@@ -3106,6 +3723,7 @@ function buildHeroModel(heroId, skinIdx) {
     cfg.body = sk.body; cfg.accent = sk.accent; cfg.trim = sk.trim; cfg.coatColor = sk.body;
   }
   cfg.emblem = d.accent;
+  cfg.headShape = HEAD_SHAPES[heroId] || null;
   cfg.backSheath = (d.weapon === 'sword');
   applyBossLook(heroId, cfg);
   if (heroId === 'deadpool') { cfg.thin = 0.97; }
@@ -3161,7 +3779,8 @@ function buildHeroModel(heroId, skinIdx) {
 function buildEnemyModel(def) {
   var cfg = {
     body: def.body, skin: def.skin, accent: def.accent, trim: 0xffffff,
-    scale: def.scale, fangs: true, weapon: null
+    scale: def.scale, fangs: true, weapon: null,
+    headShape: HEAD_SHAPES[def.id] || null
   };
   /* Each archetype gets a distinct silhouette so a crowd reads at a glance. */
   if (def.id === 'thrall') { cfg.weapon = 'claws'; cfg.fangs = true; cfg.hunch = 0.34; cfg.thin = 0.86; cfg.ragged = true; }
@@ -3231,6 +3850,7 @@ function addProp(x, y, z, w, h, d, color, opts) {
   var o = opts || {};
   if (!o.force && o.solid !== false && inClearZone(x, z, w, d)) return null;
   var m = new THREE.Mesh(boxGeo(w, h, d), matU(color, o.emissive || 0x000000, { transparent: !!o.transparent, opacity: o.opacity }));
+  m.userData.mergeable = true;
   m.position.set(x, y + h / 2, z);
   if (o.rotY) m.rotation.y = o.rotY;
   m.receiveShadow = true;
@@ -3246,6 +3866,7 @@ function addProp(x, y, z, w, h, d, color, opts) {
 function addDecor(x, y, z, geo, color, emissive, opts) {
   var o = opts || {};
   var m = new THREE.Mesh(geo, matU(color, emissive || 0x000000, o));
+  m.userData.mergeable = true;
   m.position.set(x, y, z);
   m.castShadow = !!o.castShadow;
   worldGroup.add(m);
@@ -3811,36 +4432,86 @@ function buildCity(stage, loc, half) {
   }
   function facade(bx, bz, bw, bd, bh, faceAxis, faceSign) {
     if (!footprintClear(bx, bz, bw, bd)) return;
-    var m = addProp(bx, 0, bz, bw, bh, bd, Math.random() < 0.5 ? 0x22242e : 0x1d2029);
+    /* Buildings were a single flat slab with windows stuck on. Now they get a
+       stone base course, a setback upper storey, a projecting cornice, window
+       reveals with sills, and a varied roofline — so the street reads as
+       architecture rather than a row of crates. */
+    var warm = Math.random() < 0.5;
+    var wallCol = warm ? 0x22242e : 0x1d2029;
+    var trimCol = warm ? 0x2e3140 : 0x282b36;
+
+    // ground floor is a taller, slightly proud base course
+    var baseH = Math.min(4.6, bh * 0.28);
+    var m = addProp(bx, 0, bz, bw + 0.35, baseH, bd + 0.35, 0x191b23);
     if (!m) return;
-    cityBlocks.push({ x: bx, z: bz, w: bw, d: bd, h: bh });
-    // window grid on the street-facing side
-    var rows = Math.max(2, Math.floor(bh / 4.2)), cols = Math.max(2, Math.floor((faceAxis === 'z' ? bw : bd) / 3.2));
-    var ri, ci2;
+    // main shaft
+    addProp(bx, baseH, bz, bw, bh - baseH, bd, wallCol, { force: true });
+    cityBlocks.push({ x: bx, z: bz, w: bw + 0.35, d: bd + 0.35, h: bh });
+
+    // string course between base and shaft
+    if (detail()) addDecor(bx, baseH + 0.12, bz, boxGeo(bw + 0.5, 0.28, bd + 0.5), trimCol);
+
+    // upper setback on taller blocks
+    var topY = bh;
+    if (bh > 17 && Math.random() < 0.7) {
+      var setH = rand(3.5, 7);
+      addProp(bx, bh, bz, bw * 0.72, setH, bd * 0.72, wallCol, { force: true });
+      addDecor(bx, bh + 0.16, bz, boxGeo(bw * 0.78, 0.3, bd * 0.78), trimCol);
+      topY = bh + setH;
+    }
+
+    // window grid with reveals and sills on the street-facing side
+    var faceW = (faceAxis === 'z') ? bw : bd;
+    var rows = Math.max(2, Math.floor((topY - baseH) / 4.2));
+    var cols = Math.max(2, Math.floor(faceW / 3.2));
+    var ri, ci2, off, wy;
     for (ri = 0; ri < rows; ri++) {
       for (ci2 = 0; ci2 < cols; ci2++) {
-        if (Math.random() < 0.42) continue;
+        if (Math.random() < 0.36) continue;
         var lit = Math.random() < 0.55;
-        var win = new THREE.Mesh(boxGeo(faceAxis === 'z' ? 1.2 : 0.24, 1.05, faceAxis === 'z' ? 0.24 : 1.2),
+        off = (ci2 - (cols - 1) / 2) * (faceW / cols);
+        wy = baseH + 1.9 + ri * 4.2;
+        if (wy > topY - 1.4) continue;
+        var wOut = (faceAxis === 'z') ? bd / 2 : bw / 2;
+        var px = (faceAxis === 'z') ? bx + off : bx + faceSign * (wOut + 0.08);
+        var pz = (faceAxis === 'z') ? bz + faceSign * (wOut + 0.08) : bz + off;
+        // recessed reveal behind the glass gives the wall thickness
+        addDecor(px, wy, pz, boxGeo(faceAxis === 'z' ? 1.5 : 0.16, 1.5, faceAxis === 'z' ? 0.16 : 1.5), 0x0e1016);
+        var win = new THREE.Mesh(boxGeo(faceAxis === 'z' ? 1.2 : 0.2, 1.12, faceAxis === 'z' ? 0.2 : 1.2),
           matU(lit ? 0xffd890 : 0x171a22, lit ? 0xffbe60 : 0x000000));
-        var off = (ci2 - (cols - 1) / 2) * ((faceAxis === 'z' ? bw : bd) / cols);
-        if (faceAxis === 'z') win.position.set(bx + off, 2.4 + ri * 4.2, bz + faceSign * (bd / 2 + 0.14));
-        else win.position.set(bx + faceSign * (bw / 2 + 0.14), 2.4 + ri * 4.2, bz + off);
+        win.position.set(px + (faceAxis === 'z' ? 0 : faceSign * 0.06), wy,
+                         pz + (faceAxis === 'z' ? faceSign * 0.06 : 0));
         worldGroup.add(win);
+        // sill
+        if (detail()) addDecor(px + (faceAxis === 'z' ? 0 : faceSign * 0.1), wy - 0.72, pz + (faceAxis === 'z' ? faceSign * 0.1 : 0),
+          boxGeo(faceAxis === 'z' ? 1.6 : 0.3, 0.14, faceAxis === 'z' ? 0.3 : 1.6), trimCol);
       }
     }
-    // ground-floor doorway + awning
-    var dw = 2.2;
-    if (faceAxis === 'z') {
-      addDecor(bx, 1.3, bz + faceSign * (bd / 2 + 0.16), boxGeo(dw, 2.6, 0.3), 0x0d0f14);
-      addDecor(bx, 2.85, bz + faceSign * (bd / 2 + 0.5), boxGeo(dw + 1.4, 0.22, 1.1), 0x50202a);
-    } else {
-      addDecor(bx + faceSign * (bw / 2 + 0.16), 1.3, bz, boxGeo(0.3, 2.6, dw), 0x0d0f14);
-      addDecor(bx + faceSign * (bw / 2 + 0.5), 2.85, bz, boxGeo(1.1, 0.22, dw + 1.4), 0x50202a);
+
+    // ground-floor shopfront: recessed doorway, awning, fascia sign
+    var dw = 2.2, outD = (faceAxis === 'z') ? bd / 2 + 0.2 : bw / 2 + 0.2;
+    var dx2 = (faceAxis === 'z') ? bx : bx + faceSign * outD;
+    var dz2 = (faceAxis === 'z') ? bz + faceSign * outD : bz;
+    addDecor(dx2, 1.4, dz2, boxGeo(faceAxis === 'z' ? dw : 0.3, 2.8, faceAxis === 'z' ? 0.3 : dw), 0x0d0f14);
+    addDecor(dx2, 1.4, dz2, boxGeo(faceAxis === 'z' ? dw - 0.5 : 0.36, 2.3, faceAxis === 'z' ? 0.36 : dw - 0.5), 0x1a1f2a);
+    var awX = (faceAxis === 'z') ? dx2 : dx2 + faceSign * 0.5;
+    var awZ = (faceAxis === 'z') ? dz2 + faceSign * 0.5 : dz2;
+    addDecor(awX, 3.1, awZ, boxGeo(faceAxis === 'z' ? dw + 1.6 : 1.2, 0.24, faceAxis === 'z' ? 1.2 : dw + 1.6), 0x50202a);
+    if (Math.random() < 0.5) {
+      addDecor(awX, 3.9, awZ, boxGeo(faceAxis === 'z' ? dw + 1.2 : 0.18, 0.8, faceAxis === 'z' ? 0.18 : dw + 1.2),
+        pick([0xff4a5a, 0x40b0ff, 0xffd070]), pick([0xff4a5a, 0x40b0ff, 0xffd070]));
     }
-    // roof parapet + rooftop box
-    addDecor(bx, bh + 0.35, bz, boxGeo(bw + 0.3, 0.7, bd + 0.3), 0x2c2f3a);
-    if (Math.random() < 0.6) addProp(bx + rand(-bw * 0.2, bw * 0.2), bh, bz + rand(-bd * 0.2, bd * 0.2), 3, 1.6, 3, 0x2a2c36);
+
+    // projecting cornice, then the parapet sits on top of it
+    if (detail()) addDecor(bx, topY - 0.5, bz, boxGeo(bw + 0.7, 0.4, bd + 0.7), trimCol);
+    addDecor(bx, topY + 0.35, bz, boxGeo(bw + 0.3, 0.7, bd + 0.3), 0x2c2f3a);
+    // roof furniture
+    if (Math.random() < 0.6) addProp(bx + rand(-bw * 0.2, bw * 0.2), topY, bz + rand(-bd * 0.2, bd * 0.2), 3, 1.6, 3, 0x2a2c36);
+    if (Math.random() < 0.35) {
+      var tank = new THREE.Mesh(cylGeo(1.0, 1.2, 2.4, 8), matU(0x3a3026));
+      tank.position.set(bx + rand(-bw * 0.25, bw * 0.25), topY + 1.9, bz + rand(-bd * 0.25, bd * 0.25));
+      worldGroup.add(tank);
+    }
   }
 
   // rows facing the north-south street
@@ -3978,14 +4649,22 @@ function buildDocks(stage, loc, half) {
   for (i = 0; i < 22; i++) {
     x = rand(-half + 5, half - 5); z = rand(-half + 5, half - 5);
     if (dist2(x, z, 0, 0) < 40) continue;
-    if (Math.random() < 0.5) addDecor(x, 0.7, z, cylGeo(0.6, 0.6, 1.4, 8), 0x4a4a2a, 0x000000, { castShadow: true });
-    else addProp(x, 0, z, 1.6, 1.6, 1.6, 0x6a5230);
+    if (Math.random() < 0.5) {
+      addDecor(x, 0.7, z, drumGeo(0.6, 1.4), 0x4a4a2a, 0x000000, { castShadow: true });
+    } else {
+      // crate with a chamfer and corner battens
+      addProp(x, 0, z, 1.6, 1.6, 1.6, 0x6a5230);
+      if (detail()) {
+        addDecor(x, 0.8, z, shapeGeo(1.66, 0.14, 1.66, { bevel: 0.05, seg: 2 }), 0x8a6a3c);
+        addDecor(x, 1.58, z, shapeGeo(1.5, 0.1, 1.5, { bevel: 0.05, seg: 2 }), 0x54401f);
+      }
+    }
   }
   // dock lights
   for (i = 0; i < 8; i++) {
     x = rand(-half, half); z = rand(-half, half);
     addDecor(x, 4, z, cylGeo(0.12, 0.12, 8, 6), 0x2e3a40);
-    addDecor(x, 8.2, z, sphGeo(0.34, 8), 0xfff0c0, 0xffc070);
+    addDecor(x, 8.2, z, shapeGeo(0.5, 0.3, 0.5, { bevel: 0.09, seg: 2, bot: 1.0, top: 0.5 }), 0xfff0c0, 0xffc070);
     if (i < 5) addLightPoint(x, 8, z, 0x60e0c0, 0.6, 18);
   }
 }
@@ -3996,8 +4675,17 @@ function buildCastle(stage, loc, half) {
   for (i = 0; i < 16; i++) {
     a = (i / 16) * Math.PI * 2; r = half * 0.62;
     x = Math.sin(a) * r; z = Math.cos(a) * r;
-    addProp(x, 0, z, 2.2, rand(7, 15), 2.2, 0x3a3440);
+    var pilH = rand(7, 15);
+    addProp(x, 0, z, 2.2, pilH, 2.2, 0x3a3440);
     addDecor(x, 0.4, z, cylGeo(1.8, 2.0, 0.8, 8), 0x46404c);
+    // moulded base, banded shaft and a flared capital
+    addDecor(x, 1.0, z, shapeGeo(2.5, 0.5, 2.5, { bevel: 0.12, seg: 2, bot: 1.0, top: 0.86 }), 0x4a4450);
+    var band;
+    for (band = 1; band < 3 && detail(); band++) {
+      addDecor(x, pilH * (band / 3), z, shapeGeo(2.34, 0.22, 2.34, { bevel: 0.06, seg: 2 }), 0x453f4b);
+    }
+    addDecor(x, pilH - 0.55, z, shapeGeo(2.7, 0.62, 2.7, { bevel: 0.14, seg: 2, bot: 0.8, top: 1.0 }), 0x4a4450);
+    addDecor(x, pilH + 0.05, z, shapeGeo(2.95, 0.28, 2.95, { bevel: 0.09, seg: 2 }), 0x524c5a);
   }
   var lc;
   for (lc = 0; lc < 3; lc++) addLedgeCluster(rand(-half + 10, half - 10), rand(-half + 10, half - 10), loc);
@@ -4005,7 +4693,10 @@ function buildCastle(stage, loc, half) {
   for (i = 0; i < 18; i++) {
     x = rand(-half + 8, half - 8); z = rand(-half + 8, half - 8);
     if (dist2(x, z, 0, 0) < 90) continue;
-    addProp(x, 0, z, rand(6, 14), rand(3, 8), 1.6, 0x342e3a, { rotY: rand(0, 3.14) });
+    var wlen = rand(6, 14), wh = rand(3, 8), wrot = rand(0, 3.14);
+    addProp(x, 0, z, wlen, wh, 1.6, 0x342e3a, { rotY: wrot });
+    var cope = new THREE.Mesh(shapeGeo(wlen + 0.3, 0.3, 1.9, { bevel: 0.08, seg: 2, bot: 1.0, top: 0.8 }), matU(0x3e3844));
+    cope.position.set(x, wh, z); cope.rotation.y = wrot; worldGroup.add(cope);
   }
   // statues
   for (i = 0; i < 8; i++) {
@@ -4014,6 +4705,7 @@ function buildCastle(stage, loc, half) {
     // Pedestal is skipped inside reserved zones; the statue used to be added
     // regardless and floated in mid-air with nothing beneath it.
     if (!addProp(x, 0, z, 2.0, 1.2, 2.0, 0x4a4450)) continue;
+    addDecor(x, 1.2, z, shapeGeo(2.3, 0.22, 2.3, { bevel: 0.07, seg: 2, bot: 1.0, top: 0.88 }), 0x565060);
     var st = makeHumanoid({ body: 0x50495a, skin: 0x50495a, accent: 0x50495a, coat: true,
       coatColor: 0x50495a, scale: 1.1, weapon: 'sword', collar: true });
     st.group.position.set(x, 1.2, z); st.group.rotation.y = rand(0, 6.2);
@@ -4025,7 +4717,8 @@ function buildCastle(stage, loc, half) {
     a = (i / 10) * Math.PI * 2; r = half * 0.34;
     x = Math.sin(a) * r; z = Math.cos(a) * r;
     addDecor(x, 0.7, z, cylGeo(0.5, 0.3, 1.4, 8), 0x2e2a34);
-    addDecor(x, 1.6, z, sphGeo(0.45, 8), 0xffa040, 0xff7020);
+    addDecor(x, 1.42, z, shapeGeo(1.0, 0.42, 1.0, { bevel: 0.14, seg: 2, bot: 0.5, top: 1.0 }), 0x3a3440);
+    addDecor(x, 1.78, z, shapeGeo(0.66, 0.4, 0.66, { bevel: 0.11, seg: 2, bot: 1.0, top: 0.35 }), 0xffa040, 0xff7020);
     addLightPoint(x, 2.2, z, 0xff9040, 1.0, 16);
   }
   // arches
@@ -4033,7 +4726,11 @@ function buildCastle(stage, loc, half) {
     x = rand(-half + 12, half - 12); z = rand(-half + 12, half - 12);
     addProp(x - 2.4, 0, z, 1.4, 9, 1.4, 0x3a3440);
     addProp(x + 2.4, 0, z, 1.4, 9, 1.4, 0x3a3440);
+    addDecor(x - 2.4, 8.7, z, shapeGeo(1.8, 0.5, 1.8, { bevel: 0.1, seg: 2, bot: 0.82, top: 1.0 }), 0x4a4450);
+    addDecor(x + 2.4, 8.7, z, shapeGeo(1.8, 0.5, 1.8, { bevel: 0.1, seg: 2, bot: 0.82, top: 1.0 }), 0x4a4450);
     addProp(x, 9, z, 6.4, 1.4, 1.4, 0x3a3440);
+    addDecor(x, 10.35, z, shapeGeo(6.9, 0.4, 1.7, { bevel: 0.1, seg: 2, bot: 1.0, top: 0.85 }), 0x4a4450);
+    addDecor(x, 9.7, z, shapeGeo(1.1, 1.5, 1.6, { bevel: 0.12, seg: 2, bot: 0.7, top: 1.0 }), 0x524c5a);
   }
 }
 
@@ -4075,8 +4772,8 @@ function buildCatacombs(stage, loc, half) {
     if (dist2(x, z, 0, 0) < 90) continue;
     if (inClearZone(x, z, 4, 4)) continue;
     if (!addProp(x, 0, z, 2.2, 13, 2.2, 0xb8b09a)) continue;
-    addDecor(x, 13.2, z, boxGeo(3.0, 0.6, 3.0), 0x9a9280);
-    addDecor(x, 0.3, z, boxGeo(3.0, 0.6, 3.0), 0x9a9280);
+    addDecor(x, 13.2, z, shapeGeo(3.0, 0.62, 3.0, { bevel: 0.14, seg: 2, bot: 0.8, top: 1.0 }), 0x9a9280);
+    addDecor(x, 0.3, z, shapeGeo(3.0, 0.62, 3.0, { bevel: 0.14, seg: 2, bot: 1.0, top: 0.8 }), 0x9a9280);
     var ring, ci;
     for (ring = 0; ring < 5; ring++) {
       for (ci = 0; ci < 4; ci++) {
@@ -4097,9 +4794,9 @@ function buildCatacombs(stage, loc, half) {
     if (inClearZone(x, z, 3, 3)) continue;
     var ry2 = rand(0, 3.14);
     if (!addProp(x, 0, z, 1.5, 1.0, 3.0, 0x4a4034, { rotY: ry2 })) continue;
-    var lid = new THREE.Mesh(boxGeo(1.7, 0.24, 3.2), matU(0x5a4e3e));
+    var lid = new THREE.Mesh(shapeGeo(1.7, 0.26, 3.2, { bevel: 0.09, seg: 2, bot: 1.0, top: 0.86 }), matU(0x5a4e3e));
     lid.position.set(x, 1.12, z); lid.rotation.y = ry2; worldGroup.add(lid);
-    var crest = new THREE.Mesh(boxGeo(0.5, 0.1, 0.9), matU(0x8a8068));
+    var crest = new THREE.Mesh(shapeGeo(0.52, 0.12, 0.92, { bevel: 0.04, seg: 2, bot: 1.0, top: 0.7 }), matU(0x8a8068));
     crest.position.set(x, 1.28, z); crest.rotation.y = ry2; worldGroup.add(crest);
   }
 
@@ -4160,12 +4857,16 @@ function buildTemple(stage, loc, half) {
   for (i = 0; i < 14; i++) {
     a = (i / 14) * Math.PI * 2; r = half * rand(0.4, 0.8);
     x = Math.sin(a) * r; z = Math.cos(a) * r;
-    addProp(x, 0, z, 2.4, rand(9, 18), 2.4, 0x2e1620);
+    var monoH = rand(9, 18);
+    addProp(x, 0, z, 2.4, monoH, 2.4, 0x2e1620);
+    addDecor(x, monoH - 0.4, z, shapeGeo(2.8, 0.5, 2.8, { bevel: 0.13, seg: 2, bot: 0.78, top: 1.0 }), 0x3a1c26);
+    addDecor(x, monoH + 0.32, z, shapeGeo(1.4, 0.9, 1.4, { bevel: 0.16, seg: 2, bot: 1.0, top: 0.3 }), 0x4a2028);
     addDecor(x, rand(4, 12), z, boxGeo(2.6, 0.5, 2.6), 0xff2436, 0xa01020);
   }
   // altar steps at centre
   for (i = 0; i < 4; i++) {
     addProp(0, i * 0.8, -half * 0.55, 22 - i * 4, 0.8, 12 - i * 2, 0x321820, { walkable: true, force: true });
+    if (detail()) addDecor(0, i * 0.8 + 0.8, -half * 0.55 + (12 - i * 2) / 2, boxGeo(22 - i * 4, 0.1, 0.34), 0x4a2430);
   }
   var lc;
   for (lc = 0; lc < 3; lc++) addLedgeCluster(rand(-half + 10, half - 10), rand(-half + 10, half - 10), loc);
@@ -4174,7 +4875,8 @@ function buildTemple(stage, loc, half) {
     a = (i / 12) * Math.PI * 2; r = half * 0.3;
     x = Math.sin(a) * r; z = Math.cos(a) * r;
     addDecor(x, 0.8, z, cylGeo(0.55, 0.35, 1.6, 8), 0x1e0e14);
-    addDecor(x, 1.9, z, sphGeo(0.5, 8), 0xff4028, 0xff2010);
+    addDecor(x, 1.66, z, shapeGeo(1.1, 0.44, 1.1, { bevel: 0.15, seg: 2, bot: 0.48, top: 1.0 }), 0x2a1018);
+    addDecor(x, 2.04, z, shapeGeo(0.74, 0.44, 0.74, { bevel: 0.12, seg: 2, bot: 1.0, top: 0.32 }), 0xff4028, 0xff2010);
     if (i % 2 === 0) addLightPoint(x, 2.6, z, 0xff3020, 1.1, 18);
   }
   // floating shards
@@ -7198,6 +7900,7 @@ function buildActWorld(act) {
   }
   if (act.indoor) buildInterior(loc, size, half);
 
+  mergeStatics();     // batch static scenery into a handful of draw calls
 
   return stage;
 }
@@ -7285,11 +7988,11 @@ function buildRoofPad(zone, loc, half) {
     if (Math.random() < 0.55) {
       var uw = rand(3.5, 6), uh = rand(1.8, 3.0), ud = rand(3.5, 6);
       addProp(rx, y, rz, uw, uh, ud, 0x2a2e3a, { force: true });        // AC unit
-      addDecor(rx, y + uh + 0.14, rz, boxGeo(uw * 0.7, 0.3, ud * 0.7), 0x3c414e);
-      addDecor(rx, y + uh + 0.42, rz, cylGeo(uw * 0.26, uw * 0.26, 0.35, 10), 0x1e222c);
+      addDecor(rx, y + uh + 0.16, rz, shapeGeo(uw * 0.72, 0.32, ud * 0.72, { bevel: 0.09, seg: 2, bot: 1.0, top: 0.88 }), 0x3c414e);
+      addDecor(rx, y + uh + 0.46, rz, shapeGeo(uw * 0.54, 0.4, uw * 0.54, { bevel: 0.12, seg: 3, bot: 1.0, top: 0.82 }), 0x1e222c);
     } else {
       addDecor(rx, y + 1.4, rz, cylGeo(1.2, 1.2, 2.8, 10), 0x3a3e4a, 0x000000, { castShadow: true });
-      addDecor(rx, y + 3.0, rz, cylGeo(1.45, 1.45, 0.3, 10), 0x22262e);  // vent stack
+      addDecor(rx, y + 3.05, rz, shapeGeo(3.1, 0.34, 3.1, { bevel: 0.3, seg: 3, bot: 0.86, top: 1.0 }), 0x22262e);  // rain cap
     }
   }
   // water tower on legs
@@ -7297,15 +8000,20 @@ function buildRoofPad(zone, loc, half) {
   for (li = 0; li < 4; li++) {
     addDecor(wtx + (li % 2 ? 1.5 : -1.5), y + 1.6, wtz + (li < 2 ? 1.5 : -1.5), boxGeo(0.28, 3.2, 0.28), 0x2a2018);
   }
-  addDecor(wtx, y + 4.6, wtz, cylGeo(2.3, 2.3, 3.4, 12), 0x3a2c20, 0x000000, { castShadow: true });
+  addDecor(wtx, y + 4.6, wtz, drumGeo(2.3, 3.4, { seg: 12 }), 0x3a2c20, 0x000000, { castShadow: true });
+  addDecor(wtx, y + 6.65, wtz, shapeGeo(4.9, 1.0, 4.9, { bevel: 0.4, seg: 3, bot: 1.0, top: 0.18 }), 0x2c2118);
+  if (detail()) {
+    addDecor(wtx, y + 3.4, wtz, shapeGeo(4.8, 0.16, 4.8, { bevel: 0.3, seg: 3 }), 0x241a12);
+    addDecor(wtx, y + 5.6, wtz, shapeGeo(4.8, 0.16, 4.8, { bevel: 0.3, seg: 3 }), 0x241a12);
+  }
   addDecor(wtx, y + 6.6, wtz, coneGeo(2.5, 1.2, 12), 0x2c2018);
   // stair head — visually explains how you get up here
   addProp(zone.x + w * 0.36, y, zone.z + d * 0.36, 5, 3.4, 4.4, loc.ground2, { force: true });
-  addDecor(zone.x + w * 0.3, y + 1.6, zone.z + d * 0.3 - 2.3, boxGeo(2.0, 2.6, 0.3), 0x0e1014);
+  addDecor(zone.x + w * 0.3, y + 1.6, zone.z + d * 0.3 - 2.3, shapeGeo(2.05, 2.6, 0.34, { bevel: 0.07, seg: 2, bot: 1.0, top: 0.96 }), 0x0e1014);
   // billboard
-  addDecor(zone.x - w * 0.32, y + 4.2, zone.z - d * 0.34, boxGeo(0.4, 5.4, 0.4), 0x1c1c24);
-  addDecor(zone.x - w * 0.16, y + 4.2, zone.z - d * 0.34, boxGeo(0.4, 5.4, 0.4), 0x1c1c24);
-  addDecor(zone.x - w * 0.24, y + 6.4, zone.z - d * 0.34, boxGeo(9, 4.4, 0.35), 0x14141c);
+  addDecor(zone.x - w * 0.32, y + 4.2, zone.z - d * 0.34, shapeGeo(0.44, 5.4, 0.44, { bevel: 0.09, seg: 2, bot: 1.1, top: 0.85 }), 0x1c1c24);
+  addDecor(zone.x - w * 0.16, y + 4.2, zone.z - d * 0.34, shapeGeo(0.44, 5.4, 0.44, { bevel: 0.09, seg: 2, bot: 1.1, top: 0.85 }), 0x1c1c24);
+  addDecor(zone.x - w * 0.24, y + 6.4, zone.z - d * 0.34, shapeGeo(9.1, 4.5, 0.4, { bevel: 0.1, seg: 2 }), 0x14141c);
   addDecor(zone.x - w * 0.24, y + 6.4, zone.z - d * 0.34 + 0.24, boxGeo(8.2, 3.7, 0.12), loc.accent, loc.accent);
   addLightPoint(zone.x - w * 0.24, y + 6.4, zone.z - d * 0.34 + 2, loc.accent, 1.1, 22);
   // aerial with a warning lamp
@@ -7529,10 +8237,18 @@ function dressCorridorBay(wx, wz, sign, loc, style) {
     addDecor(inX + sign * 2.6, 4.2, wz - 3.4, boxGeo(0.2, 1.6, 3.4), pick([0xff4a5a, 0x40b0ff, 0xffd070]), 0xff4a5a);
     addLightPoint(inX + sign * 2.6, 4.2, wz - 3.4, 0xff4a5a, 0.8, 15);
     addProp(inX + sign * 2.2, 0, wz + 4.2, 1.7, 1.7, 1.7, 0x4a3c26, { force: true });
+    addDecor(inX + sign * 2.2, 0.86, wz + 4.2, shapeGeo(1.76, 0.13, 1.76, { bevel: 0.05, seg: 2 }), 0x6b563a);
     addProp(inX + sign * 2.0, 1.7, wz + 4.4, 1.4, 1.4, 1.4, 0x3c3020, { force: true });
+    addDecor(inX + sign * 2.0, 2.4, wz + 4.4, shapeGeo(1.46, 0.11, 1.46, { bevel: 0.05, seg: 2 }), 0x584627);
   } else if (style === 'docks') {
     // cargo deck: containers, pipe runs, hazard stripes, work lamps
-    addProp(inX + sign * 1.6, 0, wz, 3.2, 3.0, 8.4, pick([0x2a5a6a, 0x8a4a20, 0x3a6a3a, 0x7a2a2a]), { force: true });
+    var ccol = pick([0x2a5a6a, 0x8a4a20, 0x3a6a3a, 0x7a2a2a]);
+    addProp(inX + sign * 1.6, 0, wz, 3.2, 3.0, 8.4, ccol, { force: true });
+    // corner castings + top rail so containers read as containers
+    if (detail()) {
+      addDecor(inX + sign * 1.6, 3.02, wz, shapeGeo(3.3, 0.16, 8.5, { bevel: 0.06, seg: 2 }), 0x1e2228);
+      addDecor(inX + sign * 1.6, 0.1, wz, shapeGeo(3.3, 0.2, 8.5, { bevel: 0.06, seg: 2 }), 0x1e2228);
+    }
     addDecor(inX + sign * 0.6, 6.6, wz, cylGeo(0.3, 0.3, 13, 8), 0x3a4650).rotation.x = Math.PI / 2;
     addDecor(inX + sign * 0.6, 7.4, wz, cylGeo(0.22, 0.22, 13, 8), 0x2e3a40).rotation.x = Math.PI / 2;
     addDecor(inX, 9.2, wz, boxGeo(0.7, 0.5, 13), 0xb8a038);
@@ -8699,13 +9415,13 @@ function buildVehicle(kind, x, z, rotY, col) {
 
   if (kind === 'sedan') {
     W = 2.7; L = 5.6;
-    var b = new THREE.Mesh(boxGeo(W, 0.8, L), matU(c)); b.position.y = 0.85; g.add(b);
-    var cab = new THREE.Mesh(boxGeo(W - 0.3, 0.85, 2.9), matU(c)); cab.position.set(0, 1.62, -0.2); g.add(cab);
-    var wsF = new THREE.Mesh(boxGeo(W - 0.45, 0.7, 0.1), glassM); wsF.position.set(0, 1.66, 1.28); wsF.rotation.x = 0.5; g.add(wsF);
-    var wsB = new THREE.Mesh(boxGeo(W - 0.45, 0.62, 0.1), glassM); wsB.position.set(0, 1.66, -1.68); wsB.rotation.x = -0.55; g.add(wsB);
+    var b = new THREE.Mesh(shapeGeo(W, 0.8, L, { bevel: 0.14, seg: 2, bot: 0.93, top: 1.0 }), matU(c)); b.position.y = 0.85; g.add(b);
+    var cab = new THREE.Mesh(shapeGeo(W - 0.3, 0.85, 2.9, { bevel: 0.12, seg: 2, bot: 1.0, top: 0.76 }), matU(c)); cab.position.set(0, 1.62, -0.2); g.add(cab);
+    var wsF = new THREE.Mesh(boxGeo(W - 0.45, 0.7, 0.1), glassM); wsF.position.set(0, 1.66, 1.02); wsF.rotation.x = -0.5;   // rake back, not forward g.add(wsF);
+    var wsB = new THREE.Mesh(boxGeo(W - 0.45, 0.62, 0.1), glassM); wsB.position.set(0, 1.66, -1.42); wsB.rotation.x = 0.55;  // rear glass leans in g.add(wsB);
     for (i = 0; i < 2; i++) {
       var sw = new THREE.Mesh(boxGeo(0.1, 0.55, 2.4), glassM);
-      sw.position.set((i ? 1 : -1) * (W / 2 - 0.2), 1.62, -0.2); g.add(sw);
+      sw.position.set((i ? 1 : -1) * 1.02, 1.62, -0.2); g.add(sw);
     }
     g.add(mkLight(-0.85, 1.02, L / 2 - 0.05, 0xfff4d0, 0.6, 0.24));
     g.add(mkLight(0.85, 1.02, L / 2 - 0.05, 0xfff4d0, 0.6, 0.24));
@@ -8714,31 +9430,67 @@ function buildVehicle(kind, x, z, rotY, col) {
     wheel(-W / 2 + 0.15, 0.55, -1.85, 0.55); wheel(W / 2 - 0.15, 0.55, -1.85, 0.55);
     H = 2.3;
   } else if (kind === 'van') {
+    /* Rebuilt: this was two disconnected blocks with a visible gap between the
+       cargo box and the nose, plus a windscreen floating in the air. Now one
+       continuous panel van — snub bonnet, raked screen, unbroken roofline,
+       wheel arches and a rear door seam. */
     W = 2.9; L = 6.2;
-    var vb = new THREE.Mesh(boxGeo(W, 2.3, L * 0.68), matU(c)); vb.position.set(0, 1.75, -0.9); g.add(vb);
-    var vn = new THREE.Mesh(boxGeo(W - 0.15, 1.5, L * 0.34), matU(c)); vn.position.set(0, 1.3, 2.1); g.add(vn);
-    var vws = new THREE.Mesh(boxGeo(W - 0.4, 0.95, 0.12), glassM); vws.position.set(0, 1.85, 2.68); vws.rotation.x = 0.28; g.add(vws);
+    var vBody = new THREE.Mesh(shapeGeo(W, 2.36, 4.7, { bevel: 0.17, seg: 2, bot: 0.97, top: 0.9 }), matU(c));
+    vBody.position.set(0, 1.78, -0.75); g.add(vBody);
+    // cab bridges body to bonnet, so there is no gap
+    var vCab = new THREE.Mesh(shapeGeo(W - 0.06, 2.2, 1.5, { bevel: 0.16, seg: 2, bot: 0.98, top: 0.82 }), matU(c));
+    vCab.position.set(0, 1.7, 2.05); g.add(vCab);
+    var vNose = new THREE.Mesh(shapeGeo(W - 0.22, 1.0, 0.9, { bevel: 0.14, seg: 2, bot: 0.9, top: 0.96 }), matU(c));
+    vNose.position.set(0, 1.05, 2.95); g.add(vNose);
+    // raked windscreen, seated on the bonnet
+    var vws = new THREE.Mesh(boxGeo(W - 0.42, 1.15, 0.1), glassM);
+    vws.position.set(0, 2.02, 2.66); vws.rotation.x = -0.42; g.add(vws);
+    // side glass + sliding-door seam
     for (i = 0; i < 2; i++) {
-      var vsw = new THREE.Mesh(boxGeo(0.1, 0.7, 1.1), glassM);
-      vsw.position.set((i ? 1 : -1) * (W / 2 - 0.06), 1.75, 1.5); g.add(vsw);
+      var sgn = i ? 1 : -1;
+      var vsw = new THREE.Mesh(boxGeo(0.08, 0.72, 1.15), glassM);
+      vsw.position.set(sgn * 1.20, 2.16, 1.9); g.add(vsw);
+      var seam = new THREE.Mesh(boxGeo(0.06, 1.9, 0.07), matU(0x1a1c22));
+      seam.position.set(sgn * (W / 2 - 0.01), 1.72, 0.35); g.add(seam);
+      // wheel arch flares
+      var af, arch;
+      for (af = 0; af < 2; af++) {
+        // hug the body: proud slabs read as fins, not arches
+        arch = new THREE.Mesh(shapeGeo(0.16, 0.46, 2.0, { bevel: 0.07, seg: 2, bot: 1.0, top: 0.45 }), matU(0x14161c));
+        arch.position.set(sgn * (W / 2 - 0.02), 0.92, af ? -2.4 : 1.9); g.add(arch);
+      }
     }
-    var stripe = new THREE.Mesh(boxGeo(W + 0.04, 0.28, L * 0.68), matU(0xb0b6c2)); stripe.position.set(0, 1.5, -0.9); g.add(stripe);
-    g.add(mkLight(-1.0, 1.0, L / 2 - 0.1, 0xfff4d0, 0.55, 0.26));
-    g.add(mkLight(1.0, 1.0, L / 2 - 0.1, 0xfff4d0, 0.55, 0.26));
-    g.add(mkLight(0, 1.6, -L * 0.68 / 2 - 0.9, 0xd03040, 2.3, 0.22));
+    // rear doors: two panels with a centre seam and handles
+    var rd = new THREE.Mesh(boxGeo(W - 0.2, 1.85, 0.09), matU(0x2a2c34));
+    rd.position.set(0, 1.82, -3.06); g.add(rd);
+    var rseam = new THREE.Mesh(boxGeo(0.07, 1.85, 0.12), matU(0x14161c));
+    rseam.position.set(0, 1.82, -3.1); g.add(rseam);
+    // waist stripe follows the body only
+    var stripe = new THREE.Mesh(boxGeo(W + 0.04, 0.26, 4.6), matU(0xb0b6c2));
+    stripe.position.set(0, 1.42, -0.75); g.add(stripe);
+    // roof rib detail
+    var rib;
+    for (rib = 0; rib < 3 && detail(); rib++) {
+      var rr = new THREE.Mesh(boxGeo(W - 0.5, 0.08, 0.12), matU(0x1e2028));
+      rr.position.set(0, 2.94, -2.2 + rib * 1.3); g.add(rr);
+    }
+    g.add(mkLight(-1.0, 0.95, 3.34, 0xfff4d0, 0.5, 0.24));
+    g.add(mkLight(1.0, 0.95, 3.34, 0xfff4d0, 0.5, 0.24));
+    g.add(mkLight(-1.15, 2.3, -3.12, 0xd03040, 0.34, 0.5));
+    g.add(mkLight(1.15, 2.3, -3.12, 0xd03040, 0.34, 0.5));
     wheel(-W / 2 + 0.1, 0.6, 1.9, 0.6); wheel(W / 2 - 0.1, 0.6, 1.9, 0.6);
     wheel(-W / 2 + 0.1, 0.6, -2.4, 0.6); wheel(W / 2 - 0.1, 0.6, -2.4, 0.6);
     H = 3.4;
   } else if (kind === 'truck') {
     W = 3.2; L = 9.6;
-    var box = new THREE.Mesh(boxGeo(W + 0.3, 3.2, 6.2), matU(0xb8bcc6)); box.position.set(0, 2.9, -1.6); g.add(box);
+    var box = new THREE.Mesh(shapeGeo(W + 0.3, 3.2, 6.2, { bevel: 0.12, seg: 2 }), matU(0xb8bcc6)); box.position.set(0, 2.9, -1.6); g.add(box);
     var ribs;
     for (ribs = 0; ribs < 5; ribs++) {
       var rb = new THREE.Mesh(boxGeo(W + 0.36, 0.16, 0.16), matU(0x8e939e));
       rb.position.set(0, 1.6 + ribs * 0.65, -1.6); g.add(rb);
     }
-    var cabT = new THREE.Mesh(boxGeo(W, 2.2, 2.6), matU(c)); cabT.position.set(0, 2.0, 3.2); g.add(cabT);
-    var twin = new THREE.Mesh(boxGeo(W - 0.45, 1.0, 0.12), glassM); twin.position.set(0, 2.5, 4.44); twin.rotation.x = 0.18; g.add(twin);
+    var cabT = new THREE.Mesh(shapeGeo(W, 2.2, 2.6, { bevel: 0.14, seg: 2, bot: 0.98, top: 0.88 }), matU(c)); cabT.position.set(0, 2.0, 3.2); g.add(cabT);
+    var twin = new THREE.Mesh(boxGeo(W - 0.45, 1.0, 0.12), glassM); twin.position.set(0, 2.5, 4.34); twin.rotation.x = -0.18; g.add(twin);
     var grill = new THREE.Mesh(boxGeo(W - 0.5, 0.7, 0.14), matU(0x2c2c34)); grill.position.set(0, 1.35, 4.5); g.add(grill);
     g.add(mkLight(-1.15, 1.2, 4.5, 0xfff4d0, 0.6, 0.3));
     g.add(mkLight(1.15, 1.2, 4.5, 0xfff4d0, 0.6, 0.3));
@@ -8750,10 +9502,10 @@ function buildVehicle(kind, x, z, rotY, col) {
   } else {  // bike
     W = 1.0; L = 2.9;
     var frame = new THREE.Mesh(boxGeo(0.38, 0.44, 1.9), matU(c)); frame.position.y = 0.86; g.add(frame);
-    var tank = new THREE.Mesh(boxGeo(0.5, 0.42, 0.9), matU(c)); tank.position.set(0, 1.12, 0.1); g.add(tank);
-    var seat = new THREE.Mesh(boxGeo(0.42, 0.2, 1.0), matU(0x121216)); seat.position.set(0, 1.14, -0.75); g.add(seat);
-    var fairing = new THREE.Mesh(boxGeo(0.56, 0.7, 0.5), matU(c)); fairing.position.set(0, 1.0, 1.05); g.add(fairing);
-    var scr = new THREE.Mesh(boxGeo(0.4, 0.3, 0.1), glassM); scr.position.set(0, 1.42, 1.15); scr.rotation.x = 0.5; g.add(scr);
+    var tank = new THREE.Mesh(shapeGeo(0.5, 0.42, 0.9, { bevel: 0.12, seg: 2, bot: 0.8, top: 1.0 }), matU(c)); tank.position.set(0, 1.12, 0.1); g.add(tank);
+    var seat = new THREE.Mesh(shapeGeo(0.42, 0.2, 1.0, { bevel: 0.07, seg: 2 }), matU(0x121216)); seat.position.set(0, 1.14, -0.75); g.add(seat);
+    var fairing = new THREE.Mesh(shapeGeo(0.56, 0.7, 0.5, { bevel: 0.11, seg: 2, bot: 0.7, top: 1.0 }), matU(c)); fairing.position.set(0, 1.0, 1.05); g.add(fairing);
+    var scr = new THREE.Mesh(boxGeo(0.4, 0.3, 0.1), glassM); scr.position.set(0, 1.42, 1.15); scr.rotation.x = -0.5; g.add(scr);
     var bar = new THREE.Mesh(boxGeo(0.95, 0.09, 0.09), matU(0x2c2c34)); bar.position.set(0, 1.36, 0.9); g.add(bar);
     var pipe = new THREE.Mesh(cylGeo(0.1, 0.1, 1.5, 8), matU(0x9aa2b0));
     pipe.position.set(0.24, 0.6, -0.5); pipe.rotation.x = Math.PI / 2; g.add(pipe);
@@ -8777,16 +9529,16 @@ function mkLight(x, y, z, col, w, h) {
 function buildMuscleCar(x, z, rotY, bodyCol) {
   var g = new THREE.Group();
   var col = bodyCol === undefined ? 0x14141a : bodyCol;
-  var body = new THREE.Mesh(boxGeo(3.0, 0.85, 6.4), matU(col)); body.position.y = 0.86; g.add(body);
-  var skirt = new THREE.Mesh(boxGeo(3.16, 0.34, 6.0), matU(0x0a0a0e)); skirt.position.y = 0.5; g.add(skirt);
-  var hood = new THREE.Mesh(boxGeo(2.86, 0.22, 2.1), matU(col)); hood.position.set(0, 1.33, 1.95); g.add(hood);
+  var body = new THREE.Mesh(shapeGeo(3.0, 0.85, 6.4, { bevel: 0.15, seg: 2, bot: 0.94, top: 1.0 }), matU(col)); body.position.y = 0.86; g.add(body);
+  var skirt = new THREE.Mesh(shapeGeo(3.16, 0.34, 6.0, { bevel: 0.1, seg: 2, bot: 0.9, top: 1.0 }), matU(0x0a0a0e)); skirt.position.y = 0.5; g.add(skirt);
+  var hood = new THREE.Mesh(shapeGeo(2.86, 0.22, 2.1, { bevel: 0.08, seg: 2, bot: 1.0, top: 0.97 }), matU(col)); hood.position.set(0, 1.33, 1.95); g.add(hood);
   var scoop = new THREE.Mesh(boxGeo(1.05, 0.3, 1.0), matU(0x08080c)); scoop.position.set(0, 1.52, 1.75); g.add(scoop);
-  var cabin = new THREE.Mesh(boxGeo(2.6, 0.92, 2.5), matU(0x0b0b11)); cabin.position.set(0, 1.72, -0.35); g.add(cabin);
+  var cabin = new THREE.Mesh(shapeGeo(2.6, 0.92, 2.5, { bevel: 0.13, seg: 2, bot: 1.0, top: 0.78 }), matU(0x0b0b11)); cabin.position.set(0, 1.72, -0.35); g.add(cabin);
   var glassF = new THREE.Mesh(boxGeo(2.42, 0.72, 0.12), matU(0x22303e, 0x0d141c));
-  glassF.position.set(0, 1.74, 0.9); glassF.rotation.x = 0.42; g.add(glassF);
+  glassF.position.set(0, 1.74, 0.72); glassF.rotation.x = -0.42;   // seated on the tapered cabin g.add(glassF);
   var glassB = new THREE.Mesh(boxGeo(2.42, 0.62, 0.12), matU(0x22303e, 0x0d141c));
-  glassB.position.set(0, 1.74, -1.6); glassB.rotation.x = -0.5; g.add(glassB);
-  var trunk = new THREE.Mesh(boxGeo(2.86, 0.2, 1.5), matU(col)); trunk.position.set(0, 1.33, -2.4); g.add(trunk);
+  glassB.position.set(0, 1.74, -1.42); glassB.rotation.x = 0.5; g.add(glassB);
+  var trunk = new THREE.Mesh(shapeGeo(2.86, 0.2, 1.5, { bevel: 0.07, seg: 2 }), matU(col)); trunk.position.set(0, 1.33, -2.4); g.add(trunk);
   var spoiler = new THREE.Mesh(boxGeo(2.7, 0.12, 0.5), matU(0x0a0a0e)); spoiler.position.set(0, 1.72, -3.0); g.add(spoiler);
   var spL = new THREE.Mesh(boxGeo(0.16, 0.42, 0.3), matU(0x0a0a0e)); spL.position.set(-1.15, 1.5, -2.95); g.add(spL);
   var spR = spL.clone(); spR.position.x = 1.15; g.add(spR);
@@ -8884,10 +9636,12 @@ function buildHubWorld() {
   for (i = 0; i < 4; i++) {
     var px = (i % 2 ? 1 : -1) * 21, pz2 = (i < 2 ? 1 : -1) * 21;
     addProp(px, 0, pz2, 2.6, 15, 2.6, 0x2a2a32, { force: true });
-    addDecor(px, 7.5, pz2, boxGeo(3.0, 0.5, 3.0), 0x33333c);
+    addDecor(px, 0.35, pz2, shapeGeo(3.3, 0.7, 3.3, { bevel: 0.16, seg: 2, bot: 1.0, top: 0.84 }), 0x33333c);
+    addDecor(px, 7.5, pz2, shapeGeo(3.0, 0.5, 3.0, { bevel: 0.12, seg: 2 }), 0x33333c);
+    addDecor(px, 14.6, pz2, shapeGeo(3.2, 0.55, 3.2, { bevel: 0.14, seg: 2, bot: 0.84, top: 1.0 }), 0x3a3a44);
     addDecor(px, 12.4, pz2, cylGeo(0.08, 0.08, 2.2, 6), 0x14141a);
-    addDecor(px, 11.2, pz2, cylGeo(0.95, 0.55, 0.6, 10), 0x3a3a42);
-    addDecor(px, 10.9, pz2, sphGeo(0.42, 8), 0xfff2cc, 0xffd898);
+    addDecor(px, 11.2, pz2, shapeGeo(1.9, 0.62, 1.9, { bevel: 0.24, seg: 3, bot: 0.5, top: 1.0 }), 0x3a3a42);
+    addDecor(px, 10.85, pz2, shapeGeo(0.8, 0.4, 0.8, { bevel: 0.16, seg: 3, bot: 1.0, top: 0.5 }), 0xfff2cc, 0xffd898);
     addLightPoint(px, 10.4, pz2, 0xffc286, 1.15, 30);
   }
   addLightPoint(0, 11, 0, 0xff4050, 0.55, 46);
@@ -8907,17 +9661,28 @@ function buildHubWorld() {
   /* ---- weapon bench + rack ---- */
   var bx = 15, bz = -14;
   addProp(bx, 0, bz, 8.5, 1.15, 2.6, 0x3a2d22, { force: true });
-  addDecor(bx, 1.24, bz, boxGeo(8.6, 0.16, 2.7), 0x4a3a2a);
+  addDecor(bx, 1.26, bz, shapeGeo(8.8, 0.22, 2.85, { bevel: 0.06, seg: 2, bot: 0.97, top: 1.0 }), 0x4a3a2a);
+  addDecor(bx, 1.05, bz, shapeGeo(8.6, 0.18, 2.7, { bevel: 0.05, seg: 2 }), 0x30251c);
+  var bl;
+  for (bl = 0; bl < 4; bl++) {
+    addDecor(bx - 3.9 + (bl % 2) * 7.8, 0.55, bz - 1.0 + (bl < 2 ? 0 : 2.0),
+      shapeGeo(0.3, 1.1, 0.3, { bevel: 0.05, seg: 2, bot: 0.85, top: 1.0 }), 0x2a2018);
+  }
   // pegboard behind the rack so the swords hang on something instead of air
   addDecor(bx, 3.6, bz - 1.55, boxGeo(9.4, 5.4, 0.22), 0x2b2b33);
-  addDecor(bx, 6.25, bz - 1.5, boxGeo(9.8, 0.3, 0.4), 0x3a3a44);
+  addDecor(bx, 6.25, bz - 1.5, shapeGeo(9.9, 0.34, 0.46, { bevel: 0.08, seg: 2, bot: 1.0, top: 0.8 }), 0x3a3a44);
+  addDecor(bx, 0.95, bz - 1.5, shapeGeo(9.9, 0.26, 0.42, { bevel: 0.07, seg: 2, bot: 0.8, top: 1.0 }), 0x3a3a44);
   for (i = 0; i < 5; i++) {
     var sx2 = bx - 3.2 + i * 1.6;
-    addDecor(sx2, 3.5, bz - 1.36, boxGeo(0.12, 2.1, 0.05), 0xd8dce8, 0x343c4c);
-    addDecor(sx2, 2.35, bz - 1.36, boxGeo(0.42, 0.1, 0.12), 0xb8202c);
+    addDecor(sx2, 2.45, bz - 1.36, bladeGeo(2.05, 0.12, 0.05), 0xd8dce8, 0x343c4c);
+    addDecor(sx2, 2.35, bz - 1.36, shapeGeo(0.44, 0.11, 0.13, { bevel: 0.028, seg: 2 }), 0xb8202c);
+    addDecor(sx2, 2.05, bz - 1.36, shapeGeo(0.1, 0.42, 0.1, { bevel: 0.022, seg: 2, bot: 1.05, top: 0.92 }), 0x14100e);
     addDecor(sx2, 4.72, bz - 1.4, boxGeo(0.5, 0.12, 0.14), 0x50505c);   // wall hook
   }
-  for (i = 0; i < 6; i++) addDecor(bx - 3.5 + i * 1.4, 1.6, bz + 0.5, boxGeo(0.5, 0.55, 0.5), 0x6a5a30);  // ammo boxes
+  for (i = 0; i < 6; i++) {
+    addDecor(bx - 3.5 + i * 1.4, 1.6, bz + 0.5, shapeGeo(0.52, 0.56, 0.52, { bevel: 0.055, seg: 2 }), 0x6a5a30);
+    if (detail()) addDecor(bx - 3.5 + i * 1.4, 1.89, bz + 0.5, shapeGeo(0.56, 0.07, 0.56, { bevel: 0.03, seg: 2 }), 0x8a7440);
+  }  // ammo boxes
   addLightPoint(bx, 4, bz, 0xffd0a0, 0.8, 18);
 
   /* ---- lockers, crates, med bay, training dummy ---- */
@@ -10547,6 +11312,7 @@ if (!window.THREE) {
 }
 
 })();
+
 
 </script>
 </body>
