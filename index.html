@@ -792,7 +792,7 @@ body.touch #skills{display:none;}   /* the on-screen buttons already show these 
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.4.1';
+var GAME_VERSION = 'v3.5.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -4611,6 +4611,12 @@ function makeHumanoid(cfg) {
      down about its centre — the old 1:5 head-to-body ratio is the single
      biggest thing that read as a toy. */
   headG.scale.setScalar(cfg.headScale || 0.84);
+  // a mouth that opens and closes with speech (lip-flap, PS2 style)
+  if (!cfg.mask && !cfg.helm && !cfg.skull) {
+    var mouth = new THREE.Mesh(new THREE.CircleGeometry(0.034, 10), matU(0x1a0608));
+    mouth.position.set(0, -0.122, 0.2); mouth.scale.set(1.7, 0.12, 1);
+    headG.add(mouth); headG.userData.mouth = mouth;
+  }
   if (!cfg.mask && !cfg.helm && !cfg.hood && !cfg.skull) {
     var earL = new THREE.Mesh(shapeGeo(0.05, 0.13, 0.09, { bevel: 0.02, seg: 2, bot: 0.7, top: 1.0 }), skinM);
     earL.position.set(-0.215, 0.01, -0.01); earL.rotation.z = 0.12; headG.add(earL);
@@ -5087,6 +5093,7 @@ function makeHumanoid(cfg) {
   var keep = [armL.userData.hand, armR.userData.hand];
   if (flames) keep = keep.concat(flames);
   if (gownMesh) keep.push(gownMesh);
+  if (headG.userData.mouth) keep.push(headG.userData.mouth);
   mergeRigid(g, keep);
 
   return {
@@ -6565,23 +6572,39 @@ function addGoalZone(x, z, loc, fromY) {
 }
 
 /* ---------------- collectibles ---------------- */
+/* Pickups: a bloodstone shard and a serum vial, each with a soft glow —
+   replacing the toy-like diamond-in-a-hoop. */
+function pickupGlow(g, col, size) {
+  var dot = softDotTex();
+  if (!dot) return;
+  var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: col, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
+  sp.scale.set(size, size, 1); g.add(sp);
+}
 function spawnToken(x, y, z, worth) {
   var g = new THREE.Group();
-  var gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), matU(0xff2a3a, 0xa00c18));
-  g.add(gem);
-  var halo = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.05, 6, 16), matU(0xffb060, 0xffb060));
-  halo.rotation.x = Math.PI / 2; g.add(halo);
+  var gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.26, 0), new THREE.MeshPhongMaterial({ color: 0xb01020, emissive: 0x6a0610, specular: 0xffc0c0, shininess: 90 }));
+  gem.scale.set(0.8, 1.7, 0.8); g.add(gem);
+  var chip = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), gem.material);
+  chip.position.set(0.18, -0.2, 0.05); chip.scale.set(0.8, 1.5, 0.8); chip.rotation.z = 0.5; g.add(chip);
+  pickupGlow(g, 0xff2030, 1.5);
   g.position.set(x, y, z);
   fxGroup.add(g);
   pickups.push({ kind: 'token', group: g, gem: gem, x: x, y: y, z: z, worth: worth || 1, t: rand(0, 6), taken: false });
 }
 function spawnHealth(x, y, z) {
   var g = new THREE.Group();
-  var vial = new THREE.Mesh(cylGeo(0.24, 0.24, 0.7, 8), matU(0x40ff90, 0x20a060));
-  g.add(vial);
+  var liquid = new THREE.Mesh(cylGeo(0.13, 0.13, 0.5, 10), new THREE.MeshPhongMaterial({ color: 0x30e080, emissive: 0x108040, shininess: 60 }));
+  g.add(liquid);
+  var glass = new THREE.Mesh(cylGeo(0.17, 0.17, 0.62, 12), new THREE.MeshPhongMaterial({ color: 0xc8e8ff, specular: 0xffffff, shininess: 120, transparent: true, opacity: 0.35, depthWrite: false }));
+  g.add(glass);
+  var capM = new THREE.MeshPhongMaterial({ color: 0x9aa2ae, specular: 0xffffff, shininess: 90 });
+  var cap1 = new THREE.Mesh(cylGeo(0.19, 0.19, 0.1, 12), capM); cap1.position.y = 0.36; g.add(cap1);
+  var cap2 = new THREE.Mesh(cylGeo(0.19, 0.19, 0.1, 12), capM); cap2.position.y = -0.36; g.add(cap2);
+  pickupGlow(g, 0x40ff90, 1.4);
+  g.rotation.z = 0.25;
   g.position.set(x, y, z);
   fxGroup.add(g);
-  pickups.push({ kind: 'health', group: g, gem: vial, x: x, y: y, z: z, worth: 45, t: rand(0, 6), taken: false });
+  pickups.push({ kind: 'health', group: g, gem: liquid, x: x, y: y, z: z, worth: 45, t: rand(0, 6), taken: false });
 }
 function spawnStageTokens(stage, half, loc) {
   var n = stage.tokens, i, x, z, y;
@@ -10932,17 +10955,34 @@ function playDeployCutscene(then) {
   addProp(-13.5, 0, 4, 4.6, 2.2, 2.6, 0x243028, { castShadow: true });
   addProp(13.5, 0, 1, 2.0, 2.0, 2.0, 0x3c3020, { castShadow: true });
   addDecor(-13.5, 2.35, 4, boxGeo(4.8, 0.3, 2.8), 0x2c3a30);
-  // garage front wall with the shutter opening
-  addProp(-14, 0, 16, 20, 16, 3, 0x22222a, { force: true, castShadow: false });
-  addProp(14, 0, 16, 20, 16, 3, 0x22222a, { force: true, castShadow: false });
-  addProp(0, 11, 16, 12, 6, 3, 0x22222a, { force: true, castShadow: false });
-  var shutter = new THREE.Mesh(boxGeo(11.6, 10.5, 0.5), matU(0x2a2a32));
+  /* The garage is the ground floor of a brick block: a brick front with a
+     steel lintel and a corrugated roller door, apartments above with lit
+     windows, and a lit workshop visible behind the door as it rolls up. */
+  var gw1 = addProp(-14, 0, 16, 20, 16, 3, 0x5a3a32, { force: true, castShadow: false });
+  var gw2 = addProp(14, 0, 16, 20, 16, 3, 0x5a3a32, { force: true, castShadow: false });
+  var gw3 = addProp(0, 11, 16, 12, 5, 3, 0x5a3a32, { force: true, castShadow: false });
+  [gw1, gw2, gw3].forEach(function (w) { if (w) w.userData.tex = 'brick'; });
+  addProp(0, 16, 17, 48, 16, 5, 0x22242e, { force: true, castShadow: false, solid: false });   // apartments above (facade texture)
+  var lint = addDecor(0, 10.8, 14.4, boxGeo(13, 0.5, 0.4), 0x3a3c44); lint.userData.tex = 'metal';
+  var jambL = addDecor(-6.2, 5.4, 14.4, boxGeo(0.4, 10.8, 0.4), 0x3a3c44); jambL.userData.tex = 'metal';
+  var jambR = addDecor(6.2, 5.4, 14.4, boxGeo(0.4, 10.8, 0.4), 0x3a3c44); jambR.userData.tex = 'metal';
+  // the workshop behind the door
+  var shopM = matU(0xffffff); var gft2 = garageFloorTex(68); if (gft2) shopM.map = gft2; else shopM.color.setHex(0x26262c);
+  var shopF = new THREE.Mesh(new THREE.PlaneGeometry(22, 18), shopM); shopF.rotation.x = -Math.PI / 2; shopF.position.set(0, 0.03, 26); worldGroup.add(shopF);
+  var bw = addDecor(0, 7, 34.5, boxGeo(24, 14, 1), 0x4a3a34); bw.userData.tex = 'brick';
+  var bench = addDecor(-6, 0.9, 32.5, boxGeo(6, 1.8, 2), 0x3a3028); bench.userData.tex = 'wood';
+  var rack = addDecor(6, 2.5, 33, boxGeo(5, 5, 1.2), 0x30343c); rack.userData.tex = 'metal';
+  addLightPoint(-4, 9, 28, 0xffc890, 1.4, 30);
+  var shutterM = matU(0x7a7e88);
+  var mtx = getTex('metal');
+  if (mtx) { shutterM.map = mtx.clone(); shutterM.map.needsUpdate = true; shutterM.map.repeat.set(4, 0.6); shutterM.map.rotation = Math.PI / 2; }
+  var shutter = new THREE.Mesh(boxGeo(11.6, 10.5, 0.5), shutterM);
   shutter.position.set(0, 5.4, 15.4);
   worldGroup.add(shutter);
   var slat;
-  for (i = 0; i < 10; i++) {
-    slat = new THREE.Mesh(boxGeo(11.2, 0.7, 0.2), matU(i % 2 ? 0x33333a : 0x282830));
-    slat.position.y = -4.6 + i * 1.02;
+  for (i = 0; i < 2; i++) {
+    slat = new THREE.Mesh(boxGeo(11.6, 0.35, 0.6), matU(0x2a2c32));
+    slat.position.y = -5.1 + i * 10.3;                // bottom rail + top rail
     shutter.add(slat);
   }
   G.cutShutter = shutter;
@@ -10966,7 +11006,7 @@ function playDeployCutscene(then) {
   var ride = buildVehicle(useBike ? 'bike' : 'muscle', 0, 12, Math.PI, 0x14141a);
   G.cutRide = ride;
   var m = buildHeroModel('blade', (P.skins && P.skins.blade) || 0);
-  m.group.rotation.y = Math.PI;
+  m.group.rotation.y = 0;   // vehicle-local +Z is forward: face the windscreen
   ride.add(m.group);
   if (useBike) {
     // seated astride: hips on the seat, legs tucked
@@ -10977,15 +11017,19 @@ function playDeployCutscene(then) {
     if (m.parts.armL) { m.parts.armL.rotation.x = -1.15; m.parts.armL.userData.fore.rotation.x = -0.3; }
     if (m.parts.armR) { m.parts.armR.rotation.x = -1.15; m.parts.armR.userData.fore.rotation.x = -0.3; }
     if (m.parts.torso) m.parts.torso.rotation.x = 0.28;
+    if (m.parts.weapon) m.parts.weapon.visible = false;
   } else {
     /* Seated INSIDE the cabin. He was previously parented at roof height with
        a standing pose, so head and shoulders punched through the roof. Sunk to
        seat level, legs folded into the footwell, hands on the wheel — and the
        lower body is hidden since the bodywork would clip it anyway. */
-    m.group.position.set(-0.62, -0.02, 0.35);
+    m.group.position.set(0.62, -0.42, 0.0);   // driver's seat, left-hand side
     m.group.scale.setScalar(0.92);
-    if (m.parts.legL) m.parts.legL.visible = false;
-    if (m.parts.legR) m.parts.legR.visible = false;
+    // properly seated: thighs forward along the seat, shins down into the footwell
+    if (m.parts.legL) { m.parts.legL.rotation.x = -1.4; m.parts.legL.userData.shin.rotation.x = 1.5; m.parts.legL.userData.shin.visible = false; }
+    if (m.parts.legR) { m.parts.legR.rotation.x = -1.4; m.parts.legR.userData.shin.rotation.x = 1.5; m.parts.legR.userData.shin.visible = false; }
+    if (m.parts.weapon) m.parts.weapon.visible = false;      // the sword rides in the back, not through the roof
+    if (m.parts.coat) m.parts.coat.forEach(function (c) { c.rotation.x = -1.3; });
     if (m.parts.armL) { m.parts.armL.rotation.x = -1.35; m.parts.armL.userData.fore.rotation.x = -0.55; }
     if (m.parts.armR) { m.parts.armR.rotation.x = -1.35; m.parts.armR.userData.fore.rotation.x = -0.55; }
     if (m.parts.torso) m.parts.torso.rotation.x = 0.12;
@@ -10993,10 +11037,16 @@ function playDeployCutscene(then) {
   }
   cutActors.push({ id: 'blade', group: m.group, parts: m.parts, t: 0, sway: 0.25 });
 
+  // headlights that actually light the wet street as the car rolls out
+  var hl = new THREE.PointLight(0xfff0d0, 1.6, 22); hl.position.set(0, 1.2, useBike ? 1.6 : 3.8); ride.add(hl);
+  var tl = new THREE.PointLight(0xff2030, 0.7, 8); tl.position.set(0, 1.0, useBike ? -1.6 : -3.6); ride.add(tl);
+  /* Shots: the door rolls up on a low street-level wide; a tracking shot
+     rides alongside as the car noses out and swings onto the street; a
+     static road-level shot lets it roar past and away. */
   cutShots = [
-    { from: [-9, 3.2, 26], fromTo: [-6, 2.6, 20], to: [0, 3, 14], dur: 3.2 },
-    { from: [7, 1.6, 2], fromTo: [5, 1.4, -6], to: [0, 1.4, 6], dur: 3.4 },
-    { from: [0, 5.5, -26], fromTo: [0, 3.4, -34], to: [0, 1.6, -6], dur: 3.6 }
+    { from: [7.5, 1.1, 1.5], fromTo: [5.5, 1.3, 3.5], to: [0, 4.2, 15], dur: 2.5 },
+    { track: [-4.2, 1.5, 3.5], lookAhead: 1.5, dur: 3.2 },
+    { from: [-44, 0.9, -15.5], fromTo: [-44, 1.1, -15.5], to: [0, 1.2, -12], lookCar: true, dur: 4.2 }
   ];
   cutShot = 0; cutT = 0;
   G.cutRideT = 0;
@@ -11030,8 +11080,10 @@ function playCutscene(cfg) {
 }
 function applyCutShot(i) {
   var s = cutShots[Math.min(i, cutShots.length - 1)];
+  G.cutTrackPos = null;
+  if (!s.from) return;
   camera.position.set(s.from[0], s.from[1], s.from[2]);
-  camera.lookAt(s.to[0], s.to[1], s.to[2]);
+  if (s.to) camera.lookAt(s.to[0], s.to[1], s.to[2]);
 }
 function updateCutscene(dt) {
   if (G.mode !== 'cutscene' && !cutShots) return;
@@ -11040,14 +11092,28 @@ function updateCutscene(dt) {
   var s = cutShots[Math.min(cutShot, cutShots.length - 1)];
   var f = clamp(cutT / (s.dur || 8), 0, 1);
   // slow dolly + slight drift on every shot
-  var px = lerp(s.from[0], (s.fromTo || s.from)[0], f);
-  var py = lerp(s.from[1], (s.fromTo || s.from)[1], f);
-  var pz = lerp(s.from[2], (s.fromTo || s.from)[2], f);
+  var sf = s.from || [0, 3, 0];
+  var px = lerp(sf[0], (s.fromTo || sf)[0], f);
+  var py = lerp(sf[1], (s.fromTo || sf)[1], f);
+  var pz = lerp(sf[2], (s.fromTo || sf)[2], f);
   /* Shot / reverse-shot: whenever a character on stage is speaking, cut to
      an over-the-shoulder close-up on them from behind whoever they are
      talking to, with a slow push-in. Establishing shots play between. */
   var spk = cutSpeaker(), handheld = Math.sin(G.time * 0.9) * 0.03;
-  if (spk && !G.cutShutter) {
+  if (G.cutRide && (s.track || s.lookCar)) {
+    var rp = G.cutRide.position;
+    if (s.track) {
+      var tv = new THREE.Vector3(s.track[0], s.track[1], s.track[2]).applyAxisAngle(new THREE.Vector3(0, 1, 0), G.cutRide.rotation.y).add(rp);
+      if (!G.cutTrackPos) G.cutTrackPos = tv.clone();
+      G.cutTrackPos.lerp(tv, 1 - Math.exp(-5 * dt));
+      camera.position.copy(G.cutTrackPos);
+      var fw = new THREE.Vector3(0, 0, s.lookAhead || 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), G.cutRide.rotation.y);
+      camera.lookAt(rp.x + fw.x, 1.1, rp.z + fw.z);
+    } else {
+      camera.position.set(px, py + handheld, pz);
+      camera.lookAt(rp.x, 1.2, rp.z);
+    }
+  } else if (spk && !G.cutShutter) {
     if (G.cutFocusId !== spk.actor.id + '#' + dlgIdx) { G.cutFocusId = spk.actor.id + '#' + dlgIdx; G.cutFocusT = 0; G.cutFocusSide = -(G.cutFocusSide || 1); }
     G.cutFocusT += dt;
     var S = spk.actor.group.position, hy = 2.0 * (spk.actor.group.scale.y || 1);
@@ -11065,7 +11131,8 @@ function updateCutscene(dt) {
     camera.lookAt(S.x, hy + 0.02, S.z);
   } else {
     camera.position.set(px, py + handheld, pz);
-    camera.lookAt(s.to[0], s.to[1] + Math.sin(G.time * 0.4) * 0.05, s.to[2]);
+    var sto = s.to || [0, 1.2, 0];
+    camera.lookAt(sto[0], sto[1] + Math.sin(G.time * 0.4) * 0.05, sto[2]);
   }
   if (f >= 1 && cutShot < cutShots.length - 1) { cutShot++; cutT = 0; }
   /* deploy scene: shutter rolls up, then the ride pulls out and away */
@@ -11147,10 +11214,14 @@ function cutAct(a2, dt) {
   var p = a2.parts, spk = cutSpeaker(), talking = spk && spk.actor === a2;
   var t = a2.t, armRx, armLx, foreR, foreL;
   if (!p.armR || !p.legL || G.cutShutter) return;
+  var mouth = p.head && p.head.userData.mouth;
+  if (mouth) mouth.scale.y = damp(mouth.scale.y, (talking && dlgChar < dlgFull.length) ? 0.25 + Math.abs(Math.sin(t * 17)) * 0.95 : 0.12, 30, dt);
   if (talking) {
-    var beat = Math.sin(t * 3.1) * 0.5 + 0.5;
-    armRx = -0.35 - beat * 0.45; foreR = -0.9 - beat * 0.35;
-    armLx = -0.08; foreL = -0.35;
+    var beat = Math.sin(t * 3.1) * 0.5 + 0.5, g4 = dlgIdx % 4;
+    if (g4 === 0) { armRx = -0.35 - beat * 0.45; foreR = -0.9 - beat * 0.35; armLx = -0.08; foreL = -0.35; }        // emphatic hand
+    else if (g4 === 1) { armRx = -1.1 + beat * 0.1; foreR = -0.15; armLx = -0.06; foreL = -0.3; }                  // pointing
+    else if (g4 === 2) { armRx = -0.5 - beat * 0.2; foreR = -1.0; armLx = -0.5 - beat * 0.2; foreL = -1.0; }        // open palms, both hands
+    else { armRx = -0.1; foreR = -0.4; armLx = -0.1; foreL = -0.4; p.torso.rotation.x = damp(p.torso.rotation.x, 0.12, 4, dt); }  // leaning in, quiet threat
     p.head.rotation.x = damp(p.head.rotation.x, Math.sin(t * 4.2) * 0.07, 8, dt);
     if (spk.listener) {
       var want = Math.atan2(spk.listener.group.position.x - a2.group.position.x, spk.listener.group.position.z - a2.group.position.z);
@@ -11821,8 +11892,9 @@ function buildHubWorld() {
   worldGroup.add(ceil);
   for (i = -HALF; i < HALF; i += 9) addDecor(i, 14.4, 0, boxGeo(0.7, 0.8, 72), 0x181820);  // roof beams
   // roller shutter door
-  addDecor(0, 5.5, -HALF + 0.4, boxGeo(16, 11, 0.4), 0x2a2a30);
-  for (i = 0; i < 11; i++) addDecor(0, 0.6 + i, -HALF + 0.65, boxGeo(15.6, 0.7, 0.2), i % 2 ? 0x33333a : 0x282830);
+  // a corrugated steel roller door — it was being textured as brick
+  addDecor(0, 5.5, -HALF + 0.4, boxGeo(16, 11, 0.4), 0x5a5e68).userData.tex = 'metal';
+  for (i = 0; i < 11; i++) addDecor(0, 0.6 + i, -HALF + 0.65, boxGeo(15.6, 0.7, 0.2), i % 2 ? 0x6a6e78 : 0x585c66).userData.tex = 'metal';
   // pipes along the ceiling
   for (i = 0; i < 4; i++) {
     var pz = -22 + i * 14;
@@ -11931,11 +12003,40 @@ function nearTerminal(x, z, r) {
   }
   return false;
 }
+/* CRT terminal face: the label in big type, scrolling-data rows, scanlines. */
+function terminalScreenTex(label, color) {
+  if (TEX_SAFE || typeof document === 'undefined') return null;
+  var c = document.createElement('canvas'); c.width = 256; c.height = 168;
+  var g = null;
+  try { g = c.getContext('2d'); } catch (e) { g = null; }
+  if (!g || !g.fillText) return null;
+  var col = hexCss(color), rng = texRng(texHash(String(label))), i;
+  g.fillStyle = '#05070a'; g.fillRect(0, 0, 256, 168);
+  g.fillStyle = col; g.globalAlpha = 0.18; g.fillRect(0, 0, 256, 168); g.globalAlpha = 1;
+  g.font = 'bold 30px Arial, sans-serif'; g.textAlign = 'center'; g.fillStyle = col;
+  g.fillText(String(label || '').toUpperCase(), 128, 52);
+  g.font = '11px monospace'; g.textAlign = 'left'; g.globalAlpha = 0.7;
+  for (i = 0; i < 6; i++) {
+    var w = 60 + rng() * 140;
+    g.fillRect(18, 74 + i * 13, w, 5);
+    g.fillText(String(Math.floor(rng() * 9999)), 18 + w + 8, 80 + i * 13);
+  }
+  g.globalAlpha = 1;
+  g.strokeStyle = col; g.lineWidth = 3; g.strokeRect(6, 6, 244, 156);
+  g.fillStyle = 'rgba(0,0,0,0.35)';
+  for (i = 0; i < 168; i += 3) g.fillRect(0, i, 256, 1);
+  var t = new THREE.CanvasTexture(c);
+  t.userData = { cached: true };
+  return t;
+}
 function addTerminal(x, z, label, action, color) {
   var g = new THREE.Group();
   var base = new THREE.Mesh(boxGeo(3.0, 1.0, 1.8), matU(0x24242e)); base.position.y = 0.5; g.add(base);
   var post = new THREE.Mesh(boxGeo(0.5, 1.6, 0.5), matU(0x1a1a22)); post.position.y = 1.6; g.add(post);
-  var screen = new THREE.Mesh(boxGeo(2.6, 1.7, 0.18), matU(color, color));
+  var scrM = matU(color, color);
+  var stx = terminalScreenTex(label, color);
+  if (stx) { scrM.color.setHex(0x000000); scrM.emissive.setHex(0xffffff); scrM.emissiveMap = stx; }
+  var screen = new THREE.Mesh(boxGeo(2.6, 1.7, 0.18), scrM);
   screen.position.set(0, 3.0, 0.1); screen.rotation.x = -0.32; g.add(screen);
   var frame = new THREE.Mesh(boxGeo(2.9, 2.0, 0.1), matU(0x101016));
   frame.position.set(0, 3.0, -0.02); frame.rotation.x = -0.32; g.add(frame);
@@ -12371,6 +12472,15 @@ function dlgAdvance() {
 }
 function updateDialogue(dt) {
   if (!dlgActive) return;
+  // in-game speakers move their lips too
+  var who = String((dlgQueue[dlgIdx] || [])[0] || '').toUpperCase(), sp = [blade, ally], si4;
+  for (si4 = 0; si4 < sp.length; si4++) {
+    var se = sp[si4];
+    if (!se || !se.parts || !se.parts.head || !se.parts.head.userData.mouth) continue;
+    var nm4 = String((se.def && se.def.name) || '').toUpperCase();
+    var talk = who && (nm4.indexOf(who) >= 0 || who.indexOf(nm4.split(' ')[0]) >= 0) && dlgChar < dlgFull.length;
+    se.parts.head.userData.mouth.scale.y = talk ? 0.25 + Math.abs(Math.sin(G.time * 17)) * 0.95 : 0.12;
+  }
   if (dlgChar < dlgFull.length) {
     dlgTimer += dt;
     while (dlgTimer > 0.018 && dlgChar < dlgFull.length) {
