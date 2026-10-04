@@ -607,6 +607,12 @@ body.tutOn #toast{display:none;}
 .chip.hot{border-color:#d6283a;color:#ffb0b6;}
 .dFoot{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;font-weight:700;}
 #hubBody{max-height:calc(100vh - 262px);}
+.hubPanel > .row{flex-wrap:nowrap;gap:8px;align-items:stretch;}
+.hubPanel > .row > .btn{margin-top:4px;margin-bottom:4px;width:auto;box-sizing:border-box;}
+.hubPanel > .row > #btnDeploy{flex:1 1 0;min-width:0;}
+.hubPanel > .row > #btnCoop{flex:0 0 auto;}
+.hubPanel > .row > #btnHubTitle{flex:0 0 auto;}
+#btnCoop.coopOn{border-left-color:var(--amber);color:#ffe9b0;}
 @media (max-width:640px){
   .msn{flex-direction:column;gap:8px;}
   .chapList{flex:0 0 auto;flex-direction:row;overflow-x:auto;width:100%;padding-bottom:4px;}
@@ -659,7 +665,8 @@ body.tutOn #toast{display:none;}
   #hubBody{max-height:calc(100vh - 124px);}
   .msn{height:calc(100vh - 124px);min-height:150px;}
   .chapList{flex-basis:200px;}
-  .chp{padding:4px 9px;}.chp .chpNum{flex-basis:22px;height:22px;}.chpBar{display:none;}
+  .chp{padding:2px 8px;min-height:0;gap:8px;}.chp .chpNum{flex-basis:18px;height:18px;font-size:8px;}.chpBar,.chp i{display:none;}.chp b{font-size:10px;letter-spacing:.1em;}.chapList{gap:3px;}
+  #btnCoop{padding:6px 12px;margin:0;font-size:11px;}
   .apName{font-size:15px;margin:0;}.apHead .hdr{display:none;}
   .tiles{margin:6px 0;gap:6px;}.actTile{min-height:56px;padding:5px 8px;}.atNum{font-size:15px;}.atName{font-size:10px;margin-top:2px;}.atPips{margin-top:3px;}
   .apDetail{padding:6px 12px 7px;min-height:0;}.dChips{margin-top:4px;}.dFoot{margin-top:4px;}.apDetail .sub{font-size:11px;}
@@ -920,8 +927,9 @@ body.tutOn #toast{display:none;}
       <div id="hubBody"></div>
       <div class="hr"></div>
       <div class="row">
-        <div class="btn" style="flex:1" id="btnDeploy">▸ Deploy</div>
-        <div class="btn" style="flex:0 0 150px" id="btnHubTitle">◂ Back</div>
+        <div class="btn" id="btnDeploy">▸ Deploy</div>
+        <div class="btn" style="white-space:nowrap" id="btnCoop">Co-op: Off</div>
+        <div class="btn" style="min-width:110px" id="btnHubTitle">◂ Back</div>
       </div>
     </div></div>
   </div>
@@ -1074,7 +1082,7 @@ body.tutOn #toast{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.7.1';
+var GAME_VERSION = 'v3.8.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1787,6 +1795,15 @@ var IN = {
   padId: '',
   padSprint: false
 };
+/* ---- local co-op ----
+   Player 2 drives the partner hero from a second controller. updatePlayer() reads
+   the global IN, so for P2's turn IN is swapped for IN2 (same shape) and swapped
+   back after. P1 = keyboard/touch/first pad; with exactly ONE controller attached
+   it belongs to P2 and P1 plays on keyboard or touch. */
+var IN2 = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, down: {}, hit: {}, buffer: {}, pointerLocked: false,
+            touch: false, pad: null, device: 'pad', padType: 'xbox', padId: '', padSprint: false, padMoving: true };
+var CO = { n: 0, solo: false, has: false, live: false, prev: {}, sprint: false };
+var CO_ACTS = { jump: 1, light: 1, heavy: 1, dash: 1, special: 1, throw: 1, day: 1 };
 var KEYMAP = {
   KeyW: 'fwd', ArrowUp: 'fwd', KeyS: 'back', ArrowDown: 'back',
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
@@ -1938,13 +1955,14 @@ function inputInit() {
     IN.pad = e.gamepad.index; IN.padId = e.gamepad.id; IN.padType = detectPadType(e.gamepad.id);
     padPrev = {};
     toast('Controller connected — ' + (glyphSet() === 'ps' ? 'PlayStation' : 'Xbox') + ' layout');
-    refreshGlyphs();
+    refreshGlyphs(); setTimeout(coopLabel, 50);
   });
   window.addEventListener('gamepaddisconnected', function () {
     IN.pad = null; IN.padMoving = false; IN.move.x = 0; IN.move.y = 0;
     if (IN.device === 'pad') setDevice(IN.touch ? 'touch' : 'kb');
     if (G.mode === 'play') { doPause(); }
     toast('Controller disconnected');
+    setTimeout(coopLabel, 50);
   });
   if (IN.touch && IN.device !== 'touch') setDevice('touch');
   var lgBar = el('legend');
@@ -2430,7 +2448,7 @@ function pollGamepad(dt) {
     if (b[i] && !padPrev['b' + i]) anyNew = true;
   }
   var L = padAxis(gp, 0, 1), R = padAxis(gp, 2, 3);
-  if (any || L.m > 0.55 || R.m > 0.55) { if (IN.device !== 'pad') setDevice('pad'); }
+  if ((any || L.m > 0.55 || R.m > 0.55) && !coopSoloPlay()) { if (IN.device !== 'pad') setDevice('pad'); }
   function press(n) { return b[n] && !padPrev['b' + n]; }
   function finish() { var k; for (k = 0; k < 17; k++) padPrev['b' + k] = b[k]; }
 
@@ -2478,6 +2496,7 @@ function pollGamepad(dt) {
   }
 
   /* ---- gameplay ---- */
+  if (coopSoloPlay()) { finish(); return; }      // the lone pad is Player 2's; see pollPad2
   if (G.tut && G.mode === 'play' && press(8)) tutSkip();
   var live = (G.mode === 'play' || G.mode === 'hub');
   var touchStickDown = (touchState.stickId >= 0);
@@ -2516,6 +2535,94 @@ function pollGamepad(dt) {
   finish();
 }
 
+
+function coopLabel() {
+  var b = el('btnCoop'), st = '';
+  if (!b || !P) return;
+  if (P.coop) {
+    coopFindPad();
+    st = CO.n >= 2 ? ' \u00b7 P2 ready' : (CO.n === 1 ? ' \u00b7 pad is P2' : ' \u00b7 need controller');
+  }
+  b.textContent = 'Co-op: ' + (P.coop ? 'On' : 'Off') + st;
+  b.classList.toggle('coopOn', !!P.coop);
+}
+function coopOn() { return !!(P && P.coop); }
+function coopSoloPlay() { return coopOn() && CO.solo && G.mode === 'play' && !G.tut; }
+/* The pad Player 2 holds, or null. */
+function coopFindPad() {
+  var pads, i, list = [], j;
+  CO.n = 0;
+  if (!navigator.getGamepads || padBlocked) return null;
+  try { pads = navigator.getGamepads(); } catch (e) { return null; }
+  if (!pads) return null;
+  for (i = 0; i < pads.length; i++) if (pads[i] && pads[i].connected) list.push(pads[i]);
+  CO.n = list.length;
+  if (!list.length) { CO.solo = false; return null; }
+  if (list.length === 1) { CO.solo = true; return list[0]; }
+  CO.solo = false;
+  var p1 = (IN.pad !== null && IN.pad !== undefined) ? IN.pad : list[0].index;
+  for (j = 0; j < list.length; j++) if (list[j].index !== p1) return list[j];
+  return null;
+}
+function setAct2(a, v) {
+  if (!a || !CO_ACTS[a]) return;
+  if (v && !IN2.down[a]) { IN2.hit[a] = true; IN2.buffer[a] = 0.28; }
+  IN2.down[a] = v;
+}
+function coopReset() {
+  var k;
+  for (k in IN2.down) IN2.down[k] = false;
+  for (k in IN2.hit) IN2.hit[k] = false;
+  for (k in IN2.buffer) IN2.buffer[k] = 0;
+  IN2.move.x = 0; IN2.move.y = 0; CO.prev = {}; CO.sprint = false;
+}
+function pollPad2(dt) {
+  var gp = coopFindPad(), had = CO.has, i, bb, b = [];
+  CO.has = !!gp && coopOn();
+  if (!CO.has) { if (had) coopReset(); return; }
+  for (i = 0; i < 17; i++) { bb = gp.buttons[i]; b[i] = !!(bb && (bb.pressed || bb.value > 0.55)); }
+  var L = padAxis(gp, 0, 1), R = padAxis(gp, 2, 3), M = G.southpaw ? R : L, DZ = 0.2;
+  var live = (G.mode === 'play');
+  if (live && M.m > DZ) {
+    var s = Math.min(1, (M.m - DZ) / (1 - DZ));
+    IN2.move.x = (M.x / M.m) * s; IN2.move.y = -(M.y / M.m) * s;
+  } else { IN2.move.x = 0; IN2.move.y = 0; }
+  if (M.m > 0.93) CO.sprint = true; else if (M.m < 0.7) CO.sprint = false;
+  var lay = PAD_LAYOUTS[G.padLayout] || PAD_LAYOUTS.fof, bi, n;
+  function mapBtn(n2, act) {
+    if (act === 'sprint') return;
+    var v = b[n2];
+    if (v !== !!CO.prev['m' + n2]) { CO.prev['m' + n2] = v; setAct2(act, live ? v : false); }
+  }
+  for (bi in lay.map) { if (lay.map.hasOwnProperty(bi)) mapBtn(parseInt(bi, 10), lay.map[bi]); }
+  for (bi in PAD_DPAD_MAP) { if (PAD_DPAD_MAP.hasOwnProperty(bi)) mapBtn(parseInt(bi, 10), PAD_DPAD_MAP[bi]); }
+  var wantSprint = !!(live && (b[10] || CO.sprint));
+  if (wantSprint !== !!IN2.down.sprint) IN2.down.sprint = wantSprint;
+  // Start pauses from either pad (solo mode: P1's pad logic is bypassed)
+  var st = b[9];
+  if (st && !CO.prev.start && live && CO.solo) doPause();
+  CO.prev.start = st;
+}
+function inputEndFrame2(dt) {
+  var k;
+  for (k in IN2.hit) IN2.hit[k] = false;
+  for (k in IN2.buffer) { if (IN2.buffer[k] > 0) IN2.buffer[k] -= dt; }
+}
+/* Is a human steering the partner right now? */
+function coopLive() { return !!(coopOn() && CO.has && ally && ally !== player && !G.tut); }
+function updateCoopP2(e, dt) {
+  if (e.dead) { updateAlly(e, dt); return; }
+  var saved = IN;
+  IN = IN2;
+  try { updatePlayer(e, dt); } finally { IN = saved; }
+  inputEndFrame2(dt);
+  // leash: nobody gets lost off-screen
+  if (player && !player.dead && (distXZ(e.pos, player.pos) > 30 || e.pos.y < -6)) {
+    e.pos.set(player.pos.x - Math.sin(player.yaw + 1.2) * 2.4, player.pos.y + 0.6, player.pos.z - Math.cos(player.yaw + 1.2) * 2.4);
+    e.vel.set(0, 0, 0); e.invuln = 1.0;
+    emit(e.pos.x, e.pos.y + 1, e.pos.z, 14, { color: 0x80c0ff, speed: 4, life: 0.4, gravity: 0 });
+  }
+}
 
 // Keyboard -> analog move vector (camera-relative resolution happens later)
 function readMoveKeys() {
@@ -7899,7 +8006,7 @@ function updateProjectiles(dt) {
         var tg = heroList();
         for (j = 0; j < tg.length; j++) {
           e = tg[j];
-          if (!e || e.dead || e.aiOnly === 'off') continue;
+          if (!e || e.dead) continue;        // v3.7.1: the 'off' skip made the player immune to every enemy projectile
           d = Math.sqrt(dist2(p.x, p.z, e.pos.x, e.pos.z));
           if (d < p.radius + 0.7 && Math.abs(p.y - (e.pos.y + 1.0)) < 1.5) {
             damageEntity(e, p.dmg, p.x, p.z, { knock: 3, source: 'projectile' });
@@ -9259,7 +9366,7 @@ function updatePlayer(e, dt) {
   }
 
   animateEntity(e, dt);
-  updateCamera(e, dt);
+  if (e === player) updateCamera(e, dt);
   pickupCheck(e);
   interactCheck(e);
 }
@@ -10925,6 +11032,12 @@ function startAct(index, isVs) {
   ally.pos.y = groundHeightAt(ally.pos.x, ally.pos.z, G.safeY + 8, 0.6);
   ally.yaw = G.spawnYaw;
   cacheMaterials(ally);
+  coopReset(); CO.live = false;
+  if (coopOn()) {
+    coopFindPad();
+    // one controller attached: it is Player 2's, so Player 1 plays on keyboard / touch
+    if (CO.solo && IN.device === 'pad') setDevice(('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 'touch' : 'kb');
+  }
   player = blade;
   camYaw = G.spawnYaw; camPitch = 0.3;
   camera.position.set(G.safeX - faceX * 9, G.safeY + 7, G.safeZ - faceZ * 9);
@@ -12840,6 +12953,7 @@ function closeHubPanel() {
    slow-mo, rings, banners, camera punch.
    ========================================================================== */
 function doPartnerAssist() {
+  if (coopLive()) { toast('Call is off in co-op. Player 2 is human'); return; }
   if (!ally || ally.dead) { toast('No partner available'); return; }
   var p = player;
   if (p.cd.call > 0) { toast('Assist recharging (' + p.cd.call.toFixed(1) + 's)'); return; }
@@ -12871,6 +12985,7 @@ function doPartnerAssist() {
 }
 
 function doTagSwap() {
+  if (coopLive()) { toast('Tag is off in co-op. Player 2 is human'); return; }
   if (!ally) { toast('No partner'); return; }
   if (ally.dead) { toast(ally.def.name + ' is down'); return; }
   if (player.cd.tag > 0) { toast('Tag recharging'); return; }
@@ -13219,7 +13334,7 @@ function cineBars(on) {
    ========================================================================== */
 function refreshHUDNames() {
   if (player) el('pName').textContent = player.def.name.toUpperCase();
-  if (ally) el('aName').textContent = ally.def.name.toUpperCase();
+  if (ally) el('aName').textContent = ally.def.name.toUpperCase() + (coopLive() ? '  \u00b7  P2' : '');
   el('aPlate').style.display = ally ? 'block' : 'none';
   var dayBar = el('pDay');
   el('pDayRow').style.display = (player && player.heroId === 'blade') ? 'flex' : 'none';
@@ -13975,6 +14090,7 @@ function renderHub() {
   body.classList.toggle('msnMode', hubTab === 'missions');
   wireHub();
   if (hubTab === 'missions') missionsAfter();
+  coopLabel();
 }
 function wireHub() {
   var body = el('hubBody'), i;
@@ -14198,7 +14314,12 @@ function loop(now) {
     if (G.comboTimer > 0) { G.comboTimer -= raw; if (G.comboTimer <= 0) breakCombo(); }
 
     updatePlayer(player, dt);
-    updateAlly(ally, dt);
+    pollPad2(dt);
+    if (coopLive()) updateCoopP2(ally, dt); else updateAlly(ally, dt);
+    if (coopLive() !== CO.live) {
+      CO.live = coopLive(); refreshHUDNames();
+      if (CO.live) toast('Player 2 is in'); else if (coopOn()) toast('Player 2 controller lost, partner AI takes over');
+    }
     if (G.beat && G.beat.escortee && !G.beat.escortee.dead) updateEscortee(G.beat.escortee, dt);
     var i;
     for (i = enemies.length - 1; i >= 0; i--) updateEnemy(enemies[i], dt);
@@ -14608,6 +14729,15 @@ function wireMenus() {
       renderHub();
     });
   }
+  el('btnCoop').addEventListener('click', function () {
+    P.coop = !P.coop; saveProfile(); SFX.ui(); coopLabel();
+    if (P.coop) {
+      coopFindPad();
+      toast(CO.n >= 2 ? 'Co-op on. Player 2 uses the second controller'
+          : (CO.n === 1 ? 'Co-op on. Your controller is Player 2, Player 1 plays on keyboard or touch'
+          : 'Co-op on. Connect a controller for Player 2'));
+    } else toast('Co-op off. Your partner is AI');
+  });
   el('btnDeploy').addEventListener('click', function () {
     SFX.ui();
     var idx = (G.selectedAct !== undefined && actUnlocked(G.selectedAct))
