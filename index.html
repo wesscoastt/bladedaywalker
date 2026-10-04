@@ -915,7 +915,7 @@ body.tutOn #toast{display:none;}
         <div><div class="hdr">Nightstalker Safehouse</div><div class="ttl" id="hubTitle">The Garage</div></div>
         <div class="pill"><span id="hubTok">0</span> Bloodstones</div>
       </div>
-      <div class="sub" style="margin-top:8px" id="hubBlurb">Weapons on the bench. Blood in the streets.</div>
+      <div class="sub" style="margin-top:8px" id="hubBlurb">Gear up here, then take the hunt to the streets.</div>
       <div class="tabs" id="hubTabs">
         <span class="gl bump" data-gl="tabprev"></span>
         <div class="tab on" data-tab="missions">Missions</div>
@@ -1082,7 +1082,7 @@ body.tutOn #toast{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.8.0';
+var GAME_VERSION = 'v3.8.1';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1916,7 +1916,7 @@ function inputInit() {
   document.addEventListener('pointerlockerror', function () {
     if (IN.lockBlocked) return;
     IN.lockBlocked = true;
-    toast('Cursor lock blocked here — hold right mouse and drag to look');
+    toast('Cursor lock is blocked here. Hold right mouse and drag to look');
   });
   cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   document.addEventListener('pointerlockchange', function () {
@@ -1954,7 +1954,7 @@ function inputInit() {
   window.addEventListener('gamepadconnected', function (e) {
     IN.pad = e.gamepad.index; IN.padId = e.gamepad.id; IN.padType = detectPadType(e.gamepad.id);
     padPrev = {};
-    toast('Controller connected — ' + (glyphSet() === 'ps' ? 'PlayStation' : 'Xbox') + ' layout');
+    toast('Controller connected: ' + (glyphSet() === 'ps' ? 'PlayStation' : 'Xbox') + ' layout');
     refreshGlyphs(); setTimeout(coopLabel, 50);
   });
   window.addEventListener('gamepaddisconnected', function () {
@@ -2652,21 +2652,21 @@ function readMoveKeys() {
 var BLADE_QUIPS = [
   'Some motherfuckers are always trying to ice skate uphill.',
   'Catch you fuckers at a bad time?',
-  'There are worse things out tonight than vampires.',
+  'Tell your friends I said hi.',
   'You picked the wrong block.',
   'Burn.',
-  'Ash. That is all you were ever going to be.',
+  'Next.',
   'Should have stayed underground.',
   'That is one less.',
   'Still thirsty?',
-  'Sun comes up in four hours. You will not see it.'
+  'Dawn is in four hours. You are not invited.'
 ];
 var PARTNER_QUIPS = {
   whistler: ['Nice. Sloppy, but nice.', 'That is my shot.', 'Clear on your left.'],
   spider: ['Okay, that one is definitely dead.', 'Not gonna lie, that was gross.', 'Team-up! ...anyone? No?'],
   rider: ['Your soul is forfeit.', 'Judged.', 'The debt grows.'],
   elsa: ['Textbook.', 'Do keep up.', 'One for the ledger.'],
-  knight: ['Khonshu saw that.', 'The moon is watching.', 'Marked.']
+  knight: ['Khonshu saw that.', 'Khonshu approves. Barely.', 'Marked.']
 };
 
 var DIFFS = [
@@ -2692,7 +2692,7 @@ var HEROES = {
     hp: 150, speed: 7.8, dmg: 11, reach: 2.4, combo: 3, rangedRate: 0.34,
     special: 'Bolt Storm', specialDesc: 'Fires a fan of UV bolts that stagger a whole crowd.',
     quip: 'You brood, I shoot. Teamwork.',
-    bio: 'Whistler\'s daughter. Bow, arrows, attitude. She does not miss twice.'
+    bio: 'Whistler\'s daughter, handy with a crossbow and short on patience. She rarely needs a second shot.'
   },
   spider: {
     id: 'spider', name: 'Spider-Man', title: 'Web-Slinger', style: 'hybrid',
@@ -2701,7 +2701,7 @@ var HEROES = {
     hp: 165, speed: 8.6, dmg: 12, reach: 2.8, combo: 4, rangedRate: 0.22,
     special: 'Web Blitz', specialDesc: 'Yanks in everything nearby, then flurries them into the pavement.',
     quip: 'So the sword guy IS a good guy. Great. Love that for us.',
-    bio: 'Friendly neighborhood everything. Talks too much, hits at the right time.'
+    bio: 'Friendly neighborhood everything. He never stops talking, and he still lands the hit when it counts.'
   },
   rider: {
     id: 'rider', name: 'Ghost Rider', title: 'Spirit of Vengeance', style: 'melee',
@@ -2709,8 +2709,8 @@ var HEROES = {
     coat: true, glasses: false, weapon: 'chain', flames: true,
     hp: 230, speed: 6.6, dmg: 21, reach: 4.2, combo: 3, rangedRate: 0,
     special: 'Penance Chain', specialDesc: 'Hellfire chain sweeps a burning ring and ignites the guilty.',
-    quip: 'Their souls are stained. Convenient.',
-    bio: 'The chain remembers every sin. Vampires are made of sin.'
+    quip: 'Their souls are filthy. That saves time.',
+    bio: 'His chain burns whatever it has judged guilty. Vampires have a lot to answer for.'
   },
   elsa: {
     id: 'elsa', name: 'Elsa Bloodstone', title: 'Monster Hunter', style: 'hybrid',
@@ -2719,7 +2719,7 @@ var HEROES = {
     hp: 175, speed: 7.2, dmg: 15, reach: 2.6, combo: 3, rangedRate: 0.5,
     special: 'Silver Buckshot', specialDesc: 'Point-blank silver spread that deletes a cone of thralls.',
     quip: 'Do try to keep up, darling. The night is short.',
-    bio: 'Born to the hunt, raised on it, extremely bored of being told to stay home.'
+    bio: 'Monster hunter by birth, and tired of being told to stay home.'
   },
   knight: {
     id: 'knight', name: 'Moon Knight', title: 'Fist of Khonshu', style: 'hybrid',
@@ -2882,7 +2882,7 @@ var BOSSES = {
     id: 'vrasta', name: 'Countess Vrasta', sub: 'Highblood of the Keep', hp: 2150, speed: 6.4, dmg: 22,
     body: 0x2a1030, skin: 0xe8dce8, accent: 0x9a30d8, scale: 1.3, reach: 3.0,
     moves: ['blink', 'volley', 'summon', 'ring'], adds: 'bat', phases: 3, recruit: 'elsa',
-    intro: 'Half-breed. You wear your father\'s hunger like a coat.'
+    intro: 'Half-breed. Four hundred years, and I have never smelled one like you.'
   },
   bonecaller: {
     id: 'bonecaller', name: 'The Bonecaller', sub: 'Choirmaster of the Deep', hp: 2400, speed: 4.2, dmg: 24,
@@ -2921,7 +2921,7 @@ var LOCATIONS = [
     accent: 0xff4a5a, accent2: 0x40b0ff, ambient: 0x3a4258, sun: 0x8090c0,
     props: 'city', fogNear: 26, fogFar: 118, rain: true, snow: false, embers: false,
     boss: 'sable',
-    blurb: 'A whole block went missing. Not the people. The block.'
+    blurb: 'Forty people vanished from three city blocks, and nobody has found a body.'
   },
   {
     id: 'docks', name: 'Rotten Harbor', short: 'Shipyard',
@@ -2929,7 +2929,7 @@ var LOCATIONS = [
     accent: 0x30d0b0, accent2: 0xffa030, ambient: 0x2e4046, sun: 0x70a0a8,
     props: 'docks', fogNear: 20, fogFar: 100, rain: true, snow: false, embers: false,
     boss: 'harvester',
-    blurb: 'Containers going out full. Nothing coming back alive.'
+    blurb: 'Shipping containers leave the harbor sealed and full. None of them come back.'
   },
   {
     id: 'castle', name: 'Vrasta Keep', short: 'Castle Ruins',
@@ -2939,7 +2939,7 @@ var LOCATIONS = [
     accent: 0xffa348, accent2: 0x8fa8d8, ambient: 0x33394a, sun: 0x9fb0d8,
     props: 'castle', fogNear: 22, fogFar: 110, rain: false, snow: true, embers: false,
     boss: 'vrasta',
-    blurb: 'They shipped a castle across an ocean, stone by stone. Ask why.'
+    blurb: 'Someone shipped a whole castle across the ocean and rebuilt it on the cliffs.'
   },
   {
     id: 'catacombs', name: 'The Bone Choir', short: 'Catacombs',
@@ -2947,7 +2947,7 @@ var LOCATIONS = [
     accent: 0x50e0a0, accent2: 0xd8d0b0, ambient: 0x241f18, sun: 0xb09070,
     props: 'catacombs', fogNear: 24, fogFar: 112, rain: false, snow: false, embers: false,
     boss: 'bonecaller',
-    blurb: 'Under the keep: a choir with no mouths, singing anyway.'
+    blurb: 'Beneath the keep, a choir is singing in the dark, and none of its members have mouths.'
   },
   {
     id: 'temple', name: 'Crimson Ascension', short: 'Blood Temple',
@@ -2955,7 +2955,7 @@ var LOCATIONS = [
     accent: 0xff2436, accent2: 0xffb020, ambient: 0x50202a, sun: 0xc06060,
     props: 'temple', fogNear: 18, fogFar: 96, rain: false, snow: false, embers: true,
     boss: 'vhalimar',
-    blurb: 'The Thirst has an address. Kick the door in.'
+    blurb: 'The first vampire is at home, and he left the door open.'
   }
 ];
 
@@ -2991,7 +2991,7 @@ function heroReach(h) { return h.def.reach * (1 + 0.05 * upgVal(h.heroId, 'move'
 /* Recruitment beats — shown in the hub after a boss unlocks someone. */
 var RECRUIT_LINES = {
   spider: ['SPIDER-MAN', 'Alright, official team-up. I\'m calling us the Night Guys. Don\'t vote, it\'s decided.'],
-  rider: ['GHOST RIDER', 'I ride with you until the debt is paid. It will not be paid.'],
+  rider: ['GHOST RIDER', 'I ride with you until the debt is paid. Do not ask how large it is.'],
   elsa: ['ELSA', 'Point me at something with too many teeth.'],
   knight: ['MOON KNIGHT', 'Khonshu is watching. Try to be impressive.']
 };
@@ -3036,7 +3036,7 @@ BOSSES.kroven = {
   id: 'kroven', name: 'Kroven', sub: 'Broker of the Night Market', hp: 820, speed: 5.8, dmg: 17,
   body: 0x1e1824, skin: 0xd8ccc0, accent: 0xe8c020, scale: 1.28, reach: 3.0,
   moves: ['blink', 'triple', 'volley'], adds: 'familiar', phases: 1, recruit: null,
-  staggerRes: 0.6, windup: 0.36, recover: 0.46, intro: 'Everything is for sale. Including you.'
+  staggerRes: 0.6, windup: 0.36, recover: 0.46, intro: 'I can put a price on anything. Including you.'
 };
 BOSSES.tidewrack = {
   id: 'tidewrack', name: 'Tidewrack', sub: 'Drowned Foreman', hp: 1050, speed: 3.6, dmg: 23,
@@ -3060,7 +3060,7 @@ BOSSES.crimsonguard = {
   id: 'crimsonguard', name: 'The Crimson Guard', sub: 'Vhalimar\'s Shield', hp: 1800, speed: 5.4, dmg: 25,
   body: 0x3a0c14, skin: 0xf0dcd4, accent: 0xff3040, scale: 1.55, reach: 3.6,
   moves: ['charge', 'triple', 'ring', 'summon'], adds: 'reaver', phases: 2, recruit: null,
-  staggerRes: 0.7, windup: 0.42, recover: 0.5, intro: 'None reach the throne. None ever have.'
+  staggerRes: 0.7, windup: 0.42, recover: 0.5, intro: 'No one gets past me to the throne.'
 };
 
 /* Enemy pools per biome, escalating within each act via ACT.pool overrides. */
@@ -3076,61 +3076,61 @@ var POOLS = [
 
 var ACTS = [
   /* ---------------- ACT I — NIGHT STREETS ---------------- */
-  { n: 'Cold Open', loc: 0, layout: 'grid', recruit: null, blurb: 'Three blocks. Forty people. No bodies.',
+  { n: 'Cold Open', loc: 0, layout: 'grid', recruit: null, blurb: 'Forty people are missing from three blocks. Nobody has found a body.',
     beats: [F(2), T(), F(2), X(3), F(3)] },
   { n: 'The Night Market', loc: 0, layout: 'linear', recruit: null, indoor: true, blurb: 'An underground market beneath the parking structure. Close it.',
     beats: [X(3), O(3), Esc(), T(), F(3)] },
-  { n: 'Rooftop Signal', loc: 0, layout: 'rooftop', recruit: null, blurb: 'Abigail has a fix on the relay. It is very high up.',
+  { n: 'Rooftop Signal', loc: 0, layout: 'rooftop', recruit: null, blurb: 'Abigail traced their relay to the rooftops. Bring a good head for heights.',
     beats: [T(), F(3), Gt(14), T(), Hn(3), E('gorse')] },
   { n: 'Blood Bank', loc: 0, layout: 'linear', recruit: 'spider', indoor: true, blurb: 'Inside the vault floor. Sable runs the caches.',
     beats: [F(2), O(3), T(), Gt(18), B('sable')] },
-  { n: 'Exodus', loc: 0, layout: 'grid', recruit: null, blurb: 'They are leaving the city. Find out what they are carrying.',
+  { n: 'Exodus', loc: 0, layout: 'grid', recruit: null, blurb: 'Half the nest is leaving town at once. Find out what they are carrying.',
     beats: [E('maw'), F(3), T(), Hold(60), F(4)] },
 
   /* ---------------- ACT II — ROTTEN HARBOR ---------------- */
-  { n: 'Container Yard', loc: 1, layout: 'grid', recruit: null, blurb: 'Everything going out full. Nothing coming back alive.',
+  { n: 'Container Yard', loc: 1, layout: 'grid', recruit: null, blurb: 'Every container is headed out full. Find out what is inside them.',
     beats: [F(3), T(), O(4), F(3)] },
-  { n: 'The Long Pier', loc: 1, layout: 'linear', recruit: null, blurb: 'Kroven is selling the manifest. Buy it in blood.',
+  { n: 'The Long Pier', loc: 1, layout: 'linear', recruit: null, blurb: 'Kroven is selling the shipping manifest to anyone who can pay. Take it from him.',
     beats: [Cull(1), T(), F(3), E('kroven'), X(3)] },
-  { n: 'Crane Line', loc: 1, layout: 'rooftop', recruit: null, blurb: 'Up the gantries. Do not look at the water.',
+  { n: 'Crane Line', loc: 1, layout: 'rooftop', recruit: null, blurb: 'Climb the gantries to reach the manifest office, and try not to look at the water.',
     beats: [T(), F(3), T(), Hn(3), T(), F(3)] },
-  { n: 'The Hold', loc: 1, layout: 'linear', recruit: 'rider', indoor: true, blurb: 'Below deck. Whatever they were shipping is awake now.',
+  { n: 'The Hold', loc: 1, layout: 'linear', recruit: 'rider', indoor: true, blurb: 'Below deck, the cargo has woken up.',
     beats: [X(3), O(4), F(3), Gt(16), F(3), B('harvester')] },
-  { n: 'Drydock', loc: 1, layout: 'grid', recruit: null, blurb: 'One ship left. It came from a castle.',
+  { n: 'Drydock', loc: 1, layout: 'grid', recruit: null, blurb: 'One ship is still in dock. It sailed from a castle in Europe.',
     beats: [F(3), E('tidewrack'), Race(70), Gt(22), F(3)] },
 
   /* ---------------- ACT III — VRASTA KEEP ---------------- */
-  { n: 'Broken Gate', loc: 2, layout: 'grid', recruit: null, blurb: 'They shipped a castle across an ocean. Ask why.',
+  { n: 'Broken Gate', loc: 2, layout: 'grid', recruit: null, blurb: 'The castle from the manifest stands on the cliffs with its gate smashed open.',
     beats: [F(3), T(), F(3), O(3), F(3)] },
-  { n: 'Hall of Portraits', loc: 2, layout: 'linear', recruit: null, indoor: true, blurb: 'Inside the keep. The same face, four hundred years of it.',
+  { n: 'Hall of Portraits', loc: 2, layout: 'linear', recruit: null, indoor: true, blurb: 'Every portrait in the keep shows the same woman, going back four hundred years.',
     beats: [X(4), Cull(1), E('lamia'), F(3)] },
-  { n: 'Shattered Halls', loc: 2, layout: 'linear', recruit: null, blurb: 'The stairs are gone. Climb anyway.',
+  { n: 'Shattered Halls', loc: 2, layout: 'linear', recruit: null, blurb: 'The staircases have collapsed. Find another way up.',
     beats: [T(), F(3), T(), X(3), T(), F(4)] },
-  { n: 'The Countess', loc: 2, layout: 'grid', recruit: 'elsa', blurb: 'Highblood. Old money. Older hunger.',
+  { n: 'The Countess', loc: 2, layout: 'grid', recruit: 'elsa', blurb: 'Countess Vrasta has ruled the keep for four hundred years.',
     beats: [Gt(20), O(3), T(), F(3), Hn(3), B('vrasta')] },
-  { n: 'Under the Keep', loc: 2, layout: 'linear', recruit: null, indoor: true, blurb: 'The catacombs go down further than the castle goes up.',
+  { n: 'Under the Keep', loc: 2, layout: 'linear', recruit: null, indoor: true, blurb: 'The catacombs run deeper than the castle is tall.',
     beats: [E('gorse'), F(3), T(), E('lamia'), X(3), F(3)] },
 
   /* ---------------- ACT IV — THE BONE CHOIR ---------------- */
-  { n: 'Ossuary', loc: 3, layout: 'linear', recruit: null, blurb: 'Mind the bones. Some of them are still employed.',
+  { n: 'Ossuary', loc: 3, layout: 'linear', recruit: null, blurb: 'The walls are stacked with bones, and some of them move.',
     beats: [F(3), X(3), O(4), F(4)] },
-  { n: 'Drowned Crypt', loc: 3, layout: 'grid', recruit: null, blurb: 'Flooded. Singing. Neither of those should be true.',
+  { n: 'Drowned Crypt', loc: 3, layout: 'grid', recruit: null, blurb: 'The crypt is flooded, and something in the water is singing.',
     beats: [T(), F(3), Hold(55), T(), F(3)] },
-  { n: 'Rite of Marrow', loc: 3, layout: 'linear', recruit: null, blurb: 'Break the altars before the rite completes.',
+  { n: 'Rite of Marrow', loc: 3, layout: 'linear', recruit: null, blurb: 'Destroy the altars before the rite is finished.',
     beats: [Gt(24), O(4), T(), F(3), E('ossuar')] },
-  { n: 'The Choirmaster', loc: 3, layout: 'grid', recruit: 'knight', blurb: 'Every bone in you already knows the tune.',
+  { n: 'The Choirmaster', loc: 3, layout: 'grid', recruit: 'knight', blurb: 'The Bonecaller leads the choir, and the song is almost finished.',
     beats: [F(3), T(), X(3), F(4), B('bonecaller')] },
-  { n: 'The Open Door', loc: 3, layout: 'linear', recruit: null, blurb: 'The choir was never a ritual. It was a hinge.',
+  { n: 'The Open Door', loc: 3, layout: 'linear', recruit: null, blurb: 'The choir was built to open a door, and the door is open.',
     beats: [E('ossuar'), Gt(26), T(), F(4), Hn(3)] },
 
   /* ---------------- ACT V — CRIMSON ASCENSION ---------------- */
-  { n: 'Ascension Steps', loc: 4, layout: 'linear', recruit: null, blurb: 'Climb the steps in blood. They were built for it.',
+  { n: 'Ascension Steps', loc: 4, layout: 'linear', recruit: null, blurb: 'The temple steps are slick with blood and lead up into the dark.',
     beats: [F(4), Race(75), Gt(26), O(3), F(4)] },
-  { n: 'The Red Span', loc: 4, layout: 'linear', recruit: null, blurb: 'The bridge is made of the ones who volunteered.',
+  { n: 'The Red Span', loc: 4, layout: 'linear', recruit: null, blurb: 'A bridge of bone and iron crosses the gorge to the temple.',
     beats: [T(), F(4), E('crimsonguard'), Esc(), X(4), F(4)] },
-  { n: 'Inner Sanctum', loc: 4, layout: 'grid', recruit: null, indoor: true, blurb: 'Inside the temple itself. The seals are not keeping us out.',
+  { n: 'Inner Sanctum', loc: 4, layout: 'grid', recruit: null, indoor: true, blurb: 'Inside the temple, the seals have been broken from within.',
     beats: [O(3), F(4), E('lamia'), Gt(28), E('ossuar'), F(4)] },
-  { n: 'The First Thirst', loc: 4, layout: 'linear', recruit: null, blurb: 'He made your kind. Unmake him.',
+  { n: 'The First Thirst', loc: 4, layout: 'linear', recruit: null, blurb: 'Vhalimar made the first of your kind. End him.',
     beats: [F(4), T(), E('crimsonguard'), Gt(24), B('vhalimar')] }
 ];
 
@@ -3148,16 +3148,16 @@ BOSSES.vampire2 = {
 
 var BOSS_ALLIES = {
   sable:        { style: 'melee',  weapon: 'claws',   special: 'Enforcer Rush',  desc: 'Blinks through a line of enemies, opening every throat on the way.' },
-  kroven:       { style: 'hybrid', weapon: 'darts',   special: 'Market Value',   desc: 'Throws a fan of paid-for silver. Everything it touches bleeds.' },
+  kroven:       { style: 'hybrid', weapon: 'darts',   special: 'Market Value',   desc: 'Throws a fan of silver coins that cut anything they touch.' },
   harvester:    { style: 'melee',  weapon: 'claws',   special: 'Butcher Sweep',  desc: 'One enormous arc that clears the whole floor.' },
   tidewrack:    { style: 'melee',  weapon: 'chain',   special: 'Undertow',       desc: 'Drags the drowned up through the ground to grab ankles.' },
-  vrasta:       { style: 'hybrid', weapon: 'staff',   special: 'Highblood Rite', desc: 'A ring of violet fire that answers only to old blood.' },
+  vrasta:       { style: 'hybrid', weapon: 'staff',   special: 'Highblood Rite', desc: 'A ring of violet fire that burns outward from her feet.' },
   lamia:        { style: 'hybrid', weapon: 'claws',   special: 'Handmaid\'s Kiss', desc: 'Blinks behind the biggest threat and empties it.' },
-  bonecaller:   { style: 'hybrid', weapon: 'staff',   special: 'Choir Note',     desc: 'One sung note. Every skeleton in earshot comes apart.' },
+  bonecaller:   { style: 'hybrid', weapon: 'staff',   special: 'Choir Note',     desc: 'A single sung note that shatters every skeleton in earshot.' },
   ossuar:       { style: 'melee',  weapon: 'claws',   special: 'First Voice',    desc: 'Shatters bone into a storm of shrapnel.' },
-  crimsonguard: { style: 'melee',  weapon: 'sword',   special: 'Shield Break',   desc: 'A charge that goes through armour, wall and vampire alike.' },
+  crimsonguard: { style: 'melee',  weapon: 'sword',   special: 'Shield Break',   desc: 'A charge that smashes through armor, walls and vampires.' },
   gorse:        { style: 'melee',  weapon: 'sword',   special: 'Warden\'s Edge',  desc: 'Three brutal cuts in the time most people manage one.' },
-  maw:          { style: 'melee',  weapon: 'claws',   special: 'Feeding Frenzy', desc: 'Stops being tactical. Starts being effective.' }
+  maw:          { style: 'melee',  weapon: 'claws',   special: 'Feeding Frenzy', desc: 'A wild flurry of claws that tears into everything nearby.' }
 };
 (function buildBossAllies() {
   var id, b, a;
@@ -3173,7 +3173,7 @@ var BOSS_ALLIES = {
       rangedRate: a.style === 'hybrid' ? 0.42 : 0,
       special: a.special, specialDesc: a.desc,
       quip: b.intro,
-      bio: 'Beaten, and now bound to the hunt. ' + b.sub + '.'
+      bio: 'Lost to you, now fights beside you. Formerly ' + b.sub + '.'
     };
     HERO_ORDER.push(id);
   }
@@ -3221,9 +3221,9 @@ var BOSS_DEFEAT = {
                ['BLADE', 'Then I\'ll cut the throat that carries it.'],
                ['BONECALLER', 'It already has yours…']],
   vhalimar: [['VHALIMAR', 'You are my blood. You cannot end me.'],
-             ['BLADE', 'I\'m the correction.'],
-             ['VHALIMAR', 'Then correct… what comes after…']],
-  deadpool: [['DEADPOOL', 'Okay, okay — timeout ACTUALLY this time.'],
+             ['BLADE', 'I can try.'],
+             ['VHALIMAR', 'Then deal with… what comes after…']],
+  deadpool: [['DEADPOOL', 'Okay, okay, timeout. ACTUALLY this time.'],
              ['BLADE', 'You lost.'],
              ['DEADPOOL', 'I was pacing myself. For the sequel.']],
   carti: [['CARTI', 'Whole crowd knelt for me.'],
@@ -3232,25 +3232,25 @@ var BOSS_DEFEAT = {
 };
 
 var ACT_SCRIPT = {
-  0: { pre: [['BLADE', 'Three blocks. Forty people. No bodies.'],
-             ['ABIGAIL', 'And one very grumpy man with a sword. I\'m on comms.'],
-             ['BLADE', 'Then keep it clear. I\'m going in loud.']],
+  0: { pre: [['BLADE', 'Forty people missing from three blocks, and not one body.'],
+             ['ABIGAIL', 'Which is why I\'m on comms. Try to leave one of them talking.'],
+             ['BLADE', 'Keep the line clear. I\'m going in.']],
        mid: { 3: [['ABIGAIL', 'Thermals in the alley behind you. They cached something.']] },
-       post: [['ABIGAIL', 'They\'re running a market two streets over. Selling people, Blade.']] },
+       post: [['ABIGAIL', 'There\'s a market two streets over. They\'re selling people, Blade.']] },
   1: { pre: [['BLADE', 'A market. For people.'], ['ABIGAIL', 'Don\'t make it personal.'], ['BLADE', 'Too late.']],
        post: [['ABIGAIL', 'Everything routes through a relay on the roofs. Go up.']] },
   2: { pre: [['ABIGAIL', 'Rooftops. Try not to fall, I hate paperwork.'], ['BLADE', 'I don\'t fall.']],
        mid: { 4: [['GORSE', 'Sable pays well for your head.'], ['BLADE', 'He can keep the money.']] },
-       post: [['SPIDER-MAN', 'Okay so — big sword, black coat, standing on a pile of guys. Hero or problem?'],
+       post: [['SPIDER-MAN', 'Okay, so: big sword, black coat, standing on a pile of guys. Hero or problem?'],
               ['BLADE', 'Depends how fast you move.'],
               ['SPIDER-MAN', 'Fast. Famously fast.']] },
   3: { pre: [['SPIDER-MAN', 'They\'re running blood through a bank. That\'s on the nose.'],
-             ['BLADE', 'Vampires aren\'t subtle. They\'re just old.']],
-       post: [['ABIGAIL', 'Sable\'s phone had one number in it. The harbour office. They\'re moving the people by sea.'],
+             ['BLADE', 'Vampires have never been subtle.']],
+       post: [['ABIGAIL', 'Sable\'s phone had one number in it. The harbor office. They\'re moving the people by sea.'],
               ['SPIDER-MAN', 'So. Docks. Do we carpool?']] },
-  4: { pre: [['ABIGAIL', 'Half the nest is moving out at once. That\'s not a retreat.'],
-             ['BLADE', 'It\'s a delivery.']],
-       post: [['SPIDER-MAN', 'Containers. On a pier. With heartbeats inside.'], ['BLADE', 'Now you get it.']] },
+  4: { pre: [['ABIGAIL', 'Half the nest is leaving at once. A retreat?'],
+             ['BLADE', 'A delivery.']],
+       post: [['SPIDER-MAN', 'There are containers on that pier with heartbeats inside.'], ['BLADE', 'Now you get it.']] },
 
   5: { pre: [['ABIGAIL', 'Manifest says livestock.'], ['BLADE', 'It always does.']],
        post: [['SPIDER-MAN', 'That was a lot of very confident bad guys.']] },
@@ -3258,37 +3258,37 @@ var ACT_SCRIPT = {
              ['BLADE', 'Then he can sell it to me.']],
        post: [['ABIGAIL', 'The list points at one hold. And one very large heat signature.']] },
   7: { pre: [['SPIDER-MAN', 'Cranes! Swinging! This is my whole thing, finally.'], ['BLADE', 'Then lead.']],
-       post: [['ABIGAIL', 'Harbor master\'s dead. Been dead a week. Still signing forms.']] },
+       post: [['ABIGAIL', 'The harbor master has been dead for a week and is still signing forms.']] },
   8: { pre: [['BLADE', 'Nests. Burn them.'], ['SPIDER-MAN', 'I have questions and zero desire for answers.']],
        post: [['GHOST RIDER', 'The big one\'s soul was rotten through. So is the ship it came off.'],
-              ['SPIDER-MAN', 'Hi. Your head is on fire. Is that — fine?'],
+              ['SPIDER-MAN', 'Hi. Your head is on fire. Is that fine?'],
               ['GHOST RIDER', 'It is deserved.'],
               ['BLADE', 'He\'s with us. Move.']] },
-  9: { pre: [['GHOST RIDER', 'This dock remembers drowning.'], ['BLADE', 'Then let\'s give it something else to remember.']],
-       post: [['ABIGAIL', 'Every container on that manifest goes to one address: a castle they shipped over from Europe and rebuilt on the cliffs. Stone by stone.'],
+  9: { pre: [['GHOST RIDER', 'Many souls went into the water here.'], ['BLADE', 'Let\'s make sure no more do.']],
+       post: [['ABIGAIL', 'Every container on that manifest goes to one address: a castle shipped over from Europe and rebuilt on the cliffs, stone by stone.'],
               ['BLADE', 'That\'s where the forty went.']] },
 
-  10: { pre: [['SPIDER-MAN', 'Gothic castle. Snow. Somebody really committed to a look.'], ['BLADE', 'Climb.']],
-        post: [['GHOST RIDER', 'This ground remembers screaming.']] },
-  11: { pre: [['ABIGAIL', 'There\'s a woman in every portrait. Same face. Four centuries.'],
+  10: { pre: [['SPIDER-MAN', 'A gothic castle in the snow. Somebody really committed to the look.'], ['BLADE', 'Climb.']],
+        post: [['GHOST RIDER', 'People screamed here. I can still hear them.']] },
+  11: { pre: [['ABIGAIL', 'Every portrait in here shows the same woman, going back four centuries.'],
               ['BLADE', 'Then she\'s still in the building.']],
-        mid: { 2: [['ABIGAIL', 'That\'s not her. That\'s a handmaid wearing her face.'], ['BLADE', 'How many of them are there?'], ['ABIGAIL', 'Count the portraits.']] },
+        mid: { 2: [['ABIGAIL', 'That one is a handmaid wearing her face.'], ['BLADE', 'How many of them are there?'], ['ABIGAIL', 'Count the portraits.']] },
         post: [['LAMIA', 'She is sleeping. You will not wake her.'], ['BLADE', 'Watch me.']] },
   12: { pre: [['SPIDER-MAN', 'The stairs are just… gone.'], ['BLADE', 'Then we make stairs.']],
         post: [['ABIGAIL', 'Bell tower\'s clear. She knows you\'re coming.']] },
-  13: { pre: [['VRASTA', 'You wear our hunger like a coat, half-breed.'],
+  13: { pre: [['VRASTA', 'You have our hunger, half-breed. Why fight it?'],
               ['BLADE', 'And you wear a dead woman\'s face. We all cope.']],
         post: [['ELSA', 'Lovely swing. Wide, though. You leave your left open.'],
                ['BLADE', 'And you talk during a fight.'],
-               ['ELSA', 'I multitask. Elsa Bloodstone. The keep sits on catacombs — that\'s where the people went.']] },
+               ['ELSA', 'I multitask. Elsa Bloodstone. The keep sits on top of catacombs, and that\'s where your missing people went.']] },
   14: { pre: [['ELSA', 'Mind the bones. Some are still employed.'], ['BLADE', 'Then fire them.']],
         mid: { 0: [['BLADE', 'Gorse. I killed you on a roof.'], ['GORSE', 'Sable paid for two of me.']],
                3: [['ELSA', 'Another handmaid. Same face.'], ['BLADE', 'Same ending.']],
-               4: [['ABIGAIL', 'Blade… thermal on the lower vault. Heartbeats. Lots of them.'], ['BLADE', 'Alive?'], ['ABIGAIL', 'For now. They\'re being moved deeper.']] },
-        post: [['ABIGAIL', 'The signal below isn\'t vampires. It\'s older than vampires.']] },
+               4: [['ABIGAIL', 'Blade, thermals show a lot of heartbeats in the lower vault.'], ['BLADE', 'Alive?'], ['ABIGAIL', 'For now. They\'re being moved deeper.']] },
+        post: [['ABIGAIL', 'Whatever is making that signal down there is older than the vampires.']] },
 
   15: { pre: [['ELSA', 'Ossuary. Charming. Do try not to touch anything.'], ['BLADE', 'No promises.']],
-        post: [['GHOST RIDER', 'The singing is a summons. Something is being built.'],
+        post: [['GHOST RIDER', 'That singing is calling something up from below.'],
                ['ABIGAIL', 'I isolated the voices in the choir. There are forty of them.'],
                ['BLADE', '…Then we bring them home.']] },
   16: { pre: [['SPIDER-MAN', 'Flooded crypt. Cool. Cool cool cool.'], ['ELSA', 'Do try not to drown, spider.']],
@@ -3297,7 +3297,7 @@ var ACT_SCRIPT = {
         post: [['OSSUAR', 'You are late. The song is nearly finished.'], ['BLADE', 'Then I\'ll cut it short.']] },
   18: { pre: [['ABIGAIL', 'None of this was for Vrasta.'], ['BLADE', 'It was for whoever comes after her.']],
         post: [['MOON KNIGHT', 'The choir was a door. It\'s open now.'],
-               ['SPIDER-MAN', 'Guy in white. In a catacomb. At night. Why.'],
+               ['SPIDER-MAN', 'A guy in white, in a catacomb, at night. Why?'],
                ['MOON KNIGHT', 'So they see me coming.'],
                ['BLADE', 'Everyone in. Last stop.']] },
   19: { pre: [['MOON KNIGHT', 'Khonshu says the door leads to a temple.'], ['BLADE', 'Then we go through it.']],
@@ -3307,10 +3307,10 @@ var ACT_SCRIPT = {
   20: { pre: [['BLADE', 'Vhalimar. First of them. He made the Thirst.'],
               ['ELSA', 'And you carry it.'],
               ['BLADE', 'That\'s why I finish it.']],
-        post: [['SPIDER-MAN', 'Blade — your eyes went red back there.'], ['BLADE', 'I know.']] },
+        post: [['SPIDER-MAN', 'Blade, your eyes went red back there.'], ['BLADE', 'I know.']] },
   21: { pre: [['GHOST RIDER', 'The bridge is made of the ones who volunteered.'], ['BLADE', 'Don\'t look down.']],
-        post: [['ABIGAIL', 'He isn\'t defending anything. He wants you inside.']] },
-  22: { pre: [['ABIGAIL', 'The seals aren\'t keeping us out. They\'re keeping him in — and he WANTS them broken.'],
+        post: [['ABIGAIL', 'He\'s barely defending the place. He wants you to come inside.']] },
+  22: { pre: [['ABIGAIL', 'The seals don\'t keep us out, they keep him in, and he wants them broken.'],
               ['BLADE', 'I know.'],
               ['SPIDER-MAN', 'You KNOW?!'],
               ['BLADE', 'He needs a Daywalker to finish the rite. So he gets one. Up close.']],
@@ -3318,19 +3318,19 @@ var ACT_SCRIPT = {
                4: [['OSSUAR', 'Still singing…'], ['BLADE', 'Not for long.']] },
         post: [['VHALIMAR', 'Come, son of the day. Take your seat.']] },
   23: { pre: [['VHALIMAR', 'I made your kind. I can unmake you.'],
-              ['BLADE', 'You made a mistake. I\'m the correction.'],
+              ['BLADE', 'Your mistake was letting me live.'],
               ['SPIDER-MAN', 'Okay THAT was a good line.']],
-        mid: { 2: [['SPIDER-MAN', 'Didn\'t we already break this guy?'], ['ELSA', 'It\'s an order, spider. There\'s always another one inside the armour.']] },
+        mid: { 2: [['SPIDER-MAN', 'Didn\'t we already break this guy?'], ['ELSA', 'That was the guard. This is the next one up.']] },
         post: [['SPIDER-MAN', 'Is it over? Please say it\'s over.'],
-               ['BLADE', 'It\'s never over. It\'s just quiet for a while.'],
-               ['ABIGAIL', 'I\'ll take quiet. And Blade — we found them. Under the altar. Thirty-one of the forty, alive.'],
+               ['BLADE', 'For tonight.'],
+               ['ABIGAIL', 'I\'ll take tonight. And Blade, we found them. Under the altar. Thirty-one of the forty, alive.'],
                ['BLADE', 'Thirty-one.'],
-               ['ABIGAIL', 'Thirty-one people who get to see the sun come up.'],
+               ['ABIGAIL', 'Thirty-one people going home.'],
                ['BLADE', 'Get some sleep. Sun\'s up in an hour.'],
                ['', '— — —'],
-               ['ABIGAIL', 'Blade. One more thing. Vhalimar\'s vault — the ledger was still burning when I got there.'],
-               ['ABIGAIL', 'He wasn\'t the first. He was the first one WE found.'],
-               ['ABIGAIL', 'There are six more names on that page. Older names.'],
+               ['ABIGAIL', 'Blade, one more thing. The ledger in Vhalimar\'s vault was still burning when I got there.'],
+               ['ABIGAIL', 'He was not the first, just the first one we found.'],
+               ['ABIGAIL', 'Six more names are on that page, and they are older.'],
                ['BLADE', 'Any of them awake?'],
                ['ABIGAIL', 'One. It signed the ledger yesterday.'],
                ['BLADE', 'Then I\'m not done.'],
@@ -3418,7 +3418,7 @@ HEROES.deadpool = {
   body: 0xa8101c, skin: 0xa8101c, accent: 0x14141a, trim: 0xf2f2f6,
   coat: false, glasses: false, weapon: 'sword', fromBoss: true,
   hp: 210, speed: 8.0, dmg: 15, reach: 3.0, combo: 4, rangedRate: 0.3,
-  special: 'Maximum Effort', specialDesc: 'Empties both pistols, then both katanas, then apologises to nobody.',
+  special: 'Maximum Effort', specialDesc: 'Empties both pistols, then both katanas, then apologizes to nobody.',
   quip: 'Do vampires use sunscreen?',
   bio: 'Regenerates, never shuts up, technically on your side now.'
 };
@@ -3429,7 +3429,7 @@ HEROES.carti = {
   hp: 200, speed: 8.4, dmg: 19, reach: 2.9, combo: 4, rangedRate: 0,
   special: 'Opium Bass', specialDesc: 'Drops a bass hit that ragdolls everything in the room.',
   quip: 'King Vamp.',
-  bio: 'The crowd knelt for a reason. Now the reason fights for you.'
+  bio: 'He ruled a sold-out crowd of vampires. Now he works for you.'
 };
 HERO_ORDER.push('deadpool');
 HERO_ORDER.push('carti');
@@ -3447,13 +3447,13 @@ PARTNER_QUIPS.carti = ['King Vamp.', 'Sold out.', 'Too fast.', 'Whole crowd knel
 /* ---------------- the two DLC Acts ---------------- */
 ACTS.push({
   n: 'The Merc With Half a Plan', loc: 0, layout: 'linear', recruit: null, indoor: true, dlc: 1,
-  blurb: 'A hideout full of shirtless men in cheap Wolverine masks. Not vampires. Still a problem.',
+  blurb: 'A hideout full of shirtless men in cheap Wolverine masks. They are not vampires, but they are armed.',
   pool: ['dpgoon', 'dpgoon', 'dpkatana', 'dprocket', 'dpmedic'],
   beats: [F(2), Gt(18), F(3), Hn(2), O(2), B('deadpool')]
 });
 ACTS.push({
   n: 'King Vamp', loc: 4, layout: 'linear', recruit: null, indoor: true, dlc: 2,
-  blurb: 'A sold-out arena. Everyone inside changed at once.',
+  blurb: 'A sold-out arena where the whole crowd turned into vampires at the same moment.',
   pool: ['fan', 'fan', 'fanfast', 'fanjump', 'fanscream'],
   beats: [Gt(22), F(3), Gt(30), Hn(3), Gt(38), B('carti')]
 });
@@ -3499,7 +3499,7 @@ ACT_SCRIPT[24] = {
   },
   post: [['DEADPOOL', 'Before you stab me… …Oops.'],
          ['BLADE', 'Wrong target.'],
-         ['DEADPOOL', 'So THAT was the mission. In my defence, I only read the first sentence.'],
+         ['DEADPOOL', 'So THAT was the mission. In my defense, I only read the first sentence.'],
          ['BLADE', 'I noticed.'],
          ['DEADPOOL', 'We\'re hunting the same guy? Well why didn\'t you say so?'],
          ['BLADE', '…'],
@@ -5060,7 +5060,7 @@ function matChar(color, emissive, opts) {
    [TEX] Outfit textures — painted clothing.
 
    Real PS2 characters got most of their detail from the texture: seams,
-   stitching, zips, armour plates, straps and buckles, pockets, print. The
+   stitching, zips, armor plates, straps and buckles, pockets, print. The
    torso is unwrapped once around the body (u: back -> left side -> front ->
    right side -> back, v: hips -> collar), so each style paints into known
    regions. Painted in full colour; the material itself is white.
@@ -5089,7 +5089,7 @@ function outfitTex(style, base, acc, trim) {
     line(u0, v0, u1, v0, col, 1, [3, 3]); line(u1, v0, u1, v1, col, 1, [3, 3]);
     line(u1, v1, u0, v1, col, 1, [3, 3]); line(u0, v1, u0, v0, col, 1, [3, 3]);
   }
-  function plate(u0, v0, u1, v1, col) {           // armour plate with a lit top edge
+  function plate(u0, v0, u1, v1, col) {           // armor plate with a lit top edge
     rect(u0, v0, u1, v1, col);
     rect(u0, v1 - 0.012, u1, v1, hexCss(0xffffff), 0.12);
     rect(u0, v0, u1, v0 + 0.012, '#000000', 0.35);
@@ -5119,7 +5119,7 @@ function outfitTex(style, base, acc, trim) {
   g.fillStyle = B; g.fillRect(0, 0, S, S);
 
   if (style === 'bladeVest') {
-    // tactical body armour over a black shirt
+    // tactical body armor over a black shirt
     grain(0.12); folds(6, 0.18);
     plate(0.31, 0.2, 0.47, 0.82, hexCss(base, 1.22));            // left chest/abdomen plates
     plate(0.53, 0.2, 0.69, 0.82, hexCss(base, 1.22));
@@ -5254,7 +5254,7 @@ function outfitTex(style, base, acc, trim) {
     folds(10, 0.14); grain(0.05);
     g.fillStyle = '#c8ccd8'; g.beginPath(); g.arc(U(0.5), V(0.6), 16, 0, Math.PI * 2); g.fill();
     g.fillStyle = B; g.beginPath(); g.arc(U(0.5) + 7, V(0.6) - 3, 14, 0, Math.PI * 2); g.fill();
-  } else if (style === 'armour') {
+  } else if (style === 'armor') {
     grain(0.1);
     for (j = 0; j < 5; j++) plate(0.0, 0.18 + j * 0.15, 1.0, 0.31 + j * 0.15, hexCss(base, 1.1 + (j % 2) * 0.1));
     for (i = 0; i < 16; i++) for (j = 0; j < 5; j++) { g.fillStyle = '#c8ccd4'; g.fillRect(U(i / 16 + 0.02), V(0.3 + j * 0.15), 2, 2); }
@@ -5410,7 +5410,7 @@ function makeHumanoid(cfg) {
   var beltM = matU(cfg.emis ? accC : 0x1c1612, cfg.emis ? accC : 0x000000, { specular: 0x3a3430, shininess: 40 });
   var belt = new THREE.Mesh(loftGeo(ringsScale(ANAT.belt, bulk, bulk), { n: 12, p: 2.4 }), beltM); torso.add(belt);
   // accent shoulder pads + chest emblem: silhouettes read per-hero at a glance
-  /* Armoured pauldrons only on armoured silhouettes. Every hero used to wear
+  /* Armoured pauldrons only on armored silhouettes. Every hero used to wear
      bright accent-coloured shoulder blocks and a glowing chest diamond, which
      is a big part of why the cast read as toys. */
   if (cfg.pads === true || (cfg.pads !== false && cfg.spikes)) {
@@ -6075,12 +6075,12 @@ var OUTFIT_STYLE = {
   carti: { outfit: 'tee', pants: 0x161618, pantsStyle: 'cargo' },
   sable: { outfit: 'suit', pants: 0x141418 }, kroven: { outfit: 'jacket', pants: 0x3a3226, pantsStyle: 'cargo' },
   vrasta: { outfit: 'suit' }, lamia: { outfit: 'suit' }, vhalimar: { outfit: 'suit', pants: 0x1a0a10 },
-  crimsonguard: { outfit: 'armour', pants: 0x1a0a0e }, gorse: { outfit: 'armour', pants: 0x1a1c22 },
+  crimsonguard: { outfit: 'armor', pants: 0x1a0a0e }, gorse: { outfit: 'armor', pants: 0x1a1c22 },
   bonecaller: { outfit: 'ribs', pants: false }, ossuar: { outfit: 'ribs', pants: false },
   harvester: { outfit: 'rags' }, tidewrack: { outfit: 'rags' }, maw: { outfit: 'rags' },
   thrall: { outfit: 'rags' }, spitter: { outfit: 'rags' }, houndling: { outfit: 'rags' }, brute: { outfit: 'rags' },
   vampire: { outfit: 'suit', pants: 0x141218 }, cultist: { outfit: 'robe' }, acolyte: { outfit: 'robe' },
-  reaver: { outfit: 'armour' }, warden: { outfit: 'armour' }, familiar: { outfit: 'jacket', pantsStyle: 'cargo' },
+  reaver: { outfit: 'armor' }, warden: { outfit: 'armor' }, familiar: { outfit: 'jacket', pantsStyle: 'cargo' },
   wight: { outfit: 'ribs', pants: false }, revenant: { outfit: 'ribs', pants: false }, stalker: { outfit: 'jacket' },
   dpgoon: { outfit: 'shirtless', pants: 0x2a3a5a, pantsStyle: 'jeans', wolvie: true, mask: true, maskColor: 0xe0b820, pads: false },
   dpkatana: { outfit: 'shirtless', pants: 0x2a3a5a, pantsStyle: 'jeans', wolvie: true, mask: true, maskColor: 0xe0b820, pads: false },
@@ -8919,7 +8919,7 @@ function damageEntity(e, amount, srcX, srcZ, opts) {
     SFX.parry(); addShake(0.25);
     spawnRing(e.pos.x, e.pos.y + 0.1, e.pos.z, 0xd8e8ff, 5, 0.5);
     emit(e.pos.x, e.pos.y + 1.2, e.pos.z, 22, { color: 0xc8dcff, speed: 6, life: 0.5, gravity: 0 });
-    toast('PERFECT DODGE — counter!');
+    toast('PERFECT DODGE. Counter!');
     addMeter(e, 12);
     return;
   }
@@ -9125,7 +9125,7 @@ function killEntity(e, by) {
       G.bossesBeaten = G.bossesBeaten || [];
       if (G.bossesBeaten.indexOf(e.def.id) < 0) {
         G.bossesBeaten.push(e.def.id);
-        toast(e.def.name + ' yields — they will fight beside you');
+        toast(e.def.name + ' yields and will fight beside you');
       }
     }
     if (e.boss) {
@@ -9980,7 +9980,7 @@ function updateBoss(e, dt) {
     e.wardAdds = bossSummon(e, 3);
     e.wardT = 14;                                // hard cap: the trickle of
     spawnRing(e.pos.x, e.pos.y, e.pos.z, 0x9a30d8, 7, 0.9);   // ambient adds must
-    toast('Vrasta raises a ward — kill her handmaids');       // never lock the fight
+    toast('Vrasta raises a ward. Kill her handmaids');       // never lock the fight
   } else if (sig === 'bonecaller' && e.sigT <= 0) {
     e.sigT = 10;                                 // choir: heals from living adds
     var healed = 0, bi3;
@@ -9990,7 +9990,7 @@ function updateBoss(e, dt) {
     if (healed > 0) {
       e.hp = Math.min(e.maxHp, e.hp + healed * 22);
       emit(e.pos.x, e.pos.y + 1.6, e.pos.z, 24, { color: 0x50e0b0, speed: 5, life: 0.7, gravity: 2 });
-      toast('The choir sings — Bonecaller mends');
+      toast('The choir sings and the Bonecaller mends');
     }
   } else if (sig === 'kroven' && e.sigT <= 0) {
     /* Night Market broker: throws down a bounty marker. Stand in it and every
@@ -10000,7 +10000,7 @@ function updateBoss(e, dt) {
       e.bountyX = tgt.pos.x; e.bountyZ = tgt.pos.z;
       e.bountyT = 6;
       spawnTelegraph(e.bountyX, 0.06, e.bountyZ, 6.5, 6, 0xe8c020);
-      toast('Kroven marks the ground — move off the bounty');
+      toast('Kroven marks the ground. Move off the bounty');
     }
   } else if (sig === 'tidewrack' && e.sigT <= 0) {
     /* Drowned foreman: floods the arena. Standing still in the surge drags
@@ -10009,7 +10009,7 @@ function updateBoss(e, dt) {
     e.surgeT = 5;
     spawnRing(e.pos.x, 0.1, e.pos.z, 0x30d0b0, 22, 1.4);
     tone(70, 1.4, 'sawtooth', 0.16, 34);
-    toast('The tide turns — keep moving');
+    toast('The tide turns. Keep moving');
   } else if (sig === 'lamia' && e.sigT <= 0 && e.phase >= 1) {
     /* Handmaid: splits into decoys. Only one is real; hitting a copy pops it. */
     e.sigT = 14;
@@ -10028,7 +10028,7 @@ function updateBoss(e, dt) {
     e.invuln = Math.max(e.invuln, 0.4);
     bossBlink(e, tgt);
     spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xc060ff, 6, 0.7);
-    toast('Lady Lamia scatters — find the real one');
+    toast('Lady Lamia scatters. Find the real one');
   } else if (sig === 'ossuar' && e.sigT <= 0) {
     /* First Voice: raises a bone wall between you and him, forcing a flank. */
     e.sigT = 11;
@@ -10056,7 +10056,7 @@ function updateBoss(e, dt) {
     e.guarding = true;
     e.guardT = 6;
     spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xff3040, 5, 0.7);
-    toast('Guard up — break it with a HEAVY');
+    toast('Guard up. Break it with a HEAVY');
   } else if (sig === 'deadpool' && e.sigT <= 0) {
     /* Merc: regenerates, and taunts while doing it. */
     e.sigT = 9;
@@ -11053,7 +11053,7 @@ function startAct(index, isVs) {
   musicStart(act.loc, false);
 
   banner('ACT ' + (act.index + 1), act.n.toUpperCase());
-  toast(LOCATIONS[act.loc].short + ' — ' + act.blurb);
+  toast(LOCATIONS[act.loc].short + ': ' + act.blurb);
 
   // Intro is frame-driven, not timer-driven: a stalled timer must never be able
   // to leave an Act running with no active beat.
@@ -11153,7 +11153,7 @@ function beatEnter(i) {
   } else if (k === 'race') {
     G.beat.raceT = def.t;
     addGoalZone(zone.x, zone.z, LOCATIONS[act.loc], (zone.y || 0) + 6);
-    toast('Move — the seal is closing');
+    toast('Move! The seal is closing');
   } else if (k === 'cull') {
     /* One marked target hides among ordinary enemies; find and kill it. */
     spawnAtZone(zone, 6 + G.locIndex, false);
@@ -11167,7 +11167,7 @@ function beatEnter(i) {
       pick2.root.scale.multiplyScalar(1.18);
       G.beat.marked = pick2;
     }
-    toast('One of them carries the mark — find it');
+    toast('One of them carries the mark. Find it');
   } else if (k === 'boss' || k === 'elite') {
     spawnActBoss(def.b, zone, k === 'boss');
   }
@@ -11175,7 +11175,7 @@ function beatEnter(i) {
   beatObjectiveText();
   var mid = ACT_SCRIPT[act.index] && ACT_SCRIPT[act.index].mid;
   if (mid && mid[i]) playDialogue(mid[i]);
-  if (i > 0) toast('Checkpoint — ' + beatLabel(def));
+  if (i > 0) toast('Checkpoint: ' + beatLabel(def));
 }
 
 function beatLabel(def) {
@@ -11252,8 +11252,8 @@ function spawnActBoss(bossId, zone, major) {
   e.baseScale = e.root.scale.x;
   enemies.push(e);
   cacheMaterials(e);
-  if (major) { boss = e; el('bossBar').classList.add('on'); el('bossName').textContent = d.name + ' — ' + d.sub; }
-  else { boss = e; el('bossBar').classList.add('on'); el('bossName').textContent = d.name + ' — ' + d.sub; }
+  if (major) { boss = e; el('bossBar').classList.add('on'); el('bossName').textContent = d.name + ' \u00b7 ' + d.sub; }
+  else { boss = e; el('bossBar').classList.add('on'); el('bossName').textContent = d.name + ' \u00b7 ' + d.sub; }
   G.beat.bossRef = e;
   SFX.roar();
   addShake(0.8);
@@ -11391,7 +11391,7 @@ function actDirector(dt) {
     if (b.timer <= 0) { b.timer = 3.0; spawnAtZone(zone, 2 + Math.floor(G.locIndex * 0.6), Math.random() < 0.12); }
   } else if (d.k === 'race') {
     b.raceT -= dt;
-    if (b.raceT <= 0) { toast('Too slow — the seal holds'); b.raceT = d.t; }
+    if (b.raceT <= 0) { toast('Too slow. The seal holds'); b.raceT = d.t; }
     var ri, rit;
     for (ri = 0; ri < interactables.length; ri++) {
       rit = interactables[ri];
@@ -12131,14 +12131,14 @@ function endCutscene() {
    Opening cutscene. Plays once on a fresh save, before the player ever moves.
    -------------------------------------------------------------------------- */
 var INTRO_SCRIPT = [
-  ['', 'Whistler used to say the world runs on two things: money and blood.'],
-  ['', 'He was only wrong about the money.'],
-  ['BLADE', 'They took my mother before I was born. Bit her while I was still inside her.'],
-  ['BLADE', 'I got their strengths. Their speed. Their hunger.'],
-  ['BLADE', 'None of their weaknesses. The sun doesn\'t touch me. They call me the Daywalker.'],
-  ['ABIGAIL', 'Blade — I\'ve got forty missing in three blocks and no bodies. That\'s not a feeding. That\'s a harvest.'],
-  ['BLADE', 'Someone\'s building something.'],
-  ['ABIGAIL', 'Then find out who. I\'ll keep the lights on from the safehouse.'],
+  ['', 'Whistler used to say the world runs on money and blood.'],
+  ['', 'After twenty years of hunting, I think it only runs on one of them.'],
+  ['BLADE', 'A vampire bit my mother while she was pregnant with me.'],
+  ['BLADE', 'I got their speed, their strength and their hunger. I got none of their weaknesses.'],
+  ['BLADE', 'The sun does not touch me. They call me the Daywalker.'],
+  ['ABIGAIL', 'Blade, forty people are missing from three blocks and there isn\'t a single body. Nobody feeds like that. Someone is collecting them.'],
+  ['BLADE', 'Then somebody needs them alive. I want to know why.'],
+  ['ABIGAIL', 'Then find out who, and why. I\'ll keep the lights on from the safehouse.'],
   ['BLADE', 'Gear up. We hunt tonight.']
 ];
 
@@ -12163,7 +12163,7 @@ function tutorialAdvance(action) {
   saveProfile();
   if (P.tutorialStep >= HUB_TUTORIAL.length) {
     banner('READY', 'DEPLOY WHEN YOU ARE');
-    toast('Tutorial complete — use the MISSIONS terminal to deploy');
+    toast('Tutorial complete. Use the MISSIONS terminal to deploy');
   } else {
     setTimeout(function () { toast(tipText(HUB_TUTORIAL[P.tutorialStep].tip)); }, 500);
   }
@@ -13095,7 +13095,7 @@ function teamUpName(a, b) {
 function onHeroDown(e) {
   if (e === player) {
     if (ally && !ally.dead) {
-      toast(e.def.name + ' is down — take over!');
+      toast(e.def.name + ' is down. Take over!');
       // hand control to the partner
       var downed = player;
       player = ally;
@@ -13713,20 +13713,20 @@ function goTitle() {
     var src = G.recoveredFrom;
     G.recoveredFrom = null;
     setTimeout(function () {
-      toast('Recovered a save from backup — Act ' + (P.story + 1) + ', ' + P.tokens + ' bloodstones');
+      toast('Recovered a save from backup. Act ' + (P.story + 1) + ', ' + P.tokens + ' bloodstones');
     }, 900);
   }
   var fresh = (P.story === 0 && P.totalTokens === 0);
   el('miContinue').classList.toggle('off', fresh);
-  el('miContinue').textContent = fresh ? 'Continue Hunt' : ('Continue — Act ' + Math.min(P.story + 1, ACTS.length));
+  el('miContinue').textContent = fresh ? 'Continue Hunt' : ('Continue: Act ' + Math.min(P.story + 1, ACTS.length));
 }
 function doPause() {
   if (G.mode !== 'play' && G.mode !== 'hub') return;
   G.pauseFrom = G.mode;
   G.mode = 'pause';
   showScreen('scPause');
-  el('pauseTitle').textContent = G.act && G.mode !== 'hub' ? ('Act ' + (G.act.index + 1) + ' — ' + G.act.n) : 'Safehouse';
-  el('pauseObj').textContent = G.objective + (G.objectiveSub ? ' — ' + G.objectiveSub : '');
+  el('pauseTitle').textContent = G.act && G.mode !== 'hub' ? ('Act ' + (G.act.index + 1) + ': ' + G.act.n) : 'Safehouse';
+  el('pauseObj').textContent = G.objective + (G.objectiveSub ? ' \u00b7 ' + G.objectiveSub : '');
   var inHub = (G.pauseFrom === 'hub');
   el('btnRestart').style.display = inHub ? 'none' : '';
   el('btnAbandon').style.display = inHub ? 'none' : '';
@@ -13822,7 +13822,7 @@ function openHub() {
     var r = RECRUIT_LINES[rr];
     G.pendingRecruit = null;
     if (r) setTimeout(function () { playDialogue([r]); }, 700);
-    toast(HEROES[rr].name + ' joined — set them as your partner at the PARTNERS terminal');
+    toast(HEROES[rr].name + ' joined. Set them as your partner at the PARTNERS terminal');
   }
 }
 
@@ -14019,7 +14019,7 @@ function renderHub() {
       html += '<div class="card' + (own ? '' : ' lock') + (P.partner === hid ? ' eq' : '') + '" data-partner="' + hid + '">';
       html += heroFigure(h, own);
       html += '<h4' + (own ? '' : ' style="color:#7d7d86"') + '>' + h.name + '</h4>';
-      html += '<p>' + (own ? h.title + ' — ' + h.specialDesc
+      html += '<p>' + (own ? h.title + ': ' + h.specialDesc
         : (h.fromBoss ? h.title + ' · Defeat them in battle to recruit' : h.title + ' · Recruited during the story')) + '</p>';
       if (own) html += '<p style="color:#8d8078;margin-top:4px">HP ' + h.hp + ' · DMG ' + h.dmg + ' · ' + h.style + '</p>';
       if (own) html += '<div class="chip' + (P.partner === hid ? ' good' : '') + '">' + (P.partner === hid ? 'Active' : 'Select') + '</div>';
@@ -14032,7 +14032,7 @@ function renderHub() {
       hid2 = HERO_ORDER[hi2];
       list2 = SKINS[hid2];
       if (!list2 || !P.heroes[hid2]) continue;
-      html += '<div class="hr"></div><div class="hdr">' + HEROES[hid2].name + ' — Outfits</div><div class="grid">';
+      html += '<div class="hr"></div><div class="hdr">' + HEROES[hid2].name + ' Outfits</div><div class="grid">';
       for (si3 = 0; si3 < list2.length; si3++) {
         sk = list2[si3];
         var ownSkin = ((P.unlockedSkins[hid2] || [0]).indexOf(si3) >= 0);
@@ -14053,7 +14053,7 @@ function renderHub() {
       if (!P.heroes[uid]) continue;
       var hd = HEROES[uid];
       html += '<div style="margin-top:16px"><div class="hdr">' + hd.title + '</div><div class="ttl" style="font-size:18px">' + hd.name + '</div>';
-      html += '<div class="sub" style="margin:4px 0">' + hd.special + ' — ' + hd.specialDesc + '</div>';
+      html += '<div class="sub" style="margin:4px 0">' + hd.special + ': ' + hd.specialDesc + '</div>';
       for (j = 0; j < UPGRADES.length; j++) {
         var u = UPGRADES[j];
         var rank = upgVal(uid, u.id);
@@ -14101,7 +14101,7 @@ function wireHub() {
       var sa = ACTS[idx];
       if (!actUnlocked(idx)) {
         toast(sa && sa.dlc === 2 ? 'Play the Deadpool chapter first'
-            : (sa && sa.dlc === 1 ? 'Finish the campaign first' : 'Locked — finish the previous Act'));
+            : (sa && sa.dlc === 1 ? 'Finish the campaign first' : 'Locked. Finish the previous Act'));
         return;
       }
       SFX.ui();
@@ -14109,7 +14109,7 @@ function wireHub() {
       var nodes = body.querySelectorAll('[data-act]'), n;
       for (n = 0; n < nodes.length; n++) nodes[n].classList.remove('pick');
       this.classList.add('pick');
-      toast('Selected: Act ' + (idx + 1) + ' — ' + ACTS[idx].n);
+      toast('Selected: Act ' + (idx + 1) + ': ' + ACTS[idx].n);
     });
   }
   var prts = body.querySelectorAll('[data-partner]');
@@ -14150,7 +14150,7 @@ function wireHub() {
       P.tokens -= cost;
       upgOf(hid)[line] = rank + 1;
       saveProfile(); SFX.pickup(); renderHub();
-      toast(HEROES[hid].name + ' — ' + line.toUpperCase() + ' rank ' + (rank + 1));
+      toast(HEROES[hid].name + ': ' + line.toUpperCase() + ' rank ' + (rank + 1));
     });
   }
   var wipe = el('btnWipe');
@@ -14462,7 +14462,7 @@ function importSave() {
 }
 function manualRestore() {
   openSaveModal('Restore Lost Progress',
-    'Storage that was already overwritten cannot be read back — there is no server copy. ' +
+    'Storage that was already overwritten cannot be read back, and there is no server copy. ' +
     'If your save was wiped, set how far you had got and it will be rebuilt: ' +
     'enter the Act number you had reached (1-' + ACTS.length + ') and your bloodstones, as "act,stones".',
     (P.story + 1) + ',' + P.tokens, function () {
