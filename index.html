@@ -1074,7 +1074,7 @@ body.tutOn #toast{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.7.0';
+var GAME_VERSION = 'v3.7.1';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -4378,7 +4378,10 @@ function mergeStatics() {
       bm = new THREE.MeshPhongMaterial({ color: g.mat.color.clone(), emissive: g.mat.emissive ? g.mat.emissive.clone() : 0x000000, specular: 0x5a5e6a, shininess: 70 });
     }
     bm.vertexColors = true;
-    if (g.layer > 0) { bm.polygonOffset = true; bm.polygonOffsetFactor = -1; bm.polygonOffsetUnits = -2 * g.layer; }
+    /* Units only, no slope factor: the slope term scales with the view angle, so at
+       grazing angles it hauled whole decal layers over walls and feet and made
+       the floor patches strobe as the camera moved. Layers are already >=2.5 mm apart. */
+    if (g.layer > 0) { bm.polygonOffset = true; bm.polygonOffsetFactor = 0; bm.polygonOffsetUnits = -g.layer; }
     if (tex) {
       bm.map = tex;
       if (g.cls === 'facade') {
@@ -8472,9 +8475,9 @@ function animateEntity(e, dt) {
 
   // hit flash tint
   if (e.hitFlash > 0) {
-    e.hitFlash -= dt;
-    if (e.hitFlash > 0.4) e.hitFlash = 0.4;
-    var f = clamp(e.hitFlash * 6, 0, 1);
+    e.hitFlash -= Math.max(dt, 0.012);   // v3.7: hit-stop / slow-mo no longer freeze the red tint on screen
+    if (e.hitFlash > 0.3) e.hitFlash = 0.3;
+    var f = clamp(e.hitFlash * 3, 0, 0.38);
     e.root.traverse(function (o) {
       if (o.isMesh && o.material && o.material.emissive && flashableMesh(o)) {
         o.material.emissive.setRGB(f, f * 0.25, f * 0.25);
@@ -8485,8 +8488,15 @@ function animateEntity(e, dt) {
 
   // day-mode glow for Blade
   if (e.dayMode) {
-    var g2 = 0.35 + Math.sin(G.time * 12) * 0.12;
-    e.parts.chest.material.emissive.setRGB(g2, g2 * 0.2, 0.03);
+    var g2 = 0.13 + Math.sin(G.time * 4) * 0.025;     // v3.7: a warm ember, not a flashing red torso
+    if (e.hitFlash <= 0) e.parts.chest.material.emissive.setRGB(g2, g2 * 0.4, 0.02);
+  } else if (e.kind === 'hero' && e.hitFlash <= 0) {
+    e.tintChk = (e.tintChk || 0) - dt;
+    if (e.tintChk <= 0) {
+      e.tintChk = 0.5;
+      var cm = e.parts.chest && e.parts.chest.material;
+      if (cm && cm.emissive && cm.emissive.getHex() !== (e.parts.chest.userData.origEmissive || 0)) restoreMaterials(e);
+    }
   }
 }
 function restoreMaterials(e) {
