@@ -516,6 +516,164 @@ body.dev-touch #legend.on{display:none;}
 @media (max-height:620px){.btn{padding:8px 14px 8px 16px;margin:4px 0;font-size:12px;}.ctrlRow{padding:3px 0;}.wide{padding-top:16px;padding-bottom:12px;}.center{padding-top:14px;}}
 @media (max-width:620px){.ttl{font-size:21px;}.grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}.wide{padding:18px 14px 14px;}}
 
+
+/* ---- v3.7 overlay fixes: compact combo, tidy objective ---- */
+#comboBox{display:grid;grid-template-areas:"rank num" "rank lbl";grid-template-columns:auto auto;justify-items:end;align-items:center;column-gap:12px;top:calc(env(safe-area-inset-top,0px) + 96px);}
+#comboNum{grid-area:num;}
+#comboLbl{grid-area:lbl;}
+#comboRank{grid-area:rank;margin-top:0;align-self:center;}
+#objBox{padding:3px 8px 4px;background:radial-gradient(ellipse at center,rgba(0,0,0,.5),rgba(0,0,0,0) 72%);}
+#objText{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+#waveText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media (max-height:500px){
+  #comboBox{top:calc(env(safe-area-inset-top,0px) + 86px);column-gap:8px;}
+  #comboNum{font-size:28px;}
+  #comboLbl{font-size:8px;letter-spacing:.26em;}
+  #comboRank{font-size:15px;min-width:28px;padding:0 7px;}
+  #pPlate{width:min(300px,38vw);}
+  #rCol{width:min(210px,30vw);}
+}
+@media (max-width:640px) and (min-height:501px){#comboBox{top:38%;}}
+
+/* ---- v3.7 training prompt ---- */
+#tut{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 98px);width:min(480px,54vw);z-index:32;display:none;pointer-events:none;
+  padding:11px 16px 12px 18px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:3px;
+  background:linear-gradient(rgba(44,49,58,.93),rgba(10,11,14,.95));box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.14);}
+#tut.on{display:block;animation:tutIn .28s ease-out;}
+@keyframes tutIn{from{opacity:0;transform:translate(-50%,-10px);}to{opacity:1;transform:translate(-50%,0);}}
+#tut .tHead{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.28em;text-transform:uppercase;font-weight:800;color:var(--amber);}
+#tutSkip{pointer-events:auto;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-size:11px;color:#d9dee4;letter-spacing:.14em;}
+#tutSkip .gl{font-size:12px;}
+#tutTitle{font-size:20px;font-weight:300;letter-spacing:.06em;text-transform:uppercase;color:#fff;margin-top:5px;text-shadow:0 2px 8px #000;}
+#tutLine{font-size:14px;color:#dfe4ea;margin-top:5px;line-height:1.55;}
+#tutLine .gl{font-size:14px;margin:0 3px;}
+#tut .tBar{height:8px;background:linear-gradient(#030405,#14171c);border:1px solid rgba(255,255,255,.3);border-radius:2px;overflow:hidden;position:relative;}
+#tutFill{display:block;height:100%;width:0%;background:linear-gradient(#ffe39a,#e2a516 55%,#9a6200);transition:width .15s linear;}
+#tut .tRow{display:flex;align-items:center;gap:10px;margin-top:10px;}
+#tut .tRow .tBar{flex:1;margin-top:0;}
+#tutCount{font-size:11px;font-weight:800;letter-spacing:.1em;color:#ffe4b0;min-width:30px;text-align:right;}
+#tutCount:empty{display:none;}
+#tutOkMark{position:absolute;right:14px;top:30px;width:34px;height:34px;line-height:34px;text-align:center;border-radius:50%;font-size:20px;font-weight:900;color:#fff;
+  background:radial-gradient(circle at 35% 26%,#b4f7a2,#34a62d 58%,#1a6a1a);box-shadow:0 0 14px rgba(80,220,100,.7);display:none;}
+#tut.ok{border-left-color:#52c447;}
+#tut.ok #tutOkMark{display:block;animation:tutPop .35s ease-out;}
+#tut.ok #tutFill{background:linear-gradient(#b4f7a2,#34a62d 55%,#1a6a1a);}
+@keyframes tutPop{from{transform:scale(.3);opacity:0;}to{transform:scale(1);opacity:1;}}
+body.tutOn #toast{display:none;}
+@media (max-height:500px){#tut{top:calc(env(safe-area-inset-top,0px) + 80px);padding:8px 14px 9px 16px;width:min(440px,50vw);}#tutTitle{font-size:16px;margin-top:2px;}#tutLine{font-size:12px;margin-top:3px;line-height:1.4;}#tutLine .gl{font-size:12px;}#tut .tRow{margin-top:7px;}#tutOkMark{top:24px;width:28px;height:28px;line-height:28px;font-size:16px;}}
+@media (max-width:640px) and (min-height:501px){#tut{top:calc(env(safe-area-inset-top,0px) + 176px);width:92vw;}}
+
+/* ---- v3.7 mission select ---- */
+.msn{display:flex;gap:14px;align-items:flex-start;}
+.chapList{flex:0 0 220px;display:flex;flex-direction:column;gap:5px;}
+.chp{position:relative;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-left:3px solid rgba(255,255,255,.14);
+  background:linear-gradient(rgba(44,49,58,.6),rgba(14,16,20,.88));cursor:pointer;border-radius:2px;overflow:hidden;transition:background .12s,border-color .12s,transform .1s;}
+.chp .chpNum{flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;
+  background:radial-gradient(circle at 35% 26%,#4a505c,#14161a);}
+.chp .chpTx{flex:1;min-width:0;}
+.chp b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chp i{display:block;font-style:normal;font-size:10px;color:var(--dim);letter-spacing:.08em;margin-top:2px;}
+.chpBar{display:block;height:3px;margin-top:5px;background:rgba(255,255,255,.12);}
+.chpBar u{display:block;height:100%;background:linear-gradient(#ff7a86,#c4202e);text-decoration:none;}
+.chp.on{border-left-color:var(--amber);background:linear-gradient(90deg,rgba(231,64,82,.5),rgba(120,18,32,.35) 60%,rgba(26,12,16,.35));}
+.chp:hover,.chp.foc{border-color:var(--line2);border-left-color:var(--amber);background:linear-gradient(90deg,rgba(231,64,82,.85),rgba(120,18,32,.7) 55%,rgba(26,12,16,.5));box-shadow:0 0 14px rgba(214,40,58,.35);}
+.chp.foc i,.chp:hover i{color:#ffd9dd;}
+.chp.foc:after{content:'';position:absolute;top:0;bottom:0;width:38%;left:-45%;pointer-events:none;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.28),rgba(255,255,255,0));animation:sweep 1.5s ease-in-out infinite;}
+.chp.lock{opacity:.55;}
+.actPane{flex:1;min-width:0;}
+.apName{font-size:20px;font-weight:300;letter-spacing:.06em;text-transform:uppercase;color:#fff;margin:2px 0 3px;text-shadow:0 2px 8px #000;}
+.apHead .sub{font-size:12px;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin:10px 0;}
+.actTile{padding:8px 9px 9px;min-height:80px;display:flex;flex-direction:column;}
+.atTop{display:flex;justify-content:space-between;align-items:center;}
+.atNum{font-size:20px;font-weight:300;color:#ffe4b0;font-style:italic;line-height:1;}
+.atSt{font-size:12px;color:var(--ok);font-weight:800;}
+.atName{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:#fff;margin-top:5px;line-height:1.2;flex:1;}
+.atPips{display:flex;gap:3px;margin-top:6px;}
+.atPips u{flex:1;height:4px;background:rgba(255,255,255,.22);text-decoration:none;transform:skewX(-20deg);}
+.atPips u.boss{background:#d6283a;box-shadow:0 0 5px rgba(255,60,80,.7);}
+.actTile.pick{border-color:var(--amber);box-shadow:inset 0 0 0 1px rgba(255,179,71,.75);}
+.actTile.pick.foc,.actTile.pick:hover{box-shadow:inset 0 0 0 1px rgba(255,179,71,.75),0 0 16px rgba(255,170,60,.45);}
+.actTile.done .atNum{color:var(--ok);}
+.actTile.lock{opacity:.42;cursor:not-allowed;}
+.apDetail{padding:10px 14px 11px;border:1px solid var(--line);border-left:3px solid var(--amber);background:linear-gradient(rgba(44,49,58,.55),rgba(10,11,14,.9));border-radius:2px;min-height:92px;}
+.dTop{display:flex;align-items:baseline;gap:10px;}
+.dNum{font-size:10px;letter-spacing:.24em;color:var(--acc);font-weight:800;white-space:nowrap;}
+.dTop b{font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:#fff;flex:1;font-weight:700;}
+.dStat{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:700;white-space:nowrap;}
+.apDetail .sub{margin-top:3px;font-size:12px;}
+.dChips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.chip{font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--line);border-radius:10px;color:#cfd6dd;background:rgba(0,0,0,.35);font-weight:700;}
+.chip.hot{border-color:#d6283a;color:#ffb0b6;}
+.dFoot{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;font-weight:700;}
+#hubBody{max-height:calc(100vh - 262px);}
+@media (max-width:640px){
+  .msn{flex-direction:column;gap:8px;}
+  .chapList{flex:0 0 auto;flex-direction:row;overflow-x:auto;width:100%;padding-bottom:4px;}
+  .chp{flex:0 0 auto;min-width:0;padding:7px 10px;}
+  .chp i,.chpBar{display:none;}
+  .chp .chpNum{flex-basis:24px;height:24px;}
+  .tiles{grid-template-columns:repeat(3,1fr);gap:6px;}
+  .apName{font-size:17px;}
+  #hubBody{max-height:calc(100vh - 330px);}
+}
+@media (max-height:500px) and (min-width:641px){
+  #hubBlurb{display:none;}
+  .hubPanel{padding:12px 18px 10px;}
+  .tabs{margin:8px 0 7px;padding-bottom:7px;}
+  #hubBody{max-height:calc(100vh - 168px);min-height:80px;}
+  .chapList{flex-basis:200px;}
+  .chp{padding:5px 9px;}.chp .chpNum{flex-basis:24px;height:24px;}.chpBar{display:none;}
+  .apName{font-size:16px;}.apHead .sub{display:none;}
+  .tiles{margin:7px 0;}.actTile{min-height:62px;padding:6px 8px;}.atNum{font-size:16px;}
+  .apDetail{padding:7px 12px 8px;min-height:0;}.dChips{margin-top:5px;}.dFoot{margin-top:5px;}
+}
+
+/* mission select: fixed-height panes that scroll on their own */
+#hubBody.msnMode{overflow:hidden;padding-right:0;}
+.msn{height:calc(100vh - 262px);min-height:230px;align-items:stretch;}
+.chapList{overflow-y:auto;max-height:100%;padding-right:3px;}
+.actPane{overflow-y:auto;max-height:100%;padding-right:3px;}
+@media (max-height:640px) and (min-width:641px){
+  #hubBlurb{display:none;}
+  .center{padding-top:14px;padding-bottom:54px;}
+  .hubPanel{padding:14px 22px 12px;}
+  .hubHead .ttl{font-size:22px;}
+  .tabs{margin:8px 0 8px;padding-bottom:8px;}
+  .tab{padding:6px 14px;}
+  .hubPanel .hr{margin:8px 0;}
+  #btnDeploy,#btnHubTitle{padding:8px 16px;margin:2px 0;}
+  .apHead .sub{display:none;}
+  .apName{font-size:17px;}
+  .tiles{margin:8px 0;}
+  .actTile{min-height:68px;}
+  #hubBody{max-height:calc(100vh - 226px);}
+  .msn{height:calc(100vh - 226px);}
+}
+@media (max-height:500px) and (min-width:641px){
+  .center{padding-top:8px;padding-bottom:8px;}
+  .hubHead{position:absolute;top:12px;right:20px;z-index:2;}
+  .hubHead > div:first-child{display:none;}
+  .hubPanel{padding:10px 18px 8px;}
+  .tabs{margin:0 0 6px;padding-bottom:6px;}
+  #hubBody{max-height:calc(100vh - 124px);}
+  .msn{height:calc(100vh - 124px);min-height:150px;}
+  .chapList{flex-basis:200px;}
+  .chp{padding:4px 9px;}.chp .chpNum{flex-basis:22px;height:22px;}.chpBar{display:none;}
+  .apName{font-size:15px;margin:0;}.apHead .hdr{display:none;}
+  .tiles{margin:6px 0;gap:6px;}.actTile{min-height:56px;padding:5px 8px;}.atNum{font-size:15px;}.atName{font-size:10px;margin-top:2px;}.atPips{margin-top:3px;}
+  .apDetail{padding:6px 12px 7px;min-height:0;}.dChips{margin-top:4px;}.dFoot{margin-top:4px;}.apDetail .sub{font-size:11px;}
+  #btnDeploy,#btnHubTitle{padding:6px 14px;margin:0;font-size:12px;}
+  .hubPanel .hr{margin:6px 0;}
+  .dChips{flex-wrap:nowrap;overflow:hidden;}.chip{white-space:nowrap;padding:2px 7px;font-size:8px;}
+  .apDetail .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dTop b{font-size:13px;}
+}
+@media (max-width:640px){
+  .msn{height:calc(100vh - 318px);}
+  .chapList{max-height:none;overflow-y:hidden;}
+  .actPane{max-height:none;flex:1;min-height:0;}
+}
 </style>
 </head>
 <body>
@@ -565,6 +723,9 @@ body.dev-touch #legend.on{display:none;}
 
   <div id="banner"><div id="bannerT">TITLE</div><div id="bannerS">SUB</div></div>
   <div id="toast"></div>
+  <div id="tut"><div class="tHead"><span id="tutStep">Training</span><span id="tutSkip"><span class="gl" id="tutSkipGl"></span><span class="tSk">Skip</span></span></div>
+    <div id="tutTitle">Movement</div><div id="tutLine"></div>
+    <div class="tRow"><div class="tBar"><i id="tutFill"></i></div><span id="tutCount"></span></div><div id="tutOkMark">&#10003;</div></div>
   <div id="cineBars"><b></b><b></b></div>
   <div id="skipHint"><span class="gl" data-gl="skip"></span><span class="t">Skip</span></div>
 
@@ -913,7 +1074,7 @@ body.dev-touch #legend.on{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.6.0';
+var GAME_VERSION = 'v3.7.0';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1046,6 +1207,7 @@ function defaultProfile() {
     settings: null,
     introSeen: false,
     tutorialStep: 0,
+    tutDone: false,
     version: 3
   };
 }
@@ -1262,7 +1424,7 @@ function audioInit() {
     var Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
     AC = new Ctx();
-    masterGain = AC.createGain(); masterGain.gain.value = 0.9; masterGain.connect(AC.destination);
+    masterGain = AC.createGain(); masterGain.gain.value = 0.8; masterGain.connect(AC.destination);
     musicGain = AC.createGain(); musicGain.gain.value = 0.22; musicGain.connect(masterGain);
     sfxComp = AC.createDynamicsCompressor();
     sfxComp.threshold.value = -16; sfxComp.knee.value = 10; sfxComp.ratio.value = 4;
@@ -1482,14 +1644,14 @@ function ambienceStart(locIdx, indoor) {
     }
     s.start(); ambNodes.push(s);
   }
-  if (rain) { bed('lowpass', 2800, 0.5, 0.11, 0); bed('highpass', 6000, 0.6, 0.03, 0); }
-  if (props === 'city' && !indoor) bed('lowpass', 140, 0.7, 0.18, 0.05);          // city rumble
+  if (rain) { bed('lowpass', 2800, 0.5, 0.04, 0); bed('highpass', 6000, 0.6, 0.011, 0); }   // v3.7: rain bed was far too hot
+  if (props === 'city' && !indoor) bed('lowpass', 140, 0.7, 0.1, 0.05);           // city rumble
   else if (props === 'docks') bed('lowpass', 320, 0.9, 0.16, 0.12);                // water against piles
   else if (props === 'castle') bed('bandpass', 520, 1.4, 0.07, 0.08);              // wind through stone
   else if (props === 'catacombs') bed('lowpass', 90, 0.8, 0.2, 0.03);              // deep earth
   else if (props === 'temple') bed('lowpass', 220, 1.2, 0.12, 0.2);
   if (indoor) bed('lowpass', 180, 0.6, 0.1, 0.04);
-  ambGain.gain.setTargetAtTime(Math.min(1, 0.9 * (G.sfxVol / 0.55)), AC.currentTime, 1.2);
+  ambGain.gain.setTargetAtTime(Math.min(1, 0.7 * (G.sfxVol / 0.55)), AC.currentTime, 1.2);
   ambTimer = 2;
   audioSpace(!!indoor, props === 'catacombs' || props === 'castle' || props === 'temple');
 }
@@ -1697,6 +1859,7 @@ function inputInit() {
     if ((k === 'Space' || k === 'Enter') && G.mode === 'dialogue') dlgAdvance();
     if (G.cutSkippable && G.mode === 'cutscene') { G.cutSkippable = false; skipCutscene(); }
     else if (k === 'Escape' && cutShots && (G.mode === 'cutscene' || G.mode === 'dialogue')) { skipCutscene(); return; }
+    if (k === 'KeyT' && G.tut && G.mode === 'play') { tutSkip(); return; }
     if (k === 'Escape') { if (G.mode === 'play' || G.mode === 'hub') doPause(); else if (G.mode === 'pause') doResume(); }
   });
   window.addEventListener('keyup', function (e) { if (KEYMAP[e.code]) setAct(KEYMAP[e.code], false); });
@@ -1793,6 +1956,8 @@ function inputInit() {
   });
   var skh = el('skipHint');
   if (skh) skh.addEventListener('click', function (e) { e.stopPropagation(); if (cutShots) skipCutscene(); });
+  var tsk = el('tutSkip');
+  if (tsk) tsk.addEventListener('click', function (e) { e.stopPropagation(); if (G.tut) tutSkip(); });
 }
 
 var touchState = { stickId: -1, ox: 0, oy: 0, lookId: -1, lx: 0, ly: 0 };
@@ -1947,11 +2112,11 @@ function padGlyph(i) {
   return '';
 }
 /* UI-level actions: what each means on each device. */
-var UI_PAD = { confirm: 0, back: 1, tabprev: 4, tabnext: 5, alt: 3, advance: 0, skip: 9 };
-var UI_KB = { confirm: 'Enter', back: 'Esc', tabprev: 'Q', tabnext: 'E', alt: 'X', advance: 'Space', skip: 'Esc' };
+var UI_PAD = { confirm: 0, back: 1, tabprev: 4, tabnext: 5, alt: 3, advance: 0, skip: 9, tutskip: 8 };
+var UI_KB = { confirm: 'Enter', back: 'Esc', tabprev: 'Q', tabnext: 'E', alt: 'X', advance: 'Space', skip: 'Esc', tutskip: 'T' };
 var KB_LABEL = { jump: 'Space', sprint: 'Shift', light: 'J', heavy: 'K', dash: 'L', special: 'Q', day: 'F', call: 'E', tag: 'R', team: 'Z', throw: 'G', pause: 'Esc' };
 var TOUCH_WORD = { light: 'Slash', heavy: 'Heavy', jump: 'Jump', dash: 'Dash', special: 'Silver', day: 'Daywalk', call: 'Assist', tag: 'Tag', team: 'Team',
-                   advance: 'Tap', skip: 'Skip', confirm: 'Tap', back: 'Back', alt: '', tabprev: '', tabnext: '', sprint: 'Sprint' };
+                   advance: 'Tap', skip: 'Skip', tutskip: '', confirm: 'Tap', back: 'Back', alt: '', tabprev: '', tabnext: '', sprint: 'Sprint' };
 function actPadButton(act) {
   var lay = PAD_LAYOUTS[G.padLayout] || PAD_LAYOUTS.fof, k;
   for (k in lay.map) { if (lay.map.hasOwnProperty(k) && lay.map[k] === act) return parseInt(k, 10); }
@@ -2011,6 +2176,7 @@ function refreshGlyphs() {
   }
   updateTapPrompt();
   refreshLegend();
+  if (G.tut) tutRender();
   if (typeof renderControlsList === 'function' && el('ctrlList')) renderControlsList();
   if (typeof updateOptionLabels === 'function') { try { updateOptionLabels(); } catch (e) {} }
 }
@@ -2053,7 +2219,7 @@ function refreshLegend() {
 
 /* ---------- menu focus / spatial navigation ---------- */
 var UI = { cur: null, scope: null, sig: '', hold: '', holdT: 0, cfYes: null, inBody: false };
-var UI_SEL = '.mi:not(.off), .btn:not(.off), .optRow, .tab, .buy:not(.off), .stg, .card';
+var UI_SEL = '.mi:not(.off), .btn:not(.off), .optRow, .tab, .buy:not(.off), .stg, .card, .chp';
 function uiScope() {
   var m = el('scConfirm'), i, s;
   if (m && m.classList.contains('on')) return m;
@@ -2073,7 +2239,7 @@ function uiList(sc) {
   return out;
 }
 function uiSig(n) {
-  var a = ['data-buy', 'data-act', 'data-partner', 'data-skin', 'data-skinhero', 'data-tab', 'data-vshero', 'data-vsloc', 'id'], i, s = '', v;
+  var a = ['data-buy', 'data-chap', 'data-train', 'data-act', 'data-partner', 'data-skin', 'data-skinhero', 'data-tab', 'data-vshero', 'data-vsloc', 'id'], i, s = '', v;
   for (i = 0; i < a.length; i++) { v = n.getAttribute(a[i]); if (v) s += a[i] + '=' + v + ';'; }
   return s;
 }
@@ -2083,6 +2249,11 @@ function uiSetFocus(n, quiet) {
   if (!n) return;
   if (IN.device !== 'touch') n.classList.add('foc');
   UI.sig = uiSig(n);
+  if (n.getAttribute) {
+    if (n.hasAttribute('data-chap')) hubSetChapter(parseInt(n.getAttribute('data-chap'), 10));
+    else if (n.hasAttribute('data-act') && typeof hubPreview === 'function') hubPreview(parseInt(n.getAttribute('data-act'), 10));
+    else if (n.hasAttribute('data-train')) hubPreview('train');
+  }
   var sc = UI.scope, list = sc ? uiList(sc) : [];
   var holder = n.closest ? n.closest('#hubBody') : null;
   UI.inBody = !!holder;
@@ -2093,7 +2264,7 @@ function uiSetFocus(n, quiet) {
 }
 function uiFocusDefault(sc, quiet) {
   var list = uiList(sc), pick = null;
-  var pref = sc.querySelector('.stg.pick, .card.eq, .stg:not(.lock):not(.done)');
+  var pref = sc.querySelector('.actTile.pick, .stg.pick, .card.eq, .stg:not(.lock):not(.done)');
   if (sc.id === 'scHub' && pref && list.indexOf(pref) >= 0) pick = pref;
   if (!pick) pick = list[0] || null;
   if (pick) uiSetFocus(pick, quiet);
@@ -2121,7 +2292,7 @@ function uiTick() {
     if (UI.sig) { for (i = 0; i < list.length; i++) { if (uiSig(list[i]) === UI.sig) { found = list[i]; break; } } }
     if (!found && UI.inBody) {
       for (i = 0; i < list.length; i++) { if (list[i].closest && list[i].closest('#hubBody')) { found = list[i]; break; } }
-      var pf = sc.querySelector('#hubBody .stg.pick, #hubBody .card.eq');
+      var pf = sc.querySelector('#hubBody .actTile.pick, #hubBody .stg.pick, #hubBody .card.eq');
       if (pf && list.indexOf(pf) >= 0) found = pf;
     }
     if (!found) found = list[0];
@@ -2139,6 +2310,7 @@ function uiMove(dx, dy) {
   for (i = 0; i < list.length; i++) {
     n = list[i];
     if (n === cur) continue;
+    if (dx > 0 && cur.classList.contains('chp') && !(n.closest && n.closest('#actPane'))) continue;
     rr = n.getBoundingClientRect();
     ddx = rr.left + rr.width / 2 - cx; ddy = rr.top + rr.height / 2 - cy;
     along = dx ? ddx * dx : ddy * dy;
@@ -2306,6 +2478,7 @@ function pollGamepad(dt) {
   }
 
   /* ---- gameplay ---- */
+  if (G.tut && G.mode === 'play' && press(8)) tutSkip();
   var live = (G.mode === 'play' || G.mode === 'hub');
   var touchStickDown = (touchState.stickId >= 0);
   var M = G.southpaw ? R : L, V = G.southpaw ? L : R, DZ = 0.2;
@@ -8668,6 +8841,7 @@ function damageEntity(e, amount, srcX, srcZ, opts) {
     }
   }
   e.hp -= amount;
+  if (e.dummy) { if (e.hp < 1) e.hp = e.maxHp; if (G.tut) tutEvent('hit', o.source); }
   e.hitFlash = 0.18;
   e.lastAttacker = o.by || null;
   e.lastHitKind = o.source || '';
@@ -8986,6 +9160,7 @@ function updatePlayer(e, dt) {
     e.vel.y = e.jumps === 0 ? 11.4 : 10.2;
     e.jumps++;
     e.grounded = false; e.coyote = 0;
+    if (G.tut && e === player) tutEvent(e.jumps > 1 ? 'djump' : 'jump');
     SFX.jump();
     emit(e.pos.x, e.pos.y + 0.1, e.pos.z, e.jumps > 1 ? 14 : 6, { color: 0xa0b0c0, speed: 4, life: 0.35, gravity: -6 });
     if (e.jumps > 1) spawnRing(e.pos.x, e.pos.y, e.pos.z, 0x90c0ff, 2, 0.3);
@@ -9001,6 +9176,7 @@ function updatePlayer(e, dt) {
     e.invuln = Math.max(e.invuln, 0.32);
     e.dodgeAt = G.time;
     e.atk = null;
+    if (G.tut && e === player) tutEvent('dash');
     SFX.dash();
     spawnRing(e.pos.x, e.pos.y, e.pos.z, 0xffffff, 2.4, 0.3);
     emit(e.pos.x, e.pos.y + 1, e.pos.z, 12, { color: 0xc0d0ff, speed: 4, life: 0.3, gravity: 0 });
@@ -9039,6 +9215,7 @@ function updatePlayer(e, dt) {
     bufTake('special');
     e.meter = 0;
     startAttack(e, 'special');
+    if (G.tut && e === player) tutEvent('special');
     SFX.special();
     addShake(0.5);
     banner(e.def.special.toUpperCase(), '');
@@ -9046,7 +9223,7 @@ function updatePlayer(e, dt) {
   if (bufHas('day')) {
     bufTake('day');
     if (e.heroId === 'blade') {
-      if (e.dayMeter >= 100) startDaywalker(e);
+      if (e.dayMeter >= 100) { startDaywalker(e); if (G.tut) tutEvent('day'); }
       else toast('Daywalker not charged');
     } else toast('Only Blade can Daywalk');
   }
@@ -9480,6 +9657,7 @@ function updateEnemy(e, dt) {
   e.stagger = Math.max(0, e.stagger - dt);
   e.invuln = Math.max(0, e.invuln - dt);
   if (e.boss && !e.warded && e.invuln > 3) e.invuln = 0;   // never permanently immune
+  if (e.dummy) { e.atk = null; physicsStep(e, dt); animateEntity(e, dt); return; }
   if (e.stagger > 0) { e.atk = null; physicsStep(e, dt); animateEntity(e, dt); return; }
 
   if (e.boss) { updateBoss(e, dt); return; }
@@ -10687,6 +10865,7 @@ function spawnRelic(x, y, z) {
    [ACT] Beat director
    ========================================================================== */
 function startAct(index, isVs) {
+  hubChap = null;
   var act = (typeof index === 'object' && index) ? index : ACTS[clamp(index, 0, ACTS.length - 1)];
   G.vs = !!isVs;
   G.actIndex = act.index;
@@ -10767,7 +10946,6 @@ function startAct(index, isVs) {
   G.introT = 0.8;
   G.introScript = (!isVs && ACT_SCRIPT[act.index] && ACT_SCRIPT[act.index].pre) ? ACT_SCRIPT[act.index].pre : null;
   G.beatAdvanceT = 0;
-  if (act.index === 0 && !isVs) setTimeout(showTutorial, 3200);
 }
 
 function beatEnter(i) {
@@ -11189,7 +11367,11 @@ function updateActIntro(dt) {
     if (s) playDialogue(s, then); else then();
     return;
   }
-  if (s) playDialogue(s, function () { beatEnter(0); });
+  if (s) playDialogue(s, startFirstBeat);
+  else startFirstBeat();
+}
+function startFirstBeat() {
+  if (tutWanted()) tutBegin(function () { beatEnter(0); });
   else beatEnter(0);
 }
 function updateBeatAdvance(dt) {
@@ -12669,6 +12851,7 @@ function doPartnerAssist() {
   spawnRing(ally.pos.x, ally.pos.y, ally.pos.z, 0xffffff, 3, 0.35);
   spawnSlash(ally.pos.x, ally.pos.y + 1.4, ally.pos.z, ally.yaw, { radius: 3, arc: 3.2, color: acc, vertical: true, life: 0.4, grow: 2 });
   startAttack(ally, 'special');
+  if (G.tut) tutEvent('call');
   ally.meter = 0;
   SFX.special();
   addShake(0.45);
@@ -13125,6 +13308,7 @@ function updateMarker() {
 function currentMarkerTarget() {
   var i, it;
   if (G.mode === 'hub') return G.hubGuide || null;
+  if (G.tut && G.mode === 'play') return tutMarker();
   if (G.mode !== 'play' || !G.act || !G.beat) return null;
   var b = G.beat, d = b.def;
   if (d.k === 'objective') {
@@ -13146,6 +13330,190 @@ function currentMarkerTarget() {
   var e = nearestEnemy(player ? player.pos.x : 0, player ? player.pos.z : 0, 120);
   if (e) return { x: e.pos.x, y: e.pos.y + 1, z: e.pos.z };
   return b.zone ? { x: b.zone.x, y: 2, z: b.zone.z } : null;
+}
+
+/* ==========================================================================
+   [TUTORIAL] Training — a guided, step-gated opening for Act 1, in the spirit
+   of the Friend-or-Foe tutorial: one prompt at a time, the game waits for you
+   to actually do the thing, a tick and a chime, then the next lesson. A
+   Practice Thrall (an enemy that never attacks and never dies) stands in for
+   the combat steps. Skippable at any point; shown once, replayable from the
+   Missions screen.
+   ========================================================================== */
+function tutGl(n) {
+  var d = IN.device;
+  if (n === 'move') {
+    if (d === 'pad') return '<span class="gb stk">L</span>';
+    if (d === 'kb') return '<span class="gk">W</span><span class="gk">A</span><span class="gk">S</span><span class="gk">D</span>';
+    return '<span class="gt">Left stick</span>';
+  }
+  if (n === 'look') {
+    if (d === 'pad') return '<span class="gb stk">R</span>';
+    if (d === 'kb') return '<span class="gt">Mouse</span>';
+    return '<span class="gt">Drag right side</span>';
+  }
+  return glyphHTML(n);
+}
+function tutHit(kinds) {
+  return function (n, v) { return n === 'hit' && kinds.indexOf(v) >= 0; };
+}
+var TUT_STEPS = [
+  { id: 'move', title: 'Movement', line: '{move} to move around', goal: 12 },
+  { id: 'look', title: 'Camera', line: '{look} to look around', goal: 2.4 },
+  { id: 'jump', title: 'Jump', line: '{jump} to jump, press again in mid-air to double jump', goal: 1,
+    ev: function (n) { return n === 'djump'; } },
+  { id: 'dash', title: 'Dash', line: '{dash} to dash. You cannot be hit for an instant, so time it against an attack', goal: 2,
+    ev: function (n) { return n === 'dash'; } },
+  { id: 'light', title: 'Slash', line: 'Close in on the Practice Thrall and tap {light} to chain a combo', goal: 5, dummy: true,
+    ev: tutHit(['light', 'air']) },
+  { id: 'heavy', title: 'Heavy strike', line: '{heavy} hits hard and breaks guards and stagger', goal: 2, dummy: true,
+    ev: tutHit(['heavy']) },
+  { id: 'special', title: 'Silver strike', line: 'Your Silver meter is full. Press {special}', goal: 1, dummy: true,
+    setup: function () { if (player) { player.meter = 100; updateHUD(); } },
+    ev: function (n) { return n === 'special'; } },
+  { id: 'day', title: 'Daywalker', line: 'The Thirst is charged. Press {day} to unleash it', goal: 1, dummy: true,
+    setup: function () { if (player) { player.dayMeter = 100; updateHUD(); } },
+    ev: function (n) { return n === 'day'; } },
+  { id: 'call', title: 'Partner assist', line: 'Press {call} and your partner leaps in to strike', goal: 1, dummy: true,
+    ev: function (n) { return n === 'call'; } },
+  { id: 'info', title: 'Tag and Team-Up', line: '{tag} swaps to your partner. {team} unleashes a Team-Up when both meters are full', goal: 0, timed: 7 }
+];
+function tutWanted() {
+  return !!(G.act && G.act.index === 0 && !G.vs && (G.forceTut || !P.tutDone));
+}
+function tutBegin(cb) {
+  G.forceTut = false;
+  G.tut = { i: -1, prog: 0, t: 0, okT: 0, finT: 0, cb: cb, dummy: null, lx: player ? player.pos.x : 0, lz: player ? player.pos.z : 0, ly: camYaw };
+  document.body.classList.add('tutOn');
+  el('tut').classList.add('on');
+  banner('TRAINING', 'LEARN THE HUNT');
+  setObjective('Combat training', 'Follow the prompts, or skip any time');
+  tutEnter(0);
+}
+function tutSpawnDummy() {
+  var T = G.tut;
+  if (!T || (T.dummy && enemies.indexOf(T.dummy) >= 0 && !T.dummy.dead) || !player) return;
+  var x = player.pos.x + Math.sin(player.yaw) * 7, z = player.pos.z + Math.cos(player.yaw) * 7;
+  var e = makeEnemy('thrall', x, z, false);
+  e.pos.y = groundHeightAt(x, z, player.pos.y + 6, 0.6);
+  e.dummy = true; e.name = 'Practice Thrall';
+  e.hp = e.maxHp = 99999;
+  e.yaw = angleTo(x, z, player.pos.x, player.pos.z);
+  spawnRing(x, e.pos.y + 0.1, z, 0xffb347, 3, 0.6);
+  T.dummy = e;
+}
+function tutEnter(i) {
+  var T = G.tut; if (!T) return;
+  var s = TUT_STEPS[i];
+  T.i = i; T.prog = 0; T.t = 0; T.okT = 0;
+  el('tut').classList.remove('ok');
+  if (s.dummy) tutSpawnDummy();
+  if (s.setup) s.setup();
+  tutRender();
+}
+function tutRender() {
+  var T = G.tut; if (!T || T.i < 0) return;
+  var s = TUT_STEPS[T.i], line = s.line.replace(/\{(\w+)\}/g, function (m, k) { return '<span class="gl">' + tutGl(k) + '</span>'; });
+  var frac = s.timed ? clamp(T.t / s.timed, 0, 1) : (s.goal ? clamp(T.prog / s.goal, 0, 1) : 0);
+  el('tutStep').textContent = 'Training ' + (T.i + 1) + ' / ' + TUT_STEPS.length;
+  el('tutTitle').textContent = s.title;
+  el('tutLine').innerHTML = line;
+  el('tutFill').style.width = (frac * 100).toFixed(1) + '%';
+  el('tutCount').textContent = (s.goal && s.goal >= 1 && !s.timed && s.goal !== 12) ? (Math.min(s.goal, Math.floor(T.prog)) + ' / ' + s.goal) : '';
+  el('tutSkipGl').innerHTML = glyphHTML('tutskip');
+  setObjective('Combat training', 'Step ' + (T.i + 1) + ' of ' + TUT_STEPS.length);
+}
+function tutProgress(amount) {
+  var T = G.tut; if (!T || T.okT > 0 || T.finT > 0) return;
+  var s = TUT_STEPS[T.i];
+  T.prog += amount;
+  if (s.goal && T.prog >= s.goal) tutStepDone(); else tutRender();
+}
+function tutStepDone() {
+  var T = G.tut; if (!T) return;
+  T.okT = 1.0;
+  el('tut').classList.add('ok');
+  el('tutFill').style.width = '100%';
+  if (AC && G.sound) { tone(784, 0.12, 'triangle', 0.09); tone(1175, 0.24, 'triangle', 0.09, 0, 0.09); }
+  rumble(70, 0.25, 0.35);
+}
+function tutEvent(name, v) {
+  var T = G.tut; if (!T || T.i < 0 || T.okT > 0 || T.finT > 0) return;
+  var s = TUT_STEPS[T.i];
+  if (s.ev && s.ev(name, v)) tutProgress(1);
+}
+function tutTick(dt) {
+  var T = G.tut;
+  if (!T || G.mode !== 'play' || !player) return;
+  if (T.finT > 0) { T.finT -= dt; if (T.finT <= 0) tutFinish(true); return; }
+  if (T.okT > 0) {
+    T.okT -= dt;
+    if (T.okT <= 0) {
+      if (T.i + 1 >= TUT_STEPS.length) { tutWrapUp(); } else tutEnter(T.i + 1);
+    }
+    return;
+  }
+  var s = TUT_STEPS[T.i], d;
+  if (s.id === 'move') {
+    d = distXZ(player.pos, { x: T.lx, z: T.lz });
+    if (d < 3) tutProgress(d);
+  } else if (s.id === 'look') {
+    d = Math.abs(Math.atan2(Math.sin(camYaw - T.ly), Math.cos(camYaw - T.ly)));
+    if (d < 1.5) tutProgress(d);
+  } else if (s.timed) {
+    T.t += dt;
+    if (Math.floor(T.t * 4) !== Math.floor((T.t - dt) * 4)) tutRender();
+    if (T.t >= s.timed) tutStepDone();
+  }
+  T.lx = player.pos.x; T.lz = player.pos.z; T.ly = camYaw;
+  // a downed or stray Practice Thrall is replaced
+  if (s.dummy && (!T.dummy || enemies.indexOf(T.dummy) < 0)) tutSpawnDummy();
+}
+function tutRemoveDummy() {
+  var T = G.tut;
+  if (T && T.dummy && enemies.indexOf(T.dummy) >= 0) {
+    spawnRing(T.dummy.pos.x, T.dummy.pos.y + 0.1, T.dummy.pos.z, 0xffb347, 3, 0.5);
+    removeEntity(T.dummy);
+  }
+  if (T) T.dummy = null;
+}
+function tutWrapUp() {
+  var T = G.tut; if (!T) return;
+  tutRemoveDummy();
+  el('tut').classList.remove('on');
+  document.body.classList.remove('tutOn');
+  banner('TRAINING COMPLETE', 'THE HUNT BEGINS');
+  SFX.win();
+  P.tutDone = true; saveProfile();
+  T.finT = 1.6;
+}
+function tutFinish(run) {
+  var T = G.tut; if (!T) return;
+  var cb = T.cb;
+  G.tut = null;
+  if (run && cb) cb();
+}
+function tutSkip() {
+  var T = G.tut; if (!T || T.finT > 0) return;
+  tutRemoveDummy();
+  el('tut').classList.remove('on');
+  document.body.classList.remove('tutOn');
+  if (player) { if (player.dayMode) endDaywalker(player); }
+  P.tutDone = true; saveProfile();
+  var cb = T.cb;
+  G.tut = null;
+  SFX.ui();
+  if (cb) cb();
+}
+function tutReset() {
+  if (G.tut) { tutRemoveDummy(); G.tut = null; }
+  var t = el('tut'); if (t) { t.classList.remove('on'); t.classList.remove('ok'); }
+  document.body.classList.remove('tutOn');
+}
+function tutMarker() {
+  var T = G.tut;
+  if (!T || T.okT > 0 || !T.dummy || T.dummy.dead || T.i < 4 || T.i > 8) return null;
+  return { x: T.dummy.pos.x, y: T.dummy.pos.y + 1, z: T.dummy.pos.z };
 }
 
 function showTutorial() {
@@ -13179,6 +13547,7 @@ var SCREENS = ['scTitle', 'scCtrl', 'scHub', 'scPause', 'scResult', 'scVs', 'scO
 /* Anything that floats over the world must be cleared when we leave play,
    or the combo counter and objective arrow stick around in the safehouse. */
 function clearTransientHUD() {
+  tutReset();
   G.comboCount = 0; G.comboTimer = 0;
   var cb = el('comboBox'); if (cb) cb.style.opacity = 0;
   var mk = el('marker'); if (mk) mk.style.display = 'none';
@@ -13365,57 +13734,158 @@ function heroFigure(h, owned) {
   s += '</div>';
   return s;
 }
+/* ---------- Mission select (console style) ----------
+   Left: chapter list. Right: the acts of the focused chapter as compact tiles
+   plus a detail strip. Focusing a chapter or tile previews it; A / click picks
+   it; A on the picked tile again deploys. No long scrolling list. */
+var hubChap = null;      // -1 = training, 0..n = location, 99 = downloadable chapters
+var hubPrev = -1;        // act shown in the detail strip
+function chapterOf(idx) { var a = ACTS[idx]; return a ? (a.dlc ? 99 : a.loc) : 0; }
+function chapterActs(ci) {
+  var out = [], i;
+  for (i = 0; i < ACTS.length; i++) {
+    if (ci === 99 ? !!ACTS[i].dlc : (!ACTS[i].dlc && ACTS[i].loc === ci)) out.push(i);
+  }
+  return out;
+}
+function chapterStats(ci) {
+  var list = chapterActs(ci), i, done = 0, open = 0;
+  for (i = 0; i < list.length; i++) { if (P.cleared[ACTS[list[i]].id]) done++; if (actUnlocked(list[i])) open++; }
+  return { n: list.length, done: done, open: open };
+}
+function roman(n) { var r = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']; return r[n] || String(n); }
+function chapterListHTML() {
+  var h = '', ci, st, loc, cls;
+  h += '<div class="chp' + (hubChap === -1 ? ' on' : '') + '" data-chap="-1"><div class="chpNum">&#9733;</div><div class="chpTx"><b>Combat Training</b><i>Learn the controls</i></div></div>';
+  for (ci = 0; ci < LOCATIONS.length; ci++) {
+    st = chapterStats(ci);
+    if (!st.n) continue;
+    loc = LOCATIONS[ci];
+    cls = 'chp' + (hubChap === ci ? ' on' : '') + (st.open ? '' : ' lock');
+    h += '<div class="' + cls + '" data-chap="' + ci + '"><div class="chpNum">' + (st.open ? roman(ci + 1) : '&#128274;') + '</div><div class="chpTx"><b>' + loc.name + '</b>' +
+      '<i>' + st.done + ' / ' + st.n + ' cleared</i><span class="chpBar"><u style="width:' + Math.round(100 * st.done / st.n) + '%"></u></span></div></div>';
+  }
+  st = chapterStats(99);
+  if (st.n) {
+    h += '<div class="chp' + (hubChap === 99 ? ' on' : '') + (st.open ? '' : ' lock') + '" data-chap="99"><div class="chpNum">' + (st.open ? '&#9733;' : '&#128274;') + '</div><div class="chpTx"><b>Bonus Chapters</b><i>' + st.done + ' / ' + st.n + ' cleared</i><span class="chpBar"><u style="width:' + Math.round(100 * st.done / st.n) + '%"></u></span></div></div>';
+  }
+  return h;
+}
+function actTileHTML(i) {
+  var s = ACTS[i], open = actUnlocked(i), done = !!P.cleared[s.id], p = '', b, boss;
+  for (b = 0; b < s.beats.length; b++) { boss = s.beats[b].k === 'boss'; p += '<u' + (boss ? ' class="boss"' : '') + '></u>'; }
+  return '<div class="card actTile' + (open ? '' : ' lock') + (done ? ' done' : '') + (G.selectedAct === i && !G.forceTut ? ' pick' : '') + '" data-act="' + i + '">' +
+    '<div class="atTop"><span class="atNum">' + (s.dlc ? '&#9733;' : (i + 1)) + '</span><span class="atSt">' + (done ? '&#10003;' : (open ? '' : '&#128274;')) + '</span></div>' +
+    '<div class="atName">' + s.n + '</div><div class="atPips">' + p + '</div></div>';
+}
+function actDetailHTML(i) {
+  var s = ACTS[i], open = actUnlocked(i), done = !!P.cleared[s.id], chips = '', b, hasBoss = false, rec = null, reward;
+  for (b = 0; b < s.beats.length; b++) { chips += '<span class="chip' + (s.beats[b].k === 'boss' ? ' hot' : '') + '">' + beatLabel(s.beats[b]) + '</span>'; if (s.beats[b].k === 'boss') hasBoss = true; }
+  if (s.recruit && HEROES[s.recruit]) rec = HEROES[s.recruit].name;
+  reward = done ? 8 + s.loc * 3 : 28 + s.loc * 10;
+  return '<div class="dTop"><span class="dNum">' + (s.dlc ? 'BONUS' : 'ACT ' + (i + 1)) + '</span><b>' + s.n + '</b><span class="dStat">' +
+    (done ? '&#10003; Cleared' : (open ? 'Ready' : '&#128274; Locked')) + '</span></div>' +
+    '<div class="sub">' + s.blurb + '</div><div class="dChips">' + chips + '</div>' +
+    '<div class="dFoot"><span>&#9670; ' + reward + (done ? ' replay' : ' first clear') + '</span>' + (hasBoss ? '<span>Boss fight</span>' : '') + (rec ? '<span>Recruit: ' + rec + '</span>' : '') + (P.secrets[s.id] ? '<span>&#9672; Secret found</span>' : '') + '</div>';
+}
+function trainDetailHTML() {
+  var i, chips = '';
+  for (i = 0; i < TUT_STEPS.length; i++) chips += '<span class="chip">' + TUT_STEPS[i].title + '</span>';
+  return '<div class="dTop"><span class="dNum">TRAINING</span><b>Combat Training</b><span class="dStat">' + (P.tutDone ? '&#10003; Completed' : 'Recommended') + '</span></div>' +
+    '<div class="sub">A guided walk through movement, combat, Silver, Daywalker and your partner. Plays at the start of Act 1, with a practice target that never fights back.</div><div class="dChips">' + chips + '</div>';
+}
+function actPaneHTML(ci) {
+  var h = '', list, i, loc, st;
+  if (ci === -1) {
+    h += '<div class="apHead"><div class="hdr">Field Training</div><div class="apName">Combat Training</div></div>';
+    h += '<div class="tiles"><div class="card actTile trainTile' + (G.forceTut ? ' pick' : '') + '" data-train="1"><div class="atTop"><span class="atNum">&#9733;</span><span class="atSt">' + (P.tutDone ? '&#10003;' : '') + '</span></div><div class="atName">Start Training</div><div class="atPips"><u></u><u></u><u></u><u></u><u></u></div></div></div>';
+    h += '<div class="apDetail" id="apDetail">' + trainDetailHTML() + '</div>';
+    return h;
+  }
+  list = chapterActs(ci); st = chapterStats(ci);
+  loc = ci === 99 ? { name: 'Bonus Chapters', blurb: 'Finish the campaign to open these. Play them in order.' } : LOCATIONS[ci];
+  h += '<div class="apHead"><div class="hdr">' + (ci === 99 ? 'Downloadable' : 'Chapter ' + roman(ci + 1)) + ' &middot; ' + st.done + '/' + st.n + '</div><div class="apName">' + loc.name + '</div><div class="sub">' + loc.blurb + '</div></div>';
+  h += '<div class="tiles">';
+  for (i = 0; i < list.length; i++) h += actTileHTML(list[i]);
+  h += '</div><div class="apDetail" id="apDetail"></div>';
+  return h;
+}
+function hubPreview(idx) {
+  var d = el('apDetail');
+  if (!d) return;
+  if (idx === 'train') d.innerHTML = trainDetailHTML();
+  else { if (idx === hubPrev) return; hubPrev = idx; d.innerHTML = actDetailHTML(idx); }
+}
+function hubSetChapter(ci, keepFocus) {
+  if (hubChap === ci && el('apDetail')) return;
+  hubChap = ci;
+  var cs = el('chapList').querySelectorAll('.chp'), i, list, pv;
+  for (i = 0; i < cs.length; i++) cs[i].classList.toggle('on', parseInt(cs[i].getAttribute('data-chap'), 10) === ci);
+  el('actPane').innerHTML = actPaneHTML(ci);
+  wireTiles();
+  hubPrev = -1;
+  if (ci === -1) return;
+  list = chapterActs(ci);
+  pv = list.indexOf(G.selectedAct) >= 0 ? G.selectedAct : list[0];
+  hubPreview(pv);
+}
+function wireTiles() {
+  var pane = el('actPane'), tl = pane.querySelectorAll('[data-act], [data-train]'), i;
+  for (i = 0; i < tl.length; i++) {
+    tl[i].addEventListener('mouseenter', function () {
+      var a = this.getAttribute('data-act');
+      hubPreview(a === null ? 'train' : parseInt(a, 10));
+    });
+    tl[i].addEventListener('click', function () {
+      var a = this.getAttribute('data-act'), idx, nodes, n, sa;
+      if (a === null) {
+        if (this.classList.contains('pick')) { el('btnDeploy').click(); return; }
+        G.forceTut = true; G.selectedAct = 0; SFX.ui();
+        this.classList.add('pick');
+        toast('Training selected. Press Deploy to begin.');
+        return;
+      }
+      idx = parseInt(a, 10); sa = ACTS[idx];
+      if (!actUnlocked(idx)) {
+        toast(sa && sa.dlc === 2 ? 'Play the Deadpool chapter first' : (sa && sa.dlc === 1 ? 'Finish the campaign first' : 'Locked. Finish the previous Act.'));
+        return;
+      }
+      if (this.classList.contains('pick')) { el('btnDeploy').click(); return; }
+      SFX.ui();
+      G.selectedAct = idx; G.forceTut = false;
+      nodes = pane.querySelectorAll('[data-act]');
+      for (n = 0; n < nodes.length; n++) nodes[n].classList.remove('pick');
+      this.classList.add('pick');
+      hubPreview(idx);
+    });
+  }
+}
+function wireMissions() {
+  var cl = el('chapList'), cs, i;
+  if (!cl) return;
+  cs = cl.querySelectorAll('.chp');
+  for (i = 0; i < cs.length; i++) {
+    cs[i].addEventListener('click', function () { SFX.ui(); hubSetChapter(parseInt(this.getAttribute('data-chap'), 10)); });
+  }
+  wireTiles();
+}
+function missionsHTML() {
+  if (hubChap === null) hubChap = chapterOf(G.selectedAct === undefined ? P.story : G.selectedAct);
+  return '<div class="msn"><div class="chapList" id="chapList">' + chapterListHTML() + '</div><div class="actPane" id="actPane"></div></div>';
+}
+function missionsAfter() {
+  var ci = hubChap;
+  hubChap = null;            // force the pane to build
+  hubSetChapter(ci);
+  wireMissions();
+}
 function renderHub() {
   var body = el('hubBody');
   if (renderHub.last !== hubTab) { body.scrollTop = 0; renderHub.last = hubTab; }
   el('hubTok').textContent = P.tokens;
   var html = '', i, j;
   if (hubTab === 'missions') {
-    var locI, shown;
-    for (locI = 0; locI < LOCATIONS.length; locI++) {
-      var loc = LOCATIONS[locI];
-      shown = 0;
-      var block = '';
-      for (i = 0; i < ACTS.length; i++) {
-        var s = ACTS[i];
-        if (s.dlc) continue;                       // listed separately below
-        if (s.loc !== locI) continue;
-        var unlocked = actUnlocked(i);
-        var done = !!P.cleared[s.id];
-        var sec = !!P.secrets[s.id];
-        var beatCount = s.beats.length;
-        var hasBoss = false, bi;
-        for (bi = 0; bi < s.beats.length; bi++) if (s.beats[bi].k === 'boss') hasBoss = true;
-        block += '<div class="stg' + (unlocked ? '' : ' lock') + (done ? ' done' : '') + (G.selectedAct === i ? ' pick' : '') + '" data-act="' + i + '">';
-        block += '<div class="num">' + (done ? '✓' : (unlocked ? (i + 1) : '🔒')) + '</div>';
-        block += '<b>' + s.n + '</b>';
-        block += '<i>' + (s.dlc ? 'DLC ' + s.dlc + ' · ' : '') + beatCount + ' beats' +
-          (hasBoss ? ' · BOSS' : '') + (s.recruit || s.dlc ? ' · ALLY' : '') + (sec ? ' · ◈' : '') + '</i>';
-        block += '</div>';
-        shown++;
-      }
-      if (!shown) continue;
-      html += '<div style="margin-top:14px"><div class="hdr">' + loc.name + '</div>';
-      html += '<div class="sub" style="margin:4px 0 8px">' + loc.blurb + '</div>' + block + '</div>';
-    }
-    // ---- DLC chapters ----
-    var dblock = '', di4;
-    for (di4 = 0; di4 < ACTS.length; di4++) {
-      var ds = ACTS[di4];
-      if (!ds.dlc) continue;
-      var dOpen = actUnlocked(di4);
-      var dDone = !!P.cleared[ds.id];
-      dblock += '<div class="stg' + (dOpen ? '' : ' lock') + (dDone ? ' done' : '') + (G.selectedAct === di4 ? ' pick' : '') + '" data-act="' + di4 + '">';
-      dblock += '<div class="num">' + (dDone ? '✓' : (dOpen ? '★' : '🔒')) + '</div>';
-      dblock += '<b>' + ds.n + '</b>';
-      dblock += '<i>DLC ' + ds.dlc + ' · ' + ds.beats.length + ' beats · BOSS · ALLY</i>';
-      dblock += '</div>';
-    }
-    if (dblock) {
-      html += '<div style="margin-top:18px"><div class="hdr">Downloadable Chapters</div>';
-      html += '<div class="sub" style="margin:4px 0 8px">Finish the campaign to open these. Play them in order.</div>';
-      html += dblock + '</div>';
-    }
+    html += missionsHTML();
   } else if (hubTab === 'partners') {
     html += '<div class="sub">Pick who rides with you. Partners are recruited by beating act bosses.</div><div class="grid">';
     for (i = 1; i < HERO_ORDER.length; i++) {
@@ -13492,7 +13962,9 @@ function renderHub() {
     html += '<div class="hr"></div><div class="btn sm" id="btnWipe">✕ Erase save data</div>';
   }
   body.innerHTML = html;
+  body.classList.toggle('msnMode', hubTab === 'missions');
   wireHub();
+  if (hubTab === 'missions') missionsAfter();
 }
 function wireHub() {
   var body = el('hubBody'), i;
@@ -13731,6 +14203,7 @@ function loop(now) {
     if (G.finisherT > 0) G.finisherT -= raw;
     updateActIntro(raw);
     updateBeatAdvance(raw);
+    tutTick(raw);
     actDirector(raw);
     musicTick(raw);
     updateHUD();
