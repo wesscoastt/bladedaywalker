@@ -28,9 +28,9 @@ setTimeout(function () {
 <!-- Inline SVG favicon keeps the single file self-sufficient; the PNG + manifest
      links light up the Home Screen icon once the /icons folder ships alongside. -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3CradialGradient%20id%3D%22bg%22%20cx%3D%2250%25%22%20cy%3D%2242%25%22%20r%3D%2266%25%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23640c18%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23060308%22/%3E%0A%20%20%20%20%3C/radialGradient%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22steel%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ffffff%22/%3E%3Cstop%20offset%3D%220.24%22%20stop-color%3D%22%23c8cfdd%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.47%22%20stop-color%3D%22%236f7787%22/%3E%3Cstop%20offset%3D%220.51%22%20stop-color%3D%22%23f2f6ff%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220.72%22%20stop-color%3D%22%23a2aabc%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%233f4653%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%20%20%3Cfilter%20id%3D%22g%22%20x%3D%22-30%25%22%20y%3D%22-30%25%22%20width%3D%22160%25%22%20height%3D%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%2210%22/%3E%3C/filter%3E%0A%20%20%3C/defs%3E%0A%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22url%28%23bg%29%22/%3E%0A%20%20%3Ctext%20x%3D%22256%22%20y%3D%22352%22%20text-anchor%3D%22middle%22%20fill%3D%22url%28%23steel%29%22%20stroke%3D%22%23140408%22%20stroke-width%3D%2214%22%0A%20%20%20%20%20%20%20%20paint-order%3D%22stroke%22%20font-family%3D%22%27Arial%20Black%27%2C%27Impact%27%2Csans-serif%22%20font-size%3D%22400%22%20font-weight%3D%22900%22%3EB%3C/text%3E%0A%20%20%3Cg%20filter%3D%22url%28%23g%29%22%20opacity%3D%22.8%22%3E%0A%20%20%20%20%3Cpolygon%20points%3D%2238%2C375%20475%2C105%20485%2C140%2049%2C412%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Cpolygon%20points%3D%2238%2C375%20475%2C105%20485%2C140%2049%2C412%22%20fill%3D%22%23d01222%22/%3E%0A%20%20%3Cpolygon%20points%3D%2265%2C367%20470%2C118%20475%2C135%2075%2C393%22%20fill%3D%22%23ff5a64%22%20opacity%3D%22.8%22/%3E%0A%20%20%3Cpath%20d%3D%22M220%2C295%20h15%20v65%20q0%2C12%20-7%2C12%20q-8%2C0%20-8%2C-12z%22%20fill%3D%22%23be0e1e%22/%3E%0A%20%20%3Ccircle%20cx%3D%22227%22%20cy%3D%22378%22%20r%3D%2211%22%20fill%3D%22%23be0e1e%22/%3E%0A%3C/svg%3E%0A">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="manifest" href="icons/manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <title>BLADE: DAYWALKER — Night Hunt</title>
 <style>
 /* ============================================================
@@ -683,6 +683,8 @@ body.tutOn #toast{display:none;}
 }
 
 /* ---- online co-op ---- */
+#netCode{font-size:44px;font-weight:800;letter-spacing:.3em;text-align:center;padding:8px 0 6px;color:#fff;font-family:ui-monospace,Menlo,Consolas,monospace;}
+#netJoinCode{width:100%;box-sizing:border-box;font-size:34px;font-weight:800;letter-spacing:.3em;text-align:center;text-transform:uppercase;padding:8px;margin:6px 0;background:rgba(4,5,8,.92);color:#fff;border:1px solid var(--line);font-family:ui-monospace,Menlo,Consolas,monospace;}
 .netTa{width:100%;box-sizing:border-box;height:64px;background:rgba(4,5,8,.92);color:#cfe0c8;border:1px solid var(--line);padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;line-height:1.4;resize:none;word-break:break-all;user-select:text;-webkit-user-select:text;}
 #scNet .row > .btn{flex:1 1 0;width:auto;box-sizing:border-box;}
 </style>
@@ -979,29 +981,25 @@ body.tutOn #toast{display:none;}
   </div>
 
   <div class="screen" id="scNet">
-    <div class="center"><div class="panel wide" style="max-width:600px">
+    <div class="center"><div class="panel wide" style="max-width:560px">
       <div class="hdr">Online</div><div class="ttl">Co-op with a friend</div>
-      <div class="sub" style="margin-top:6px">Each of you plays on your own device with your own camera. One of you hosts, the other joins. Swap the two codes in any chat app, then the host deploys from the safehouse and the friend drops in. Wi-Fi works best.</div>
+      <div class="sub" style="margin-top:6px">Each of you plays on your own device. One of you hosts and gets a 4-letter code. The other joins with it.</div>
       <div class="hr"></div>
       <div class="tabs" style="margin:0 0 8px"><div class="tab on" id="netTabHost">Host</div><div class="tab" id="netTabJoin">Join</div></div>
       <div id="netHostPane">
-        <div class="sub"><b>1.</b> Create an invite and send it to your friend.</div>
-        <div class="row" style="margin:6px 0"><div class="btn" id="netMake">Create invite</div></div>
-        <textarea class="netTa" id="netOffer" readonly spellcheck="false" placeholder="Your invite code shows up here"></textarea>
-        <div class="row" style="margin:4px 0 8px"><div class="btn" id="netCopyOffer">Copy</div><div class="btn" id="netShareOffer">Share</div></div>
-        <div class="sub"><b>2.</b> Paste the reply code your friend sends back.</div>
-        <textarea class="netTa" id="netReplyIn" spellcheck="false" placeholder="Paste your friend's reply code"></textarea>
-        <div class="row" style="margin:4px 0"><div class="btn" id="netConnect">Connect</div></div>
+        <div class="row" style="margin:6px 0"><div class="btn" id="netMake">Host a game</div></div>
+        <div class="sub">Your room code</div>
+        <div id="netCode">----</div>
+        <div class="row" style="margin:4px 0"><div class="btn" id="netShareCode">Send code to friend</div></div>
+        <div class="sub">Keep the game open (switching apps to send the code is fine). Once your friend joins, deploy from the safehouse and they drop into your mission.</div>
       </div>
       <div id="netJoinPane" style="display:none">
-        <div class="sub"><b>1.</b> Paste the invite code the host sent you.</div>
-        <textarea class="netTa" id="netOfferIn" spellcheck="false" placeholder="Paste the host's invite code"></textarea>
-        <div class="row" style="margin:6px 0"><div class="btn" id="netAnswer">Make reply code</div></div>
-        <div class="sub"><b>2.</b> Send this reply to the host and keep this screen open. You will drop into the host's mission when they deploy.</div>
-        <textarea class="netTa" id="netAnswerOut" readonly spellcheck="false" placeholder="Your reply code shows up here"></textarea>
-        <div class="row" style="margin:4px 0"><div class="btn" id="netCopyAns">Copy</div><div class="btn" id="netShareAns">Share</div></div>
+        <div class="sub">Type the code from the host.</div>
+        <input id="netJoinCode" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE">
+        <div class="row" style="margin:6px 0"><div class="btn" id="netJoinBtn">Join</div></div>
+        <div class="sub">Once you are in, wait in your safehouse. You drop into the host's mission when they deploy.</div>
       </div>
-      <div class="sub" id="netStatus" style="margin-top:8px;color:#ffd9a0;min-height:16px"></div>
+      <div class="sub" id="netStatus" style="margin-top:10px;color:#ffd9a0;min-height:16px"></div>
       <div class="hr"></div>
       <div class="row"><div class="btn" style="flex:1" id="netDisc">Disconnect</div><div class="btn" style="flex:0 0 150px" id="netBack">&#9666; Back</div></div>
     </div></div>
@@ -1116,7 +1114,7 @@ body.tutOn #toast{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.9.0';
+var GAME_VERSION = 'v3.9.1';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -1890,7 +1888,7 @@ function inputInit() {
   window.addEventListener('pagehide', resetInputState);
   window.addEventListener('focus', resetInputState);
   window.addEventListener('keydown', function (e) {
-    var k = e.code, uiSc = uiOpen(), inField = (e.target && e.target.tagName === 'TEXTAREA');
+    var k = e.code, uiSc = uiOpen(), inField = (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT'));
     audioInit(); audioResume(); menuMusicPoke();
     if (e.code === 'F11' || (e.code === 'KeyV' && G.mode !== 'play')) { e.preventDefault(); toggleFullscreen(); }
     if (uiSc) {
@@ -14398,11 +14396,10 @@ function updateWorld(dt) {
    - No server: the two browsers connect directly (WebRTC). Codes are swapped
      by hand in any chat app. Strict carrier NATs can block the connection.
    ========================================================================== */
-var NET = { role: '', pc: null, st: null, ctl: null, open: false, state: '',
+var NET = { role: '', ws: null, code: '', wsOk: false, pingT: null, open: false, state: '',
             lastRx: 0, sendT: 0, nextId: 1, ents: {}, rs: null, snap: null, inAct: false,
             forceSeed: 0, forceHero: '', realRandom: Math.random, peerVer: '', esc: null,
             proj: [], projMesh: [], ringT: 0, goalSent: false, need: {}, hostMode: '', diffSave: null };
-var NET_ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
 
 /* mulberry32: small, fast, good enough to make two devices build the same map */
 function netRng(seed) {
@@ -14417,110 +14414,85 @@ function netRng(seed) {
 }
 function netR(v) { return Math.round(v * 100) / 100; }
 
-/* ---- invite / reply codes ---- */
-function netB64(bytes) {
+/* ---- connection: a tiny relay on the game's own site (worker.js) ----
+   Both phones open a WebSocket to /coop/<CODE>. The relay just forwards
+   messages between the two players in a room, so no direct phone-to-phone link
+   is needed and carrier NATs cannot block it. */
+var NET_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function netMakeCode() {
   var s = '', i;
-  for (i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-  return window.btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  for (i = 0; i < 4; i++) s += NET_CODE_CHARS.charAt(Math.floor(NET.realRandom() * NET_CODE_CHARS.length));
+  return s;
 }
-function netUnB64(str) {
-  var b = str.replace(/-/g, '+').replace(/_/g, '/'), out, i, bin;
-  while (b.length % 4) b += '=';
-  bin = window.atob(b); out = new Uint8Array(bin.length);
-  for (i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
+function netRelayBase() {
+  var loc = window.location;
+  if (loc.protocol !== 'https:' && loc.protocol !== 'http:') return '';
+  if (/claude\.ai|claudeusercontent|anthropic/.test(loc.hostname)) return '';
+  return (loc.protocol === 'https:' ? 'wss://' : 'ws://') + loc.host + '/coop/';
 }
-function netEncode(obj) {
-  var bytes = new TextEncoder().encode(JSON.stringify(obj)), cs, w;
-  if (window.CompressionStream) {
-    cs = new window.CompressionStream('deflate-raw'); w = cs.writable.getWriter();
-    w.write(bytes); w.close();
-    return new Response(cs.readable).arrayBuffer().then(function (buf) { return 'BD2' + netB64(new Uint8Array(buf)); });
-  }
-  return Promise.resolve('BD1' + netB64(bytes));
-}
-function netDecode(code) {
-  var c = String(code || '').replace(/\s+/g, ''), kind = c.slice(0, 3), bytes, ds, w;
-  var bad = 'That code is damaged. Copy it again';
-  if (kind !== 'BD1' && kind !== 'BD2') return Promise.reject(new Error('That does not look like a co-op code'));
-  try { bytes = netUnB64(c.slice(3)); } catch (e) { return Promise.reject(new Error(bad)); }
-  if (kind === 'BD1') {
-    try { return Promise.resolve(JSON.parse(new TextDecoder().decode(bytes))); } catch (e2) { return Promise.reject(new Error(bad)); }
-  }
-  if (!window.DecompressionStream) return Promise.reject(new Error('This browser cannot read that code'));
-  ds = new window.DecompressionStream('deflate-raw'); w = ds.writable.getWriter();
-  w.write(bytes); w.close();
-  return new Response(ds.readable).arrayBuffer().then(function (buf) {
-    return JSON.parse(new TextDecoder().decode(new Uint8Array(buf)));
-  }).catch(function () { throw new Error(bad); });
-}
-function netGather(pc) {
-  return new Promise(function (resolve) {
-    var done = false, t;
-    function fin() { if (done) return; done = true; clearTimeout(t); pc.removeEventListener('icegatheringstatechange', chk); resolve(); }
-    function chk() { if (pc.iceGatheringState === 'complete') fin(); }
-    if (pc.iceGatheringState === 'complete') { resolve(); return; }
-    t = setTimeout(fin, 5000);
-    pc.addEventListener('icegatheringstatechange', chk);
-  });
-}
-
-/* ---- connection ---- */
 function netSend(o) {
-  if (!NET.ctl || NET.ctl.readyState !== 'open') return;
-  try { NET.ctl.send(JSON.stringify(o)); } catch (e) {}
+  if (!NET.open || !NET.ws || NET.ws.readyState !== 1) return;
+  try { NET.ws.send(JSON.stringify(o)); } catch (e) {}
 }
-function netSendFast(o) {
-  if (!NET.st || NET.st.readyState !== 'open') return;
-  try { NET.st.send(JSON.stringify(o)); } catch (e) {}
-}
+function netSendFast(o) { netSend(o); }
 function netStatus(txt) { NET.state = txt; var n = el('netStatus'); if (n) n.textContent = txt; }
-function netWire(ch) {
-  if (ch.label === 'st') { NET.st = ch; ch.onmessage = netOnMsg; }
-  else { NET.ctl = ch; ch.onmessage = netOnMsg; ch.onopen = netOnOpen; }
-}
-function netNewPC() {
-  var pc = new window.RTCPeerConnection({ iceServers: NET_ICE });
-  pc.onconnectionstatechange = function () {
-    var st = pc.connectionState;
-    if (pc !== NET.pc) return;
-    if (st === 'failed' || st === 'closed') netLost();
-    else if (st === 'disconnected') setTimeout(function () { if (NET.pc === pc && pc.connectionState === 'disconnected') netLost(); }, 6000);
+function netShowCode(c) { var n = el('netCode'); if (n) n.textContent = c || '----'; }
+function netConnect(role, code, retry) {
+  var base = netRelayBase(), ws;
+  if (!base) { netStatus('Online co-op works on your game site, not in this preview'); return false; }
+  if (!window.WebSocket) { netStatus('This browser does not support online play'); return false; }
+  if (!retry) { netClose(); NET.tries = 0; }
+  NET.want = { role: role, code: code };
+  NET.retrying = !!retry;
+  NET.role = role; NET.code = code; NET.wsOk = false;
+  try { ws = new window.WebSocket(base + code + '?role=' + role); } catch (e) { NET.role = ''; netStatus('Could not reach the co-op server'); return false; }
+  NET.ws = ws;
+  ws.onopen = function () {
+    if (ws !== NET.ws) return;
+    NET.wsOk = true; NET.tries = 0;
+    if (role === 'host') netStatus('Room ' + code + ' is open. Waiting for your friend to join...');
+    else netStatus('Joining room ' + code + '...');
   };
-  return pc;
+  ws.onmessage = function (ev) { if (ws === NET.ws) netOnRaw(ev.data); };
+  ws.onclose = function () {
+    if (ws !== NET.ws) return;
+    NET.ws = null;
+    if (NET.open) netPeerLeft(true);
+    if (NET.want) { netRetry(); return; }       // phones drop sockets when you switch apps: come back quietly
+    netLost(NET.wsOk ? '' : 'Could not reach the co-op server. Check your internet and try again');
+  };
+  if (NET.pingT) clearInterval(NET.pingT);
+  NET.pingT = setInterval(function () { if (NET.ws && NET.ws.readyState === 1) { try { NET.ws.send('ping'); } catch (e) {} } }, 20000);
+  return true;
 }
-function netHostCreate() {
-  var pc;
-  if (!window.RTCPeerConnection) return Promise.reject(new Error('This browser does not support online play'));
-  netClose();
-  pc = netNewPC(); NET.pc = pc; NET.role = 'host';
-  netWire(pc.createDataChannel('st', { ordered: false, maxRetransmits: 0 }));
-  netWire(pc.createDataChannel('ctl'));
-  return pc.createOffer().then(function (o) { return pc.setLocalDescription(o); })
-    .then(function () { return netGather(pc); })
-    .then(function () { return netEncode({ t: 'offer', s: pc.localDescription.sdp }); });
+function netRetry() {
+  if (NET.retryT || !NET.want) return;
+  NET.tries = (NET.tries || 0) + 1;
+  if (NET.tries > 60) { NET.want = null; netLost('Could not reconnect. Check your internet and try again'); return; }
+  netStatus(NET.want.role === 'host' ? 'Reconnecting room ' + NET.want.code + '...' : 'Reconnecting to the host...');
+  NET.retryT = setTimeout(function () {
+    NET.retryT = null;
+    if (!NET.want || NET.ws) return;
+    if (document.hidden) return;                 // resumes on visibilitychange
+    netConnect(NET.want.role, NET.want.code, true);
+  }, NET.tries < 3 ? 600 : 2000);
 }
-function netHostAccept(code) {
-  if (!NET.pc || NET.role !== 'host') return Promise.reject(new Error('Create an invite first'));
-  return netDecode(code).then(function (o) {
-    if (!o || o.t !== 'answer' || !o.s) throw new Error('That is not a reply code. Paste the code your friend made');
-    return NET.pc.setRemoteDescription({ type: 'answer', sdp: o.s });
-  });
-}
-function netJoin(code) {
-  if (!window.RTCPeerConnection) return Promise.reject(new Error('This browser does not support online play'));
-  return netDecode(code).then(function (o) {
-    var pc;
-    if (!o || o.t !== 'offer' || !o.s) throw new Error('That is not an invite code. Paste the code the host sent you');
-    netClose();
-    pc = netNewPC(); NET.pc = pc; NET.role = 'guest';
-    pc.ondatachannel = function (e) { netWire(e.channel); };
-    return pc.setRemoteDescription({ type: 'offer', sdp: o.s })
-      .then(function () { return pc.createAnswer(); })
-      .then(function (a) { return pc.setLocalDescription(a); })
-      .then(function () { return netGather(pc); })
-      .then(function () { return netEncode({ t: 'answer', s: pc.localDescription.sdp }); });
-  });
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden && NET.want && !NET.ws && !NET.retryT) netConnect(NET.want.role, NET.want.code, true);
+});
+function netOnRaw(d) {
+  var o, c;
+  if (d === 'pong') return;
+  try { o = JSON.parse(d); } catch (e) { return; }
+  if (o.t === 'peer') { netOnOpen(); return; }
+  if (o.t === 'peerleft') { netPeerLeft(); return; }
+  if (o.t === 'taken') { if (NET.role === 'host') { c = netMakeCode(); netShowCode(c); netConnect('host', c); } return; }
+  if (o.t === 'nohost') {
+    if (NET.retrying) { netStatus('Waiting for the host to come back...'); return; }   // the close that follows schedules the next try
+    NET.want = null; netCloseSilent(); netStatus('No game found with code ' + NET.code + '. Check the code with the host'); return;
+  }
+  if (o.t === 'full') { NET.want = null; netCloseSilent(); netStatus('That game already has two players'); return; }
+  netOnMsg({ data: d });
 }
 function netOnOpen() {
   NET.open = true; NET.lastRx = performance.now();
@@ -14535,12 +14507,35 @@ function netOnOpen() {
   }
   coopLabel();
 }
+/* The other player dropped. The room stays open on both sides, so whoever left
+   can come straight back with the same code (or by reopening the app). */
+function netPeerLeft(selfDropped) {
+  var i, wasOpen = NET.open;
+  NET.open = false;
+  if (NET.role === 'host') {
+    if (ally && ally.netRemote) { ally.netRemote = false; ally.isPlayer = false; ally.aiOnly = 'on'; if (ally.dead) ally.deadT = 0; refreshHUDNames(); }
+    if (wasOpen) toast(selfDropped ? 'Connection dropped. Your partner is AI until it is back' : 'Friend left. Your partner is AI again');
+    if (!selfDropped) netStatus('Your friend left. They can rejoin with code ' + NET.code);
+    coopLabel();
+    return;
+  }
+  if (NET.inAct) netGuestEndAct(false, 0, 'HOST DISCONNECTED');
+  for (i = 0; i < NET.projMesh.length; i++) NET.projMesh[i].visible = false;
+  if (wasOpen) toast('Host disconnected. Waiting for them to come back');
+  if (!selfDropped) netStatus('The host disconnected. You will reconnect when they are back');
+  coopLabel();
+}
+function netCloseSilent() {
+  var ws = NET.ws;
+  NET.ws = null; NET.want = null;
+  if (NET.retryT) { clearTimeout(NET.retryT); NET.retryT = null; }
+  if (NET.pingT) { clearInterval(NET.pingT); NET.pingT = null; }
+  try { if (ws) ws.close(); } catch (e) {}
+  NET.open = false; NET.role = ''; NET.rs = null; NET.snap = null;
+  coopLabel();
+}
 function netClose() {
   var i;
-  try { if (NET.st) NET.st.close(); } catch (e) {}
-  try { if (NET.ctl) NET.ctl.close(); } catch (e2) {}
-  try { if (NET.pc) NET.pc.close(); } catch (e3) {}
-  NET.pc = null; NET.st = null; NET.ctl = null; NET.open = false;
   if (NET.role === 'host' && ally && ally.netRemote) {    // the partner goes back to AI
     ally.netRemote = false; ally.isPlayer = false; ally.aiOnly = 'on';
     if (ally.dead) { ally.deadT = 0; }
@@ -14548,14 +14543,13 @@ function netClose() {
   }
   if (NET.role === 'guest' && NET.inAct) netGuestEndAct(false, 0, 'CONNECTION LOST');
   for (i = 0; i < NET.projMesh.length; i++) NET.projMesh[i].visible = false;
-  NET.role = ''; NET.rs = null; NET.snap = null;
-  coopLabel();
+  netCloseSilent();
 }
-function netLost() {
+function netLost(msg) {
   var wasOpen = NET.open, role = NET.role;
   netClose();
-  if (wasOpen) toast(role === 'host' ? 'Friend disconnected. Your partner is AI again' : 'Lost the connection to the host');
-  netStatus(wasOpen ? 'Disconnected' : 'Could not connect. Make a new invite and try again');
+  if (wasOpen) toast(role === 'host' ? 'Connection lost. Your partner is AI again' : 'Lost the connection to the host');
+  netStatus(msg || (wasOpen ? 'Connection lost' : 'Disconnected'));
 }
 
 /* ---- message router ---- */
@@ -14989,19 +14983,8 @@ function netGuestFrame(dt, raw) {
 }
 
 /* ---- menu wiring ---- */
-function netCopy(id) {
-  var t = el(id), v = t.value;
-  if (!v) { toast('Nothing to copy yet'); return; }
-  t.focus(); t.select();
-  try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v); else document.execCommand('copy'); toast('Copied'); } catch (e) { toast('Press and hold to copy'); }
-}
-function netShare(id) {
-  var v = el(id).value;
-  if (!v) { toast('Nothing to share yet'); return; }
-  if (navigator.share) navigator.share({ text: v }).catch(function () {}); else netCopy(id);
-}
 function netInit() {
-  var tabH = el('netTabHost'), tabJ = el('netTabJoin');
+  var tabH = el('netTabHost'), tabJ = el('netTabJoin'), inp = el('netJoinCode');
   function pane(host) {
     tabH.classList.toggle('on', host); tabJ.classList.toggle('on', !host);
     el('netHostPane').style.display = host ? 'block' : 'none';
@@ -15012,29 +14995,36 @@ function netInit() {
   el('miOnline').addEventListener('click', function () {
     audioInit(); audioResume(); menuMusicPoke(); SFX.ui();
     showScreen('scNet'); G.mode = 'menu';
-    netStatus(NET.open ? (NET.role === 'host' ? 'Friend connected. Deploy from the safehouse' : 'Connected. Waiting for the host to deploy') : NET.state);
+    if (!netRelayBase()) netStatus('Online co-op works on your game site, not in this preview');
+    else netStatus(NET.open ? (NET.role === 'host' ? 'Friend connected. Deploy from the safehouse' : 'Connected. Waiting for the host to deploy') : (NET.role === 'host' ? 'Room ' + NET.code + ' is open. Waiting for your friend...' : ''));
   });
-  el('netBack').addEventListener('click', function () { SFX.ui(); if (NET.open) openHub(); else goTitle(); });
+  el('netBack').addEventListener('click', function () { SFX.ui(); if (NET.role) openHub(); else goTitle(); });
   el('netMake').addEventListener('click', function () {
-    SFX.ui(); netStatus('Creating invite...'); el('netOffer').value = '';
-    netHostCreate().then(function (c) { el('netOffer').value = c; netStatus('Send this code to your friend, then paste their reply below'); })
-      .catch(function (e) { netStatus('Could not create an invite: ' + (e && e.message ? e.message : 'unsupported browser')); });
+    var c = netMakeCode();
+    SFX.ui();
+    if (netConnect('host', c)) { netShowCode(c); netStatus('Opening room ' + c + '...'); }
   });
-  el('netCopyOffer').addEventListener('click', function () { SFX.ui(); netCopy('netOffer'); });
-  el('netShareOffer').addEventListener('click', function () { SFX.ui(); netShare('netOffer'); });
-  el('netConnect').addEventListener('click', function () {
-    SFX.ui(); netStatus('Connecting...');
-    netHostAccept(el('netReplyIn').value).then(function () { netStatus('Waiting for your friend to connect...'); })
-      .catch(function (e) { netStatus(e && e.message ? e.message : 'Could not use that code'); });
+  el('netShareCode').addEventListener('click', function () {
+    SFX.ui();
+    if (NET.role !== 'host' || !NET.code) { toast('Host a game first'); return; }
+    var msg = 'Join my BLADE game. Open Online Co-op, tap Join and enter ' + NET.code;
+    if (navigator.share) navigator.share({ text: msg }).catch(function () {});
+    else { try { navigator.clipboard.writeText(NET.code); toast('Code copied'); } catch (e) { toast('Code: ' + NET.code); } }
   });
-  el('netAnswer').addEventListener('click', function () {
-    SFX.ui(); netStatus('Making reply...'); el('netAnswerOut').value = '';
-    netJoin(el('netOfferIn').value).then(function (c) { el('netAnswerOut').value = c; netStatus('Send this reply to the host and keep this screen open'); })
-      .catch(function (e) { netStatus(e && e.message ? e.message : 'Could not use that code'); });
+  inp.addEventListener('input', function () {
+    var v = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    if (inp.value !== v) inp.value = v;
   });
-  el('netCopyAns').addEventListener('click', function () { SFX.ui(); netCopy('netAnswerOut'); });
-  el('netShareAns').addEventListener('click', function () { SFX.ui(); netShare('netAnswerOut'); });
-  el('netDisc').addEventListener('click', function () { SFX.ui(); netClose(); netStatus('Disconnected'); toast('Online co-op closed'); });
+  function join() {
+    var c = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    SFX.ui();
+    if (c.length !== 4) { netStatus('The code is 4 letters and numbers'); return; }
+    inp.blur();
+    netConnect('guest', c);
+  }
+  el('netJoinBtn').addEventListener('click', join);
+  inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); join(); } });
+  el('netDisc').addEventListener('click', function () { SFX.ui(); netClose(); netShowCode(''); netStatus('Disconnected'); });
 }
 
 /* ==========================================================================
