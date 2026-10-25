@@ -1114,7 +1114,7 @@ body.tutOn #toast{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.9.1';
+var GAME_VERSION = 'v3.9.2';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -14441,7 +14441,7 @@ function netConnect(role, code, retry) {
   var base = netRelayBase(), ws;
   if (!base) { netStatus('Online co-op works on your game site, not in this preview'); return false; }
   if (!window.WebSocket) { netStatus('This browser does not support online play'); return false; }
-  if (!retry) { netClose(); NET.tries = 0; }
+  if (!retry) { netClose(); NET.tries = 0; NET.everOk = false; }
   NET.want = { role: role, code: code };
   NET.retrying = !!retry;
   NET.role = role; NET.code = code; NET.wsOk = false;
@@ -14449,7 +14449,7 @@ function netConnect(role, code, retry) {
   NET.ws = ws;
   ws.onopen = function () {
     if (ws !== NET.ws) return;
-    NET.wsOk = true; NET.tries = 0;
+    NET.wsOk = true; NET.everOk = true; NET.tries = 0;
     if (role === 'host') netStatus('Room ' + code + ' is open. Waiting for your friend to join...');
     else netStatus('Joining room ' + code + '...');
   };
@@ -14458,8 +14458,9 @@ function netConnect(role, code, retry) {
     if (ws !== NET.ws) return;
     NET.ws = null;
     if (NET.open) netPeerLeft(true);
-    if (NET.want) { netRetry(); return; }       // phones drop sockets when you switch apps: come back quietly
-    netLost(NET.wsOk ? '' : 'Could not reach the co-op server. Check your internet and try again');
+    if (NET.want && NET.everOk) { netRetry(); return; }       // phones drop sockets when you switch apps: come back quietly
+    NET.want = null;
+    netLost(NET.everOk ? '' : 'Could not reach the co-op server on this site. If you just updated the game, make sure worker.js and wrangler.jsonc were uploaded too');
   };
   if (NET.pingT) clearInterval(NET.pingT);
   NET.pingT = setInterval(function () { if (NET.ws && NET.ws.readyState === 1) { try { NET.ws.send('ping'); } catch (e) {} } }, 20000);
