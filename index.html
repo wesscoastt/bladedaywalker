@@ -985,6 +985,8 @@ body.tutOn #toast{display:none;}
       <div class="hdr">Online</div><div class="ttl">Co-op with a friend</div>
       <div class="sub" style="margin-top:6px">Each of you plays on your own device. One of you hosts and gets a 4-letter code. The other joins with it.</div>
       <div class="hr"></div>
+      <div class="row" style="margin:0 0 4px"><div class="btn" id="netHeroBtn">Play as: Blade</div></div>
+      <div class="sub" id="netPeerHero" style="min-height:14px;margin-bottom:6px"></div>
       <div class="tabs" style="margin:0 0 8px"><div class="tab on" id="netTabHost">Host</div><div class="tab" id="netTabJoin">Join</div></div>
       <div id="netHostPane">
         <div class="row" style="margin:6px 0"><div class="btn" id="netMake">Host a game</div></div>
@@ -1114,7 +1116,7 @@ body.tutOn #toast{display:none;}
 /* ==========================================================================
    [CORE] Globals
    ========================================================================== */
-var GAME_VERSION = 'v3.9.2';
+var GAME_VERSION = 'v3.9.3';
 var THREE = window.THREE;
 var renderer, scene, camera, clock;
 var W = window.innerWidth, H = window.innerHeight;
@@ -5487,13 +5489,15 @@ function makeHumanoid(cfg) {
     var gE2 = gE1.clone(); gE2.position.x = 0.098; headG.add(gE2);
   }
   if (cfg.glasses) {
-    var vis = new THREE.Mesh(shapeGeo(0.46, 0.14, 0.1, { bevel: 0.03, seg: 2, bot: 0.9, top: 1.0 }), matU(0x08080a, 0x18101a));
-    vis.position.set(0, 0.065, 0.225); headG.add(vis);
-    var sheen = new THREE.Mesh(boxGeo(0.42, 0.03, 0.02), matU(0x5a6478, 0x2a3040));
-    sheen.position.set(0, 0.10, 0.272); headG.add(sheen);
-    var tmplL = new THREE.Mesh(boxGeo(0.04, 0.09, 0.3), matU(0x08080a));
-    tmplL.position.set(-0.216, 0.065, 0.09); headG.add(tmplL);
-    var tmplR = tmplL.clone(); tmplR.position.x = 0.216; headG.add(tmplR);
+    /* The lens sits clear of the brow and eye sockets; at 0.225 the head's eye
+       region poked through the shades. */
+    var vis = new THREE.Mesh(shapeGeo(0.48, 0.16, 0.1, { bevel: 0.03, seg: 2, bot: 0.9, top: 1.0 }), matU(0x08080a, 0x18101a));
+    vis.position.set(0, 0.06, 0.262); headG.add(vis);
+    var sheen = new THREE.Mesh(boxGeo(0.4, 0.025, 0.02), matU(0x3a4252, 0x1a1e28));
+    sheen.position.set(0, 0.105, 0.313); headG.add(sheen);
+    var tmplL = new THREE.Mesh(boxGeo(0.04, 0.09, 0.34), matU(0x08080a));
+    tmplL.position.set(-0.226, 0.06, 0.1); headG.add(tmplL);
+    var tmplR = tmplL.clone(); tmplR.position.x = 0.226; headG.add(tmplR);
   }
   if (cfg.hood) {
     var hood = new THREE.Mesh(shapeGeo(0.53, 0.5, 0.51, { bevel: 0.1, seg: 2, bot: 1.0, top: 0.74 }), bodyM);
@@ -11092,7 +11096,10 @@ function startAct(index, isVs) {
   G.safeY = (z0.y || 0) + 0.5;
   G.spawnYaw = Math.atan2(faceX, faceZ);
 
-  blade = makeHero('blade', G.safeX, G.safeZ, true);
+  /* Online co-op: each player picks their own hero (the variable is still called
+     `blade` because it is the host's hero everywhere else in the code). */
+  var mainId = NET.forceMain || ((NET.open && NET.role === 'host' && !isVs) ? netHeroOr(P.netHero, 'blade') : 'blade');
+  blade = makeHero(mainId, G.safeX, G.safeZ, true);
   /* Sample the actual ground rather than trusting the zone's nominal height —
      a stale value left the player hovering ~2.4 above the floor, so ground
      enemies were permanently out of reach. */
@@ -11100,7 +11107,7 @@ function startAct(index, isVs) {
   blade.pos.y = G.safeY;
   blade.yaw = G.spawnYaw;
   cacheMaterials(blade);
-  var partnerId = NET.forceHero || (P.partner && P.heroes[P.partner] ? P.partner : 'whistler');
+  var partnerId = NET.forceHero || ((NET.open && NET.role === 'host' && !isVs && NET.peerHero) ? netHeroOr(NET.peerHero, 'whistler') : (P.partner && P.heroes[P.partner] ? P.partner : 'whistler'));
   // partner stands abreast, perpendicular to the direction of travel
   ally = makeHero(partnerId, G.safeX - faceZ * 2.6, G.safeZ + faceX * 2.6, false);
   ally.pos.y = groundHeightAt(ally.pos.x, ally.pos.z, G.safeY + 8, 0.6);
@@ -14438,6 +14445,7 @@ function netSendFast(o) { netSend(o); }
 function netStatus(txt) { NET.state = txt; var n = el('netStatus'); if (n) n.textContent = txt; }
 function netShowCode(c) { var n = el('netCode'); if (n) n.textContent = c || '----'; }
 function netConnect(role, code, retry) {
+  setTimeout(netHeroLabel, 0);
   var base = netRelayBase(), ws;
   if (!base) { netStatus('Online co-op works on your game site, not in this preview'); return false; }
   if (!window.WebSocket) { netStatus('This browser does not support online play'); return false; }
@@ -14498,6 +14506,7 @@ function netOnRaw(d) {
 function netOnOpen() {
   NET.open = true; NET.lastRx = performance.now();
   netSend({ t: 'hello', v: GAME_VERSION });
+  netSendPick();
   if (NET.role === 'host') {
     netStatus('Friend connected. Deploy from the safehouse and they will drop in with you');
     toast('Friend connected');
@@ -14563,7 +14572,28 @@ function netOnMsg(ev) {
     if (o.v !== GAME_VERSION) { toast('Version mismatch: you have ' + GAME_VERSION + ', your friend has ' + o.v + '. Both of you should reload'); netStatus('Version mismatch. Both players need the same version'); }
     return;
   }
+  if (o.t === 'pick') {
+    NET.peerHero = HEROES[o.h] ? o.h : '';
+    netHeroLabel();
+    if (NET.role === 'host' && NET.peerHero && G.mode !== 'play' && G.mode !== 'pause') toast('Your friend will play as ' + HEROES[NET.peerHero].name);
+    return;
+  }
   if (NET.role === 'host') netHostMsg(o); else netGuestMsg(o);
+}
+/* ---- hero choice for online co-op ---- */
+var NET_MAIN_HEROES = ['blade', 'whistler', 'spider', 'rider', 'elsa', 'knight'];
+function netHeroOr(id, fallback) { return (id && HEROES[id]) ? id : fallback; }
+function netHeroChoices() {
+  var out = NET_MAIN_HEROES.slice(), i, id;
+  for (i = 0; i < HERO_ORDER.length; i++) { id = HERO_ORDER[i]; if (out.indexOf(id) < 0 && P.heroes[id]) out.push(id); }
+  return out;
+}
+function netMyHero() { return netHeroOr(P.netHero, NET.role === 'guest' ? 'whistler' : 'blade'); }
+function netSendPick() { netSend({ t: 'pick', h: netMyHero() }); }
+function netHeroLabel() {
+  var b = el('netHeroBtn'), f = el('netPeerHero');
+  if (b) b.textContent = 'Play as: ' + HEROES[netMyHero()].name + '  \u25b8';
+  if (f) f.textContent = NET.open && NET.peerHero ? 'Your friend plays as ' + HEROES[NET.peerHero].name : '';
 }
 
 /* ==================== HOST ==================== */
@@ -14573,7 +14603,7 @@ function netSendAct() {
   ally.netRemote = true; ally.isPlayer = false; ally.aiOnly = 'on';
   ally.atk = null;
   NET.rs = null;
-  netSend({ t: 'act', i: G.act.index, seed: G.actSeed, q: G.actQ, d: G.diffIdx, hero: ally.heroId,
+  netSend({ t: 'act', i: G.act.index, seed: G.actSeed, q: G.actQ, d: G.diffIdx, hero: ally.heroId, host: player.heroId,
     sp: [netR(ally.pos.x), netR(ally.pos.y), netR(ally.pos.z)], hy: netR(ally.yaw), dead: ally.dead ? 1 : 0 });
   for (i = 0; i < enemies.length; i++) enemies[i].netSent = false;
   if (G.beat) netSendBeat();
@@ -14662,6 +14692,12 @@ function netHostMsg(o) {
     netSendAct();
   }
 }
+/* Puppets skip physicsStep, so their model has to be moved to their position here. */
+function netPlace(e) {
+  e.root.position.copy(e.pos);
+  e.root.rotation.y = e.yaw;
+  if (e.shadow) { e.shadow.position.set(e.pos.x, e.pos.y + 0.05, e.pos.z); }
+}
 /* The friend's hero as seen on the host: a puppet driven by their reports. */
 function netPuppetHero(e, dt, s) {
   var k, ox, oz, a;
@@ -14691,18 +14727,19 @@ function netPuppetHero(e, dt, s) {
     }
   }
   if (e.atk) updateAttack(e, dt);
+  netPlace(e);
   animateEntity(e, dt);
 }
 
 /* ==================== GUEST ==================== */
 function netGuestStartAct(o) {
   var mine, theirs;
-  NET.forceSeed = o.seed >>> 0; NET.forceHero = o.hero; G.buildQ = o.q || '';
+  NET.forceSeed = o.seed >>> 0; NET.forceHero = o.hero; NET.forceMain = o.host || 'blade'; G.buildQ = o.q || '';
   if (NET.diffSave === null) NET.diffSave = G.diffIdx;
   G.diffIdx = o.d;
   NET.ents = {}; NET.esc = null; NET.need = {}; NET.goalSent = false;
   startAct(o.i, false);
-  NET.forceSeed = 0; NET.forceHero = ''; G.buildQ = '';
+  NET.forceSeed = 0; NET.forceHero = ''; NET.forceMain = ''; G.buildQ = '';
   G.introScript = null; G.introT = 0;
   mine = ally; theirs = blade;
   mine.isPlayer = true; mine.aiOnly = 'off'; mine.netRemote = false;
@@ -14906,6 +14943,7 @@ function netPuppetEnemies(dt) {
     e.invuln = 0;
     e.grounded = true;
     if (e.atk) updateAttack(e, dt);
+    netPlace(e);
     animateEntity(e, dt);
   }
   if (NET.esc) {
@@ -14915,6 +14953,7 @@ function netPuppetEnemies(dt) {
       e.pos.x += (t[0] - e.pos.x) * k; e.pos.y += (t[1] - e.pos.y) * k; e.pos.z += (t[2] - e.pos.z) * k;
       e.vel.x = (e.pos.x - ox) / Math.max(dt, 0.001); e.vel.z = (e.pos.z - oz) / Math.max(dt, 0.001);
       e.yaw = approachAngle(e.yaw, t[3], 10 * dt);
+      netPlace(e);
       animateEntity(e, dt);
     }
   }
@@ -14996,6 +15035,7 @@ function netInit() {
   el('miOnline').addEventListener('click', function () {
     audioInit(); audioResume(); menuMusicPoke(); SFX.ui();
     showScreen('scNet'); G.mode = 'menu';
+    netHeroLabel();
     if (!netRelayBase()) netStatus('Online co-op works on your game site, not in this preview');
     else netStatus(NET.open ? (NET.role === 'host' ? 'Friend connected. Deploy from the safehouse' : 'Connected. Waiting for the host to deploy') : (NET.role === 'host' ? 'Room ' + NET.code + ' is open. Waiting for your friend...' : ''));
   });
@@ -15026,6 +15066,16 @@ function netInit() {
   el('netJoinBtn').addEventListener('click', join);
   inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); join(); } });
   el('netDisc').addEventListener('click', function () { SFX.ui(); netClose(); netShowCode(''); netStatus('Disconnected'); });
+  el('netHeroBtn').addEventListener('click', function () {
+    var list = netHeroChoices(), i = list.indexOf(netMyHero());
+    SFX.ui();
+    P.netHero = list[(i + 1) % list.length];
+    saveProfile();
+    netHeroLabel();
+    netSendPick();
+    if (NET.inAct || (NET.role === 'host' && G.act && G.mode === 'play')) toast('You will play as ' + HEROES[P.netHero].name + ' from the next mission');
+  });
+  netHeroLabel();
 }
 
 /* ==========================================================================
