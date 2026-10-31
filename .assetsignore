@@ -4,3 +4,4 @@ wrangler.jsonc
 .git
 node_modules
 .wrangler
+.claude
